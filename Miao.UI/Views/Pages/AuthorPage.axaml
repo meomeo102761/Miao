@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.AuthorPage"
+             Background="{StaticResource BgMain}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.pageButton">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="#E6F7F3"/>
+        </Style>
+        <Style Selector="Button.pageButton:disabled">
+            <Setter Property="Foreground" Value="#BBB"/>
+        </Style>
+        <Style Selector="Button.pageButton.active /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.pageButton.active">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid MaxWidth="1140" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="‹ Danh sách tác giả" FontFamily="Arial" FontSize="15"
+                       Foreground="{StaticResource AccentJade}" Cursor="Hand"
+                       PointerPressed="OnBackToAuthorListClick" Margin="0,32,0,0"/>
+
+            <TextBlock x:Name="AuthorNameText" Style="{StaticResource PageTitle}" Margin="0,4,0,16"/>
+        </StackPanel>
+
+        <ItemsControl x:Name="NovelsList" Grid.Row="1" Margin="0,16,0,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="5"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border HorizontalAlignment="Center" Margin="12,0,12,16"
+                            Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Grid Width="162" Height="227" ClipToBounds="True">
+                                <Border Background="#CFEAE5">
+                                    <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" Opacity="0.6"/>
+                                </Border>
+                                <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}"
+                                    Stretch="UniformToFill"/>
+                            </Grid>
+
+                            <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17.6" FontWeight="Bold"
+                                    Foreground="#444444" TextWrapping="Wrap" TextAlignment="Center"
+                                    MaxHeight="42" MaxWidth="162" HorizontalAlignment="Stretch"
+                                    TextTrimming="CharacterEllipsis" Margin="0,8,0,0"/>
+
+                            <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Arial" FontSize="15" Foreground="#333"
+                                    MaxWidth="162" HorizontalAlignment="Center" TextAlignment="Center"
+                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+
+                            <TextBlock Text="{Binding DirectionTag}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                    MaxWidth="162" HorizontalAlignment="Center" TextAlignment="Center"
+                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+
+                            <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                    MaxWidth="162" HorizontalAlignment="Center" TextAlignment="Center"
+                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+
+                            <TextBlock Text="{Binding ReadProgress}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                    MaxWidth="162" HorizontalAlignment="Center" TextAlignment="Center"
+                                    Margin="0,2,0,8"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <StackPanel x:Name="PageButtonsPanel" Grid.Row="2" Orientation="Horizontal"
+                    HorizontalAlignment="Center" Margin="0,16,0,20"/>
+    </Grid>
+</UserControl>

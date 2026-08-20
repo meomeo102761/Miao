@@ -1,0 +1,209 @@
+<local:ConfirmablePage x:Class="Miao.UI.Views.Pages.CustomLibraryDetailPage"
+      xmlns="https://github.com/avaloniaui"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+      Background="{StaticResource BgMain}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.overlayButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.overlayButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+        </Style>
+
+        <Style Selector="Button.dialogPrimary">
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="Height" Value="36"/>
+        </Style>
+        <Style Selector="Button.dialogDanger">
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Background" Value="#E4574C"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="18">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.dialogSecondary">
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="18">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.pagerNav">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="3,0"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.pagerNav:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+        <Style Selector="Button.pagerNav:disabled">
+            <Setter Property="Opacity" Value="0.4"/>
+        </Style>
+        <Style Selector="Button.pagerCurrent">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid x:Name="RootGrid" MaxWidth="1140" Margin="20">
+
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="‹ Thư viện riêng"
+                                FontFamily="Arial" FontSize="15"
+                                Foreground="{StaticResource AccentJade}"
+                                Cursor="Hand"
+                                PointerPressed="OnBackToLibrariesClick"
+                                Margin="0,32,0,0"/>
+                        <TextBlock x:Name="TitleText" Style="{StaticResource PageTitle}" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <Button x:Name="EditButton" Grid.Column="1" Content="Sửa" Width="70" Height="34"
+                            VerticalAlignment="Bottom" Margin="0,0,0,16"
+                            Style="{StaticResource JadeButton}" Click="OnEditModeClick"/>
+                </Grid>
+
+                <ItemsControl x:Name="NovelsList" HorizontalAlignment="Stretch" Margin="0,20,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="5" Rows="0"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="8,0,8,16" HorizontalAlignment="Stretch">
+                                <Grid Height="280" ClipToBounds="True">
+                                    <Border Background="#CFEAE5">
+                                        <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" Opacity="0.6"/>
+                                    </Border>
+                                    <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill"/>
+
+                                    <Border x:Name="HoverOverlay" Background="#B3000000" Opacity="0" Cursor="Hand">
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <Button Content="📖 Đọc" Classes="overlayButton"
+                                                    Click="OnReadClick" Tag="{Binding}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="DeleteBadge"
+                                            Width="30" Height="30" CornerRadius="15" Background="#CC000000"
+                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0"
+                                            Cursor="Hand" IsVisible="False"
+                                            PointerPressed="OnDeleteBadgeClick" Tag="{Binding}">
+                                        <TextBlock Text="🗑" FontSize="15" Foreground="White"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17.6" FontWeight="Bold"
+                                        Foreground="#444" Margin="0,8,0,0" TextAlignment="Left" HorizontalAlignment="Stretch"
+                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                        Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}"/>
+
+                                <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Arial" FontSize="15" Foreground="#333"
+                                        Margin="0,2,0,0" HorizontalAlignment="Center" TextAlignment="Center"
+                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+
+                                <TextBlock Text="{Binding DirectionTag}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                        Margin="0,2,0,0" HorizontalAlignment="Center" TextAlignment="Center"
+                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+
+                                <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                        Margin="0,2,0,0" HorizontalAlignment="Center" TextAlignment="Center"
+                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+
+                                <TextBlock Text="{Binding ReadProgress}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                        Margin="0,2,0,8" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock x:Name="EmptyText" Text="Thư viện này chưa có truyện nào — bấm ➕ khi đọc 1 truyện để thêm vào đây."
+                           Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}" FontStyle="Italic" IsVisible="False"
+                           HorizontalAlignment="Center" Margin="0,20,0,0"/>
+
+                <StackPanel x:Name="PagerPanel" Orientation="Horizontal" HorizontalAlignment="Center"
+                            Margin="0,20,0,0" IsVisible="False"/>
+            </StackPanel>
+
+            <Border x:Name="ConfirmCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="24">
+                <StackPanel>
+                    <TextBlock x:Name="ConfirmMessageText" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="Xóa" Classes="dialogDanger" Click="OnConfirmYesClick"/>
+                        <Button Content="Hủy" Classes="dialogSecondary" Click="OnConfirmNoClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</local:ConfirmablePage>

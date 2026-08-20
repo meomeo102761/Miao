@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.LibraryPage"
+             Background="{StaticResource BgMain}">
+
+    <UserControl.Resources>
+
+        <Style x:Key="PageButton" TargetType="Button">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+
+        <Style Selector="Button.pageButton:pointerover">
+            <Setter Property="Background" Value="#E6F7F3"/>
+        </Style>
+        <Style Selector="Button.pageButton.active">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.pageButton:disabled">
+            <Setter Property="Foreground" Value="#BBB"/>
+        </Style>
+
+        <Style x:Key="SectionLinkText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <DataTemplate x:Key="NovelCardTemplate">
+            <Border Width="200" Margin="15,0,15,16" Background="White"
+                    BorderThickness="0" Cursor="Hand"
+                    PointerPressed="OnNovelClick" Tag="{Binding}">
+                <StackPanel HorizontalAlignment="Center">
+                    <Border Width="200" Height="280" Background="White" ClipToBounds="True">
+                        <Grid>
+                            <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" Opacity="0.6"/>
+                            <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}"
+                                   Width="200" Height="280" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17.6"
+                               FontWeight="Bold" Foreground="#444" Margin="0,8,0,0"
+                               TextAlignment="Left" HorizontalAlignment="Stretch"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
+
+                    <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Arial" FontSize="15"
+                               Foreground="#333" Margin="0,2,0,0" MaxWidth="200"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Text="{Binding DirectionTag}" FontFamily="Arial" FontSize="15"
+                               Foreground="#999" Margin="0,2,0,0" MaxWidth="200"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15"
+                               Foreground="#999" Margin="0,2,0,0" MaxWidth="200"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Text="{Binding ReadProgress}" FontFamily="Arial" FontSize="15"
+                               Foreground="#999" Margin="0,2,0,8" MaxWidth="200"
+                               HorizontalAlignment="Center" TextAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <Grid MaxWidth="1140" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Tiêu đề trang + tìm kiếm -->
+        <Grid Grid.Row="0" Margin="0,32,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Thư viện" Grid.Column="0" Style="{StaticResource PageTitle}"
+                       Margin="0" VerticalAlignment="Center"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Background="#F8FAFA" CornerRadius="4" Height="38" Width="240"
+                        BorderBrush="#CCC" BorderThickness="1">
+                    <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0"
+                             Padding="8,0" VerticalContentAlignment="Center"
+                             FontFamily="Arial" FontSize="15" KeyDown="SearchBox_KeyDown"/>
+                </Border>
+                <Button Content="Tìm" Width="65" Height="38" Margin="8,0,0,0"
+                        Style="{StaticResource JadeButton}" Click="OnSearchClick"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Dải xem trước: Mới nhất -->
+        <StackPanel x:Name="LatestSection" Grid.Row="1" Margin="0,0,0,24">
+            <TextBlock Text="Mới nhất" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
+            <TextBlock Text="Xem tất cả »" Style="{StaticResource SectionLinkText}" PointerPressed="OnShowAllLatestClick"/>
+
+            <ItemsControl x:Name="LatestPreviewList" ItemTemplate="{StaticResource NovelCardTemplate}" Margin="-15,10,-15,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <StackPanel x:Name="LatestPageButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+        </StackPanel>
+
+        <!-- Dải xem trước: Hoàn thành -->
+        <StackPanel x:Name="CompletedSection" Grid.Row="2" Margin="0,0,0,24">
+            <TextBlock Text="Hoàn thành" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
+            <TextBlock Text="Xem tất cả »" Style="{StaticResource SectionLinkText}" PointerPressed="OnShowAllCompletedClick"/>
+
+            <ItemsControl x:Name="CompletedPreviewList" ItemTemplate="{StaticResource NovelCardTemplate}" Margin="-15,10,-15,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            <StackPanel x:Name="CompletedPageButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+        </StackPanel>
+
+        <!-- Tiêu đề danh sách chính -->
+        <Border Grid.Row="3" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1" Margin="0,0,0,16" Padding="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="ListSectionTitleText" Grid.Column="0" Text="Tất cả truyện"
+                           FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
+                <TextBlock x:Name="BackToFullListLink" Grid.Column="1" Text="‹ Quay lại danh sách đầy đủ"
+                           Style="{StaticResource SectionLinkText}" Margin="0" IsVisible="False"
+                           PointerPressed="OnBackToFullListClick"/>
+            </Grid>
+        </Border>
+
+        <!-- Lưới chính -->
+        <ItemsControl x:Name="NovelsList" Grid.Row="4" ItemTemplate="{StaticResource NovelCardTemplate}"
+                      HorizontalAlignment="Center" Margin="-15,0,-15,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center"
+                    Margin="0,16,0,20" x:Name="PageButtonsPanel"/>
+    </Grid>
+</UserControl>

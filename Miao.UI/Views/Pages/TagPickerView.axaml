@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.TagPickerView"
+             Width="420" Height="560">
+    <Border Background="White" CornerRadius="8">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="Chọn tag" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
+            <DockPanel Grid.Row="1" Margin="0,0,0,10">
+                <Button Content="+ Thêm tag mới" DockPanel.Dock="Right" Width="110" Margin="8,0,0,0"
+                        Background="{StaticResource AccentJade}" Foreground="White" BorderThickness="0"
+                        Click="OnAddNewTagClick"/>
+                <Border BorderBrush="#CFE6E2" BorderThickness="1" CornerRadius="6">
+                    <TextBox x:Name="SearchBox" Padding="6" BorderThickness="0"
+                             Watermark="Tìm hoặc gõ tên tag mới rồi bấm + Thêm"
+                             TextChanged="OnSearchChanged"/>
+                </Border>
+            </DockPanel>
+            <ScrollViewer Grid.Row="2">
+                <ItemsControl x:Name="CategoriesList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock Text="{Binding Category}" FontWeight="Bold" FontSize="12"
+                                           Foreground="{StaticResource AccentJade}" Margin="0,0,0,4"/>
+                                <ItemsControl ItemsSource="{Binding Tags}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}"
+                                                      Margin="0,0,10,6" FontSize="12"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                <Button Content="Huỷ" Width="70" Margin="0,0,8,0" Click="OnCancelClick"
+                        Background="White" BorderBrush="#CFE6E2" BorderThickness="1"/>
+                <Button Content="Xong" Width="70" Click="OnDoneClick"
+                        Background="{StaticResource AccentJade}" Foreground="White" BorderThickness="0"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

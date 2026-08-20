@@ -1,0 +1,297 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.SearchPage"
+             Background="{StaticResource BgMain}"
+             FontFamily="Arial"
+             FontSize="15">
+
+    <UserControl.Resources>
+        <Style x:Key="SmallDangerButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#B94A48"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="4,0"/>
+        </Style>
+
+        <!-- ComboBox bo tròn: dùng style đơn giản (không viết lại toàn bộ ControlTemplate
+             như WPF, vì Avalonia ComboBox cần đúng các PART_Popup/PART_... nội bộ khá phức tạp) -->
+        <Style x:Key="RoundedComboBox" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <DataTemplate x:Key="TagGroupItemTemplate">
+            <StackPanel Margin="0,0,0,14"
+                        DragDrop.AllowDrop="True"
+                        PointerPressed="GroupPointerPressed"
+                        PointerMoved="GroupPointerMoved"
+                        DragDrop.Drop="GroupDrop">
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBlock Text="{Binding Category}" Style="{StaticResource BodyText}"
+                               FontWeight="Bold" FontFamily="Arial" FontSize="15" VerticalAlignment="Center"/>
+                    <Button Content="✎" Style="{StaticResource SmallDangerButton}" Foreground="{StaticResource TextMuted}"
+                            Margin="6,0,0,0" Tag="{Binding}" Click="OnEditCategoryClick" IsVisible="False" Classes="editOnly"/>
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Tags}" HorizontalAlignment="Stretch">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="5"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border DragDrop.AllowDrop="True" MinWidth="180" Padding="0,0,12,6"
+                                    PointerPressed="TagPointerPressed"
+                                    PointerMoved="TagPointerMoved"
+                                    DragDrop.Drop="TagDrop">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0" Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsCheckedChanged="OnFilterChanged"
+                                              VerticalAlignment="Center" FontFamily="Arial" FontSize="15"/>
+
+                                    <Button Grid.Column="1" Content="✎" Style="{StaticResource SmallDangerButton}"
+                                            Foreground="{StaticResource TextMuted}" Margin="6,0,0,0"
+                                            Tag="{Binding}" Click="OnEditTagClick" IsVisible="False" Classes="editOnly"/>
+
+                                    <Button Grid.Column="2" Content="✕" Style="{StaticResource SmallDangerButton}"
+                                            Margin="4,0,0,0" Tag="{Binding TagId}"
+                                            Click="OnDeleteTagClick" IsVisible="False" Classes="editOnly"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border BorderBrush="{StaticResource AccentJade}" BorderThickness="0,0,0,1" Margin="0,8,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer>
+    <Grid MaxWidth="1140" Margin="20">
+        <StackPanel>
+
+            <DockPanel Margin="0,0,0,16">
+                <Button x:Name="EditButton" Content="Sửa" DockPanel.Dock="Right" Width="70" Height="34"
+                        Style="{StaticResource JadeButton}" Click="OnEditClick"/>
+                <TextBlock Text="Tìm truyện" Style="{StaticResource PageTitle}" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <Border x:Name="EditPanel" IsVisible="False" Background="#F0F7F6" CornerRadius="6"
+                    Padding="16" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Quản lý tag" Style="{StaticResource BodyText}" FontWeight="Bold" FontSize="15"/>
+                    <TextBlock Text="Nhập nhóm và tên tag. Nếu nhóm chưa tồn tại, nhóm sẽ được tạo cùng tag đầu tiên."
+                               Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"
+                               FontSize="12" Margin="0,4,0,10"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox x:Name="CategoryComboBox" Width="180" IsEditable="True" Style="{StaticResource RoundedComboBox}"
+                                  ToolTip.Tip="Chọn nhóm có sẵn hoặc nhập nhóm mới"/>
+                        <TextBox x:Name="NewTagNameBox" Width="200" Height="30" Margin="8,0,0,0"/>
+                        <Button Content="+ Thêm tag" Style="{StaticResource JadeButton}" Margin="8,0,0,0" Click="OnAddTagClick"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="TagManageStatusText" Text="" Style="{StaticResource BodyText}"
+                               Foreground="{StaticResource TextMuted}" FontSize="11.2" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#F0F7F6" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                <StackPanel>
+
+                    <ItemsControl x:Name="TagCategoriesList" ItemTemplate="{StaticResource TagGroupItemTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <TextBlock Text="Tag" Style="{StaticResource BodyText}" FontWeight="Bold" FontSize="15" Margin="0,4,0,6"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBox x:Name="TagSuggestBox" Width="260" Height="30" TextChanged="OnTagSuggestChanged"/>
+                        <Button x:Name="TagGroupsShowAllButton" Content="Hiện tất cả" Style="{StaticResource JadeButton}"
+                                Margin="8,0,0,0" Click="OnShowAllGroupsClick" IsVisible="False"/>
+                        <Button x:Name="TagSuggestShowAllButton" Content="Hiện tất cả" Style="{StaticResource JadeButton}"
+                                Margin="8,0,0,0" Click="OnShowAllTagSuggestClick" IsVisible="False"/>
+                    </StackPanel>
+
+                    <ItemsControl x:Name="TagSuggestList" Margin="0,0,0,12">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="5"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border MinWidth="180" Padding="0,0,12,6">
+                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsCheckedChanged="OnFilterChanged"
+                                              FontFamily="Arial" FontSize="15"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ItemsControl x:Name="TagCategoriesExtraList" IsVisible="False" Margin="0,0,0,10"
+                                  ItemTemplate="{StaticResource TagGroupItemTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <TextBlock Text="Chặn tag" Style="{StaticResource BodyText}" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBox x:Name="BlockTagSuggestBox" Width="260" Height="30" TextChanged="OnBlockTagSuggestChanged"/>
+                        <Button x:Name="BlockTagSuggestShowAllButton" Content="Hiện tất cả" Style="{StaticResource JadeButton}"
+                                Margin="8,0,0,0" Click="OnShowAllBlockTagSuggestClick" IsVisible="False"/>
+                    </StackPanel>
+
+                    <ItemsControl x:Name="BlockSuggestList" Margin="0,0,0,10">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="5"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border MinWidth="180" Padding="0,0,12,6">
+                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsBlocked, Mode=TwoWay}" Tag="{Binding Tag}"
+                                              IsCheckedChanged="OnBlockSuggestChanged"
+                                              FontFamily="Arial" FontSize="15"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ItemsControl x:Name="BlockedTagsList" Margin="0,0,0,10">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#F6D9D9" CornerRadius="12" Padding="10,4" Margin="0,0,8,6"
+                                        Cursor="Hand" PointerPressed="OnRemoveBlockedTag" Tag="{Binding}">
+                                    <TextBlock FontFamily="Arial" FontSize="15" Foreground="#8A3A3A">
+                                        <Run Text="{Binding Name}"/>
+                                        <Run Text=" ✕"/>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Độ dài" Style="{StaticResource BodyText}" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <ComboBox x:Name="LengthComboBox" Style="{StaticResource RoundedComboBox}" FontSize="15" Width="140" SelectionChanged="OnFilterChanged">
+                            <ComboBoxItem Content="Không giới hạn" IsSelected="True"/>
+                            <ComboBoxItem Content="0"/>
+                            <ComboBoxItem Content="1 - 20"/>
+                            <ComboBoxItem Content="21 - 50"/>
+                            <ComboBoxItem Content="51 - 100"/>
+                            <ComboBoxItem Content="101 - 200"/>
+                            <ComboBoxItem Content="201 - 300"/>
+                            <ComboBoxItem Content="301 - 500"/>
+                            <ComboBoxItem Content="501 - 1000"/>
+                            <ComboBoxItem Content="1000+"/>
+                        </ComboBox>
+                        <TextBlock Text="chương" VerticalAlignment="Center" Style="{StaticResource BodyText}"
+                                   FontSize="15" Margin="8,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Thời gian" Style="{StaticResource BodyText}" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+
+                    <Grid HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="65"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+
+                        <RadioButton x:Name="TimeAllRadio" Grid.Column="0" Content="Mọi thời gian" GroupName="Time"
+                                     IsChecked="True" VerticalAlignment="Center" IsCheckedChanged="OnFilterChanged" Margin="0,0,20,0"/>
+                        <RadioButton x:Name="TimeMonthRadio" Grid.Column="1" Content="Tìm trong tháng" GroupName="Time"
+                                     VerticalAlignment="Center" IsCheckedChanged="OnFilterChanged" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="TimeMonthBox" Grid.Column="2" Height="28" FontSize="15" Style="{StaticResource RoundedComboBox}"
+                                  VerticalAlignment="Center" SelectionChanged="OnFilterChanged"/>
+                        <TextBlock Text="năm" Grid.Column="3" VerticalAlignment="Center" FontSize="15" Margin="8,0,8,0"/>
+                        <ComboBox x:Name="TimeYearBox" Grid.Column="4" Height="28" FontSize="15" Style="{StaticResource RoundedComboBox}"
+                                  VerticalAlignment="Center" SelectionChanged="OnFilterChanged"/>
+                    </Grid>
+
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="ResultCountText" Text="Chọn bộ lọc hoặc gõ từ khoá để tìm."
+                       Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}" Margin="0,0,0,12"/>
+
+            <ItemsControl x:Name="ResultsList" HorizontalAlignment="Center" Margin="-15,16,-15,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="200" Margin="15,0,15,16" Background="White"
+                                Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}">
+                            <StackPanel>
+                                <Border Width="200" Height="280" Background="White" ClipToBounds="True">
+                                    <Grid>
+                                        <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" Opacity="0.6"/>
+                                        <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}"
+                                               Width="200" Height="280" Stretch="UniformToFill"/>
+                                    </Grid>
+                                </Border>
+
+                                <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17.6" FontWeight="Bold"
+                                           Foreground="#444" Margin="0,8,0,0" TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="200"/>
+                                <TextBlock Text="{Binding Author}" FontFamily="Arial" FontSize="15" Foreground="#333"
+                                           HorizontalAlignment="Center" Margin="0,1.6,0,0" MaxWidth="200"/>
+                                <TextBlock Text="{Binding Tags}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                           HorizontalAlignment="Center" Margin="0,0,0,3.2" MaxWidth="200"/>
+                                <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                           HorizontalAlignment="Center" Margin="0,1.6,0,0" MaxWidth="200"/>
+                                <TextBlock Text="{Binding Tags}" FontFamily="Arial" FontSize="15"
+                                           Foreground="{StaticResource AccentJade}" HorizontalAlignment="Center"
+                                           Margin="0,0,0,8" MaxWidth="200"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </StackPanel>
+    </Grid>
+    </ScrollViewer>
+</UserControl>

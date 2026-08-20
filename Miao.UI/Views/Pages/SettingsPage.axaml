@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      x:Class="Miao.UI.Views.Pages.SettingsPage"
+      Background="{StaticResource BgMain}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Width="1140" HorizontalAlignment="Center" Margin="20">
+            <StackPanel HorizontalAlignment="Left">
+                <TextBlock Text="Cài đặt" Style="{StaticResource PageTitle}"/>
+                <TextBlock Text="Thư mục dữ liệu" Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
+                <DockPanel Width="500" Height="34" HorizontalAlignment="Left">
+                    <Button x:Name="BrowseButton" Content="Chọn..." DockPanel.Dock="Right" Width="80" Height="34"
+                            Style="{StaticResource JadeButton}" Margin="8,0,0,0" Click="OnBrowse"/>
+                    <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6">
+                        <TextBox x:Name="FolderTextBox" IsReadOnly="True" Padding="8,0" VerticalContentAlignment="Center"
+                                 BorderThickness="0" Background="#F0F7F6" FontFamily="Arial" FontSize="13"/>
+                    </Border>
+                </DockPanel>
+                <TextBlock Text="⚠ Đổi thư mục sẽ tự động chuyển toàn bộ dữ liệu sang chỗ mới và xoá thư mục cũ — không thể hoàn tác."
+                           Style="{StaticResource BodyText}" FontSize="11.2" Foreground="#B94A48" TextWrapping="Wrap"
+                           Margin="0,8,0,20" Width="500" HorizontalAlignment="Left"/>
+                <TextBlock Text="Chế độ dịch" Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
+                <ComboBox x:Name="TranslationEngineBox" Width="500" Height="34" HorizontalAlignment="Left"
+                          SelectedValueBinding="{Binding Tag}" Margin="0,0,0,20">
+                    <ComboBoxItem Content="Dịch Ngay" Tag="DichNgay"/>
+                    <ComboBoxItem Content="CTranslate2 (CT2)" Tag="CT2"/>
+                </ComboBox>
+                <TextBlock Text="Dịch Ngay: dùng dịch vụ trực tuyến, không cần chạy server Python."
+                           Style="{StaticResource BodyText}" FontSize="11.2" Foreground="{StaticResource TextMuted}"
+                           TextWrapping="Wrap" Margin="0,0,0,4" Width="500"/>
+                <TextBlock Text="CT2: dùng model dịch cục bộ, app sẽ tự khởi động server khi cần."
+                           Style="{StaticResource BodyText}" FontSize="11.2" Foreground="{StaticResource TextMuted}"
+                           TextWrapping="Wrap" Margin="0,0,0,20" Width="500"/>
+                <Button x:Name="SaveButton" Content="Lưu" Width="80" Style="{StaticResource JadeButton}"
+                        HorizontalAlignment="Left" Click="OnSave"/>
+                <TextBlock x:Name="SavedText" Text="" Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource AccentJade}" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

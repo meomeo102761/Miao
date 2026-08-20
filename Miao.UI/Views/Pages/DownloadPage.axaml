@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      x:Class="Miao.UI.Views.Pages.DownloadPage"
+      Background="{StaticResource BgMain}">
+
+    <Grid MaxWidth="1140" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="400"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Tải truyện" Style="{StaticResource PageTitle}"/>
+
+        <DockPanel Grid.Row="1" Margin="0,0,0,8" Height="34">
+            <Button x:Name="FetchButton" Content="Hiện chương" DockPanel.Dock="Right" MinWidth="90" Height="34"
+                    Style="{StaticResource JadeButton}" Margin="8,0,0,0" Click="OnFetchClick"/>
+            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6">
+                <TextBox x:Name="UrlTextBox" Padding="8,0" VerticalContentAlignment="Center"
+                         BorderThickness="0" FontFamily="Arial" FontSize="13"/>
+            </Border>
+        </DockPanel>
+
+        <TextBlock x:Name="StatusText" Grid.Row="2" Text="Nhập link mục lục rồi bấm &quot;Hiện chương&quot;."
+                   Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}" Margin="0,4,0,12"/>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
+            <TextBlock Text="Từ chương" VerticalAlignment="Center" Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"/>
+            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Width="60" Height="28" Margin="6,0">
+                <TextBox x:Name="FromChapterBox" Padding="4,0" VerticalContentAlignment="Center"
+                         BorderThickness="0" TextAlignment="Center" FontFamily="Arial" FontSize="13"/>
+            </Border>
+            <TextBlock Text="đến" VerticalAlignment="Center" Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"/>
+            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Width="60" Height="28" Margin="6,0">
+                <TextBox x:Name="ToChapterBox" Padding="4,0" VerticalContentAlignment="Center"
+                         BorderThickness="0" TextAlignment="Center" FontFamily="Arial" FontSize="13"/>
+            </Border>
+            <Button Content="Áp dụng" Style="{StaticResource NavButton}" Margin="8,0,0,0" Click="OnApplyRangeClick"/>
+            <Button Content="Chọn tất cả" Style="{StaticResource NavButton}" Margin="8,0,0,0" Click="OnSelectAllClick"/>
+            <Button Content="Bỏ chọn" Style="{StaticResource NavButton}" Margin="8,0,0,0" Click="OnDeselectAllClick"/>
+        </StackPanel>
+
+        <Border Grid.Row="4" x:Name="LofterOptionsPanel" IsVisible="False"
+                BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6"
+                Background="#F8FAFA" Padding="12" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Lofter là blog cá nhân, có thể chứa nhiều truyện khác nhau — chọn truyện áp dụng cho các chương sắp tải:"
+                           Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"
+                           TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                <RadioButton x:Name="LofterNewNovelRadio" Content="Tạo truyện mới" GroupName="LofterTarget"
+                             IsChecked="True" Checked="OnLofterTargetChanged" Margin="0,0,0,6"/>
+                <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="34" Margin="20,0,0,10">
+                    <TextBox x:Name="LofterNewTitleBox" Padding="8,0" VerticalContentAlignment="Center"
+                             BorderThickness="0" FontFamily="Arial" FontSize="13" Watermark="Nhập tên truyện..."/>
+                </Border>
+
+                <RadioButton x:Name="LofterExistingNovelRadio" Content="Thêm vào truyện đã có (cùng blog này)"
+                             GroupName="LofterTarget" Checked="OnLofterTargetChanged" Margin="0,0,0,6"/>
+                <ComboBox x:Name="LofterExistingNovelsCombo" IsEnabled="False" Margin="20,0,0,0">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayTitle}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="5" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"
+                CornerRadius="6" Background="White">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Background="#F5F7F7">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="36"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="36"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="2" Text="Gốc" FontFamily="Arial" FontSize="15" FontWeight="Bold"
+                            Foreground="{StaticResource TextMuted}" Padding="8,6"/>
+                    <TextBlock Grid.Column="4" Text="Dịch" FontFamily="Arial" FontSize="15" FontWeight="Bold"
+                            Foreground="{StaticResource TextMuted}" Padding="8,6"/>
+                    <Border Grid.ColumnSpan="5" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,0,0,1" VerticalAlignment="Bottom"/>
+                </Grid>
+
+                <ScrollViewer x:Name="ChaptersScrollViewer"
+                            VerticalScrollBarVisibility="Auto"
+                            PointerWheelChanged="ChaptersScrollViewer_PointerWheelChanged">
+                    <ItemsControl x:Name="ChaptersList" Margin="4">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition Width="36"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="36"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="{Binding Index, StringFormat={}{0}.}"
+                                            FontFamily="Arial" FontSize="15" FontWeight="Bold"
+                                            Foreground="{StaticResource TextMuted}"
+                                            VerticalAlignment="Top" Margin="0,4,0,0"/>
+
+                                    <CheckBox Grid.Column="1" IsChecked="{Binding IsSelected}" VerticalAlignment="Top" Margin="8,4,0,0"/>
+
+                                    <Grid Grid.Column="2" Margin="4,0,10,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Text="{Binding Title}"
+                                                FontFamily="Arial" FontSize="15"
+                                                Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1" Text="{Binding AlreadyDownloadedLabel}"
+                                                FontFamily="Arial" FontSize="11.2" Foreground="#C0392B" Margin="0,2,0,0"
+                                                IsVisible="{Binding IsAlreadyDownloaded}"/>
+                                    </Grid>
+
+                                    <CheckBox Grid.Column="3" IsChecked="{Binding IsSelected}" VerticalAlignment="Top" Margin="8,4,0,0"/>
+
+                                    <TextBlock Grid.Column="4" Text="{Binding TranslatedTitle}"
+                                            FontFamily="Arial" FontSize="15"
+                                            Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="4,0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <Button Grid.Row="6" x:Name="DownloadButton" Content="Tải các chương đã chọn"
+                Style="{StaticResource JadeButton}" HorizontalAlignment="Right"
+                Margin="0,16,0,0" Click="OnDownloadClick"/>
+    </Grid>
+</UserControl>

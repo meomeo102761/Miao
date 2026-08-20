@@ -1,0 +1,25 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:Miao.UI.Converters"
+             x:Class="Miao.UI.App"
+             RequestedThemeVariant="Default">
+
+    <Application.Styles>
+        <FluentTheme />
+        <Style Selector="TextBox">
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+    </Application.Styles>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="AccentJade" Color="#2FBF9F"/>
+        <SolidColorBrush x:Key="AccentJadeHover" Color="#25A88A"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#333333"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#888888"/>
+        <SolidColorBrush x:Key="BorderSoft" Color="#DDDDDD"/>
+        <SolidColorBrush x:Key="BgMain" Color="#FFFFFF"/>
+
+        <conv:CoverImageConverter x:Key="CoverImageConverter"/>
+    </Application.Resources>
+
+</Application>

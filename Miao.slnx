@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Miao.Android/Miao.Android.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="Miao.Core/Miao.Core.csproj" />
+  <Project Path="Miao.Desktop/Miao.Desktop.csproj" />
+  <Project Path="Miao.UI/Miao.UI.csproj" />
+</Solution>

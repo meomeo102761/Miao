@@ -1,0 +1,98 @@
+<local:ConfirmablePage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+             x:Class="Miao.UI.Views.Pages.BookmarksPage"
+             Background="{StaticResource BgMain}"
+             FontFamily="Arial">
+
+    <UserControl.Styles>
+        <Style Selector="Button.pageButton">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="#E6F7F3"/>
+        </Style>
+        <Style Selector="Button.pageButton:disabled">
+            <Setter Property="Foreground" Value="#BBB"/>
+        </Style>
+        <Style Selector="Button.pageButton.active /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.pageButton.active">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Margin="20" MaxWidth="1140">
+
+        <TextBlock Text="Bookmarks" Style="{StaticResource PageTitle}" Margin="0"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <Button x:Name="ReadingTabButton" Classes="navButton" Width="150" Click="OnReadingTabClick"/>
+            <Button x:Name="FavoriteTabButton" Classes="navButton" Width="150" Margin="10,0,0,0" Click="OnFavoriteTabClick"/>
+        </StackPanel>
+
+        <Border Background="#DEE8E6" CornerRadius="6" Padding="16,10" Margin="0,0,0,4">
+            <DockPanel VerticalAlignment="Center">
+                <CheckBox x:Name="SelectAllCheckBox" DockPanel.Dock="Left" VerticalAlignment="Center"
+                          Checked="OnSelectAllChanged" Unchecked="OnSelectAllChanged"/>
+                <Button Content="Xoá" DockPanel.Dock="Right" Width="80" Classes="navButton"
+                        Foreground="{StaticResource AccentJade}" Background="White" VerticalAlignment="Center"
+                        Click="OnDeleteSelectedClick"/>
+                <TextBlock x:Name="SelectedCountText" Text="" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource TextMuted}"/>
+            </DockPanel>
+        </Border>
+
+        <ItemsControl x:Name="ItemsList">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="White" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1" Padding="16,14">
+                        <DockPanel>
+                            <CheckBox IsChecked="{Binding IsSelected}" DockPanel.Dock="Left"
+                                      VerticalAlignment="Center" Width="50"/>
+
+                            <Border DockPanel.Dock="Left" Width="64" Height="90" Background="#F0F7F6"
+                                    Margin="0,0,16,0" ClipToBounds="True">
+                                <Grid>
+                                    <TextBlock Text="📖" FontSize="20" HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" Opacity="0.6"/>
+                                    <Image Source="{Binding CoverPath, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill"/>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel VerticalAlignment="Center" Cursor="Hand" PointerPressed="OnItemClick" Tag="{Binding}">
+                                <TextBlock Text="{Binding NovelTitle}" FontSize="17.6" FontWeight="Bold"
+                                           Foreground="{StaticResource AccentJade}"/>
+                                <TextBlock Text="{Binding AuthorLabel}" FontSize="15" Foreground="{StaticResource TextPrimary}" Margin="0,3,0,0"/>
+                                <TextBlock Text="{Binding ChapterLabel}" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock x:Name="EmptyText" Text="" FontSize="15" Foreground="{StaticResource TextMuted}" FontStyle="Italic"
+                   HorizontalAlignment="Center" Margin="0,20,0,0"/>
+
+        <StackPanel x:Name="PageButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,4"/>
+
+    </StackPanel>
+</local:ConfirmablePage>

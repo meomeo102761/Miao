@@ -1,0 +1,39 @@
+<Project>
+    <!-- https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management -->
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Avalonia packages -->
+        <PackageVersion Include="Avalonia" Version="12.1.1" />
+        <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+        <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+        <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
+        <PackageVersion Include="Avalonia.iOS" Version="12.1.1" />
+        <PackageVersion Include="Avalonia.Browser" Version="12.1.1" />
+        <PackageVersion Include="Avalonia.Android" Version="12.1.1" />
+        <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
+
+        <!-- MVVM -->
+        <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+
+        <!-- Android -->
+        <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.15" />
+
+        <!-- Miao.Core -->
+        <PackageVersion Include="HtmlAgilityPack" Version="1.11.72" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
+        <PackageVersion Include="DocumentFormat.OpenXml" Version="3.4.1" />
+        <PackageVersion Include="QuestPDF" Version="2025.7.4" />
+        <PackageVersion Include="Tesseract" Version="5.2.0" />
+        <PackageVersion Include="VersOne.Epub" Version="3.3.0" />
+        <PackageVersion Include="System.Drawing.Common" Version="10.0.0" />
+        <PackageVersion Include="ClosedXML" Version="0.104.2" />
+        <PackageVersion Include="Google.Apis.Drive.v3" Version="1.70.0.3834" />
+        <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+        <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+    </ItemGroup>
+</Project>

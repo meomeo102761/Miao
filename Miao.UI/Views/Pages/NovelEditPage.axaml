@@ -1,0 +1,302 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.NovelEditPage"
+             Background="{StaticResource BgMain}"
+             FontFamily="Arial"
+             FontSize="15">
+
+    <UserControl.Resources>
+
+        <Style x:Key="EditTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="SelectionBrush" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="FieldChip" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="FieldChipText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+        </Style>
+
+        <Style x:Key="SectionLine" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Margin" Value="0,18"/>
+        </Style>
+
+        <Style x:Key="SmallOutlineButton" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Button.smallOutline:pointerover">
+            <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+
+        <Style x:Key="BigRoundButton" TargetType="Button">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Width" Value="150"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="22"/>
+        </Style>
+        <Style Selector="Button.bigRound:pointerover">
+            <Setter Property="Opacity" Value="0.88"/>
+        </Style>
+
+        <DataTemplate x:Key="TagGroupItemTemplate">
+            <StackPanel Margin="0,0,0,14">
+                <TextBlock Text="{Binding Category}" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                <ItemsControl ItemsSource="{Binding Tags}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="5"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,0,16,6" FontFamily="Arial" FontSize="15"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border BorderBrush="{StaticResource AccentJade}" BorderThickness="0,0,0,1" Margin="0,8,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <ScrollViewer>
+    <StackPanel Background="{StaticResource BgMain}" Margin="20" MaxWidth="1140">
+
+        <TextBlock Text="Chỉnh sửa thông tin truyện" Style="{StaticResource PageTitle}" Margin="0,0,0,18"/>
+
+        <Border Background="#F0F7F6" BorderBrush="{StaticResource AccentJade}" BorderThickness="2" CornerRadius="8" Padding="24">
+            <StackPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,24,0">
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Tên truyện:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBox Grid.Column="1" x:Name="CustomTitleBox" Style="{StaticResource EditTextBox}"
+                                     ToolTip.Tip="Tên tự đặt — ưu tiên hiển thị nếu có, để trống sẽ dùng tên dịch/gốc"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Tên gốc:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBox Grid.Column="1" x:Name="OriginalTitleBox" Style="{StaticResource EditTextBox}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Tên dịch:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBox Grid.Column="1" x:Name="TranslatedTitleBox" Style="{StaticResource EditTextBox}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Tên tác giả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBox Grid.Column="1" x:Name="AuthorBox" Style="{StaticResource EditTextBox}"/>
+                        </Grid>
+
+                        <TextBlock Text="Tác phẩm tóm tắt:" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBox x:Name="DescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="110" Height="NaN"
+                                 Padding="10,8" FontFamily="Arial" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
+                                 CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
+                                 BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <Border Width="180" Height="252" Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"
+                                CornerRadius="4" ClipToBounds="True" Margin="0,0,0,10"
+                                BoxShadow="0 2 10 0 #26000000">
+                            <Image x:Name="CoverImage" Stretch="UniformToFill"/>
+                        </Border>
+                        <Button Content="📁 Chọn ảnh từ máy" Style="{StaticResource SmallOutlineButton}" Classes="smallOutline" Click="OnPickCoverClick" Margin="0,0,0,10" Width="180"/>
+                        <TextBlock x:Name="CoverStatusText" FontFamily="Arial" FontSize="10.5" Foreground="{StaticResource TextMuted}"
+                                   Width="180" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
+                <Border Style="{StaticResource SectionLine}"/>
+
+                <Border Style="{StaticResource FieldChip}">
+                    <TextBlock Text="Thể loại / Tag" Style="{StaticResource FieldChipText}"/>
+                </Border>
+
+                <ItemsControl x:Name="TagCategoriesList" Margin="0,10,0,0" ItemTemplate="{StaticResource TagGroupItemTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Vertical"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+
+                <TextBlock Text="Tag" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,4,0,6"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBox x:Name="TagSuggestBox" Width="260" Style="{StaticResource EditTextBox}"
+                             TextChanged="OnTagSuggestChanged"/>
+                    <Button x:Name="TagGroupsShowAllButton" Content="Hiện tất cả" Style="{StaticResource JadeButton}"
+                            Margin="8,0,0,0" Click="OnShowAllGroupsClick" IsVisible="False"/>
+                    <Button x:Name="TagSuggestShowAllButton" Content="Hiện tất cả" Style="{StaticResource JadeButton}"
+                            Margin="8,0,0,0" Click="OnShowAllTagSuggestClick" IsVisible="False"/>
+                </StackPanel>
+
+                <ItemsControl x:Name="TagSuggestList" Margin="0,0,0,12">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="5"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border MinWidth="180" Padding="0,0,12,6">
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" FontFamily="Arial" FontSize="15"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ItemsControl x:Name="TagCategoriesExtraList" IsVisible="False" Margin="0,0,0,10" ItemTemplate="{StaticResource TagGroupItemTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Vertical"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+
+                <Border Style="{StaticResource SectionLine}"/>
+
+                <Border Style="{StaticResource FieldChip}">
+                    <TextBlock Text="Liên kết chính (link gốc)" Style="{StaticResource FieldChipText}"/>
+                </Border>
+
+                <Grid Margin="0,8,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Mô tả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                    <Border Grid.Column="1" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Margin="0,0,16,0">
+                        <TextBox x:Name="SourceDescriptionBox" Height="38" Padding="8,0" BorderThickness="0" FontFamily="Arial" FontSize="15"
+                                 VerticalContentAlignment="Center" Watermark="VD: Link gốc, JJ, Bilibili..."/>
+                    </Border>
+                    <TextBlock Grid.Column="2" Text="Link:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                    <Border Grid.Column="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4">
+                        <TextBox x:Name="SourceUrlBox" Height="38" Padding="8,0" BorderThickness="0" FontFamily="Arial" FontSize="15"
+                                 VerticalContentAlignment="Center" ToolTip.Tip="Dùng để cập nhật chương mới"/>
+                    </Border>
+                </Grid>
+
+                <Border Style="{StaticResource FieldChip}">
+                    <TextBlock Text="Liên kết bổ sung" Style="{StaticResource FieldChipText}"/>
+                </Border>
+
+                <ItemsControl x:Name="LinksList" Margin="0,8,0,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Mô tả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                                <Border Grid.Column="1" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Margin="0,0,16,0">
+                                    <TextBox Text="{Binding Description, Mode=TwoWay}" Height="38" Padding="8,0"
+                                            BorderThickness="0" FontFamily="Arial" FontSize="15" VerticalContentAlignment="Center" Watermark="VD: JJ, Bilibili..."/>
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="Link:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                                <Border Grid.Column="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4">
+                                    <TextBox Text="{Binding Url, Mode=TwoWay}" Height="38" Padding="8,0"
+                                            BorderThickness="0" FontFamily="Arial" FontSize="15" VerticalContentAlignment="Center" Watermark="https://..."/>
+                                </Border>
+                                <Button Grid.Column="4" Content="✕" Width="34" Height="34" Margin="8,0,0,0"
+                                        Style="{StaticResource SmallOutlineButton}" Classes="smallOutline" Click="OnRemoveLinkClick"
+                                        ToolTip.Tip="Xóa liên kết này" Tag="{Binding}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button Content="+ Thêm liên kết" Style="{StaticResource SmallOutlineButton}" Classes="smallOutline" HorizontalAlignment="Left" Click="OnAddLinkClick"/>
+
+            </StackPanel>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+            <Button Content="Cập nhật" Style="{StaticResource BigRoundButton}" Classes="bigRound" Background="{StaticResource AccentJade}"
+                    Foreground="White" Margin="0,0,12,0" Click="OnSaveClick"/>
+            <Button Content="Xóa truyện" Style="{StaticResource BigRoundButton}" Classes="bigRound" Background="#E4574C"
+                    Foreground="White" Margin="0,0,12,0" Click="OnDeleteClick"/>
+            <Button Content="Quay lại" Style="{StaticResource BigRoundButton}" Classes="bigRound" Background="#EFEFEF" Foreground="#333" Click="OnCancelClick"/>
+        </StackPanel>
+
+        <TextBlock x:Name="StatusText" FontFamily="Arial" FontSize="12" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+
+        <!-- Modal xác nhận xóa (thay cho MessageBox.Show của WPF) -->
+        <Border x:Name="DeleteConfirmCard" IsVisible="False" Background="White" CornerRadius="12" Width="380" Padding="24">
+            <StackPanel>
+                <TextBlock x:Name="DeleteConfirmMessageText" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,20"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Xóa" Width="90" Background="#E4574C" Foreground="White" Style="{StaticResource BigRoundButton}" Classes="bigRound" Click="OnDeleteConfirmYesClick"/>
+                    <Button Content="Hủy" Width="90" Background="#EFEFEF" Foreground="#333" Style="{StaticResource BigRoundButton}" Classes="bigRound" Margin="8,0,0,0" Click="OnDeleteConfirmNoClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+    </ScrollViewer>
+</UserControl>

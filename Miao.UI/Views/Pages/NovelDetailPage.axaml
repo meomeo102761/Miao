@@ -1,0 +1,449 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.NovelDetailPage"
+             Background="{StaticResource BgMain}"
+             FontFamily="Arial"
+             FontSize="15">
+
+    <UserControl.Resources>
+
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="NovelActionButton" TargetType="Button">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="CornerRadius" Value="18"/>
+        </Style>
+
+        <Style x:Key="NovelPrimaryButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style x:Key="PageTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#444444"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="TagChipText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+
+        <Style x:Key="StatusBadgeBorder" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="9,3"/>
+        </Style>
+
+        <Style x:Key="IconSquareButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}">
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+        </Style>
+
+        <Style x:Key="ChapterButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="PagerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="4,0"/>
+        </Style>
+
+        <Style x:Key="MenuItemButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,1"/>
+        </Style>
+
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}">
+            <Setter Property="Background" Value="#E4574C"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <DataTemplate x:Key="SetOptionRowTemplate">
+            <Grid Margin="0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsApplied, Mode=TwoWay}" Click="OnToggleApplyClick" Tag="{Binding}"
+                          VerticalAlignment="Top" Margin="0,2,10,0"/>
+                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15" TextWrapping="Wrap" Cursor="Hand"
+                           PointerPressed="OnViewSetClick" Tag="{Binding}"/>
+            </Grid>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <Grid Margin="20" MaxWidth="1140">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Hàng 0: thông tin truyện + sidebar "Cùng thể loại" -->
+        <Grid Grid.Row="0" x:Name="InfoGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="SidebarGapColumn" Width="24"/>
+                <ColumnDefinition x:Name="SidebarColumn" Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+
+                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,18">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="200" Height="280" CornerRadius="6" Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1">
+                            <Image x:Name="CoverImage" Stretch="UniformToFill"/>
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="20,0">
+                            <TextBlock x:Name="TitleText" Style="{StaticResource PageTitle}"/>
+                            <TextBlock x:Name="OriginalTitleText" Foreground="{StaticResource TextMuted}" FontSize="15"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="False"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,8">
+                                <TextBlock Text="Tác giả: " Foreground="{StaticResource TextMuted}" FontSize="15"/>
+                                <TextBlock x:Name="AuthorText" Foreground="{StaticResource AccentJade}" FontSize="15" Cursor="Hand" PointerPressed="OnAuthorClick"/>
+                                <Border x:Name="StatusBadge" Style="{StaticResource StatusBadgeBorder}" Margin="12,0,0,0">
+                                    <TextBlock x:Name="StatusBadgeText" FontSize="15" FontWeight="SemiBold" Foreground="#777777"/>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock x:Name="MetaLatestText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="MetaUpdateText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            </StackPanel>
+
+                            <ItemsControl x:Name="TagsList" Margin="0,0,0,14">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Background="#EAF9FB" CornerRadius="10" Padding="9,3" Margin="0,0,6,6">
+                                            <TextBlock Text="{Binding}" Style="{StaticResource TagChipText}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock x:Name="UpdateStatusText" Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                            <WrapPanel>
+                                <Button Content="Đọc" Width="90" Style="{StaticResource NovelPrimaryButton}" Click="OnReadClick"/>
+                                <Button Content="＋" ToolTip.Tip="Thêm vào thư viện" Style="{StaticResource IconSquareButton}" Click="OnAddToLibraryClick"/>
+                                <Button x:Name="EditButton" Content="✎ ▾" ToolTip.Tip="Sửa" Width="52" Style="{StaticResource IconSquareButton}" Click="OnEditMenuClick"/>
+
+                                <Popup x:Name="EditPopup" PlacementTarget="{Binding #EditButton}" Placement="Bottom" IsLightDismissEnabled="True">
+                                    <Border Background="White" Width="220" Padding="4" CornerRadius="8" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1">
+                                        <StackPanel x:Name="EditMenuPanel">
+                                            <Button Content="✎ Sửa truyện" Style="{StaticResource MenuItemButton}" Click="OnEditInfoClick"/>
+                                            <Button Content="📝 Không gian sửa chương" Style="{StaticResource MenuItemButton}" Click="OnWorkspaceClick"/>
+                                            <Button Content="📚 Bộ tên" Style="{StaticResource MenuItemButton}" Click="OnNameClick"/>
+                                            <Separator/>
+                                            <TextBlock Text="CẬP NHẬT" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="12,6,0,2"/>
+                                            <Button x:Name="UpdateButton" Content="↻ Cập nhật link" Style="{StaticResource MenuItemButton}" Click="OnUpdateClick"/>
+                                            <Button Content="📝 Cập nhật file" Style="{StaticResource MenuItemButton}" Click="OnUpdateFileClick"/>
+                                            <Separator/>
+                                            <TextBlock Text="TẢI TRUYỆN" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="12,6,0,2"/>
+                                            <Button Content="⬇ Xuất EPUB" Style="{StaticResource MenuItemButton}" Click="OnExportEpubClick"/>
+                                            <Button Content="⬇ Xuất DOCX" Style="{StaticResource MenuItemButton}" Click="OnExportDocxClick"/>
+                                            <Button Content="⬇ Xuất PDF" Style="{StaticResource MenuItemButton}" Click="OnExportPdfClick"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </WrapPanel>
+
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="Tác phẩm tóm tắt" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
+                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,24">
+                    <TextBlock x:Name="DescriptionText" FontSize="15" Foreground="#444" LineHeight="22" TextWrapping="Wrap"/>
+                </Border>
+
+            </StackPanel>
+
+            <ContentControl x:Name="RelatedSlotWide" Grid.Column="2" VerticalAlignment="Top"/>
+        </Grid>
+
+        <!-- Hàng 1: danh sách chương -->
+        <StackPanel Grid.Row="1">
+            <TextBlock x:Name="ChaptersTitleText" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+            <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Padding="10">
+                <StackPanel>
+                    <ItemsControl x:Name="ChaptersList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,16">
+                                    <TextBlock Text="{Binding Header}" FontSize="16" FontWeight="Bold" Foreground="#444" Margin="0,0,0,10"
+                                               IsVisible="{Binding HasHeader}"/>
+                                    <ItemsControl ItemsSource="{Binding Chapters}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource ChapterButton}" Click="OnChapterButtonClick" Tag="{Binding Number}">
+                                                    <TextBlock Text="{Binding DisplayTitle}" FontSize="15" Foreground="#333" TextWrapping="Wrap" Margin="6,8"/>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel x:Name="ChapterPagination" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,4">
+                        <Button Content="‹" Style="{StaticResource PagerButton}" Click="OnPreviousChapterPageClick"/>
+                        <TextBlock x:Name="ChapterPageText" VerticalAlignment="Center" Margin="14,0"/>
+                        <Button Content="›" Style="{StaticResource PagerButton}" Click="OnNextChapterPageClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <ContentControl x:Name="RelatedSlotNarrow" Grid.Row="2" Margin="0,18,0,0"/>
+
+        <!-- Modal: danh sách tên trong 1 bộ tên -->
+        <Border x:Name="NameCard" IsVisible="False" Background="White" CornerRadius="10" Width="440" MaxHeight="520">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" x:Name="NameCountText" HorizontalAlignment="Center" MaxWidth="400" TextWrapping="Wrap"
+                           TextAlignment="Center" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="16,16,16,10"/>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="380">
+                    <ItemsControl x:Name="NameList" Margin="18,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="0,7" Cursor="Hand" PointerPressed="OnNameEntryClick" Tag="{Binding}">
+                                    <TextBlock FontSize="15" TextWrapping="Wrap">
+                                        <Run Text="{Binding OriginalTerm}"/><Run Text=" = "/><Run Text="{Binding TranslatedTerm}"/>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <Grid Grid.Row="2" Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.ColumnSpan="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0"/>
+                    <Button Grid.Column="0" Content="Lọc lại tên" Style="{StaticResource MenuItemButton}" FontSize="15" HorizontalContentAlignment="Center" Click="OnRefilterNamesClick"/>
+                    <Button Grid.Column="1" Content="Xóa tất cả" Style="{StaticResource MenuItemButton}" FontSize="15" HorizontalContentAlignment="Center" Click="OnClearAllNamesClick"/>
+                    <Button Grid.Column="2" Content="Đóng" Style="{StaticResource MenuItemButton}" FontSize="15" HorizontalContentAlignment="Center" Click="OnCloseNamePopupClickFixed"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Modal: sửa 1 tên trong bộ tên -->
+        <Border x:Name="NameEditCard" IsVisible="False" Background="White" CornerRadius="12" Width="340" Padding="20">
+            <StackPanel>
+                <TextBlock Text="Gốc:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
+                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="32" Padding="8,0" Margin="0,0,0,10">
+                    <TextBox x:Name="EditOriginalText" FontSize="14" BorderThickness="0" Background="White" IsReadOnly="True" Focusable="False" VerticalContentAlignment="Center"/>
+                </Border>
+
+                <TextBlock Text="Hán Việt:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
+                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="32" Padding="8,0" Margin="0,0,0,10">
+                    <TextBox x:Name="EditHanVietBox" FontSize="14" BorderThickness="0" VerticalContentAlignment="Center"/>
+                </Border>
+                <TextBlock Text="Bính Âm:" IsVisible="False"/>
+                <TextBox x:Name="EditPinYinBox" IsVisible="False"/>
+
+                <TextBlock Text="Dịch:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
+                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="32" Padding="8,0" Margin="0,0,0,16">
+                    <TextBox x:Name="EditNameBox" FontSize="14" BorderThickness="0" VerticalContentAlignment="Center"/>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Sửa" Width="90" Style="{StaticResource NovelPrimaryButton}" FontSize="15" Click="OnNameEditSaveClick"/>
+                    <Button Content="Xóa" Width="90" Style="{StaticResource NovelActionButton}" FontSize="15" Click="OnNameEditDeleteClick"/>
+                    <Button Content="Hủy" Width="90" Style="{StaticResource NovelActionButton}" FontSize="15" Click="OnNameEditCancelToNameList"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Modal: chọn bộ tên áp dụng cho truyện -->
+        <Border x:Name="SelectSetsCard" IsVisible="False" Background="White" CornerRadius="10" Width="440" MaxHeight="600">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Chọn bộ tên" FontSize="17" FontWeight="Bold" Margin="20,16,20,10"/>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="440">
+                    <StackPanel Margin="20,0,20,10">
+                        <TextBlock Text="Bộ chung" FontSize="15" FontWeight="Bold" Cursor="Hand" PointerPressed="OnToggleSharedSectionClick" Margin="0,10,0,6"/>
+                        <StackPanel x:Name="SharedSectionPanel" IsVisible="False">
+                            <TextBox x:Name="SharedSearchBox" Height="34" Padding="8,0" FontSize="15" VerticalContentAlignment="Center" Margin="0,0,0,8" TextChanged="OnSetSearchChanged"/>
+                            <ItemsControl x:Name="SharedOptionsList" ItemTemplate="{StaticResource SetOptionRowTemplate}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Bộ riêng" FontSize="15" FontWeight="Bold" Cursor="Hand" PointerPressed="OnTogglePrivateSectionClick" Margin="0,14,0,6"/>
+                        <StackPanel x:Name="PrivateSectionPanel" IsVisible="False">
+                            <TextBox x:Name="PrivateSearchBox" Height="34" Padding="8,0" FontSize="15" VerticalContentAlignment="Center" Margin="0,0,0,8" TextChanged="OnSetSearchChanged"/>
+                            <ItemsControl x:Name="PrivateOptionsList" ItemTemplate="{StaticResource SetOptionRowTemplate}"/>
+                        </StackPanel>
+
+                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0" Margin="0,16,0,14"/>
+                        <TextBlock Text="Bộ tên áp dụng" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <ItemsControl x:Name="AppliedOptionsList" ItemTemplate="{StaticResource SetOptionRowTemplate}"/>
+                        <TextBlock x:Name="AppliedEmptyText" Text="Chưa áp dụng bộ tên nào." FontStyle="Italic" FontSize="15" Foreground="{StaticResource TextMuted}" IsVisible="False" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Row="2" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0">
+                    <Button Content="Đóng" Style="{StaticResource MenuItemButton}" FontSize="15" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center" Margin="0" Padding="12,10" Click="OnCloseSelectSetsClick"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Modal: xác nhận -->
+        <Border x:Name="ConfirmCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="24">
+            <StackPanel>
+                <TextBlock x:Name="ConfirmMessageText" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,20"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Xóa" Width="90" Style="{StaticResource DangerButton}" Click="OnConfirmYesClick"/>
+                    <Button Content="Hủy" Width="90" Style="{StaticResource NovelActionButton}" Margin="8,0,0,0" Click="OnConfirmNoClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Modal: chọn bài đăng Lofter cần cập nhật -->
+        <Border x:Name="LofterUpdateCard" IsVisible="False" Background="White" CornerRadius="10" Width="700" MaxHeight="600">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="20,16,20,10">
+                    <TextBlock Text="Chọn chương cập nhật vào truyện này" FontSize="17" FontWeight="Bold"/>
+                    <TextBlock x:Name="LofterUpdateSubText" FontSize="12.5" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="20,0,20,10">
+                    <Button Content="Chọn tất cả" Style="{StaticResource NovelActionButton}" Click="OnLofterSelectAllClick"/>
+                    <Button Content="Bỏ chọn" Style="{StaticResource NovelActionButton}" Click="OnLofterDeselectAllClick"/>
+                </StackPanel>
+
+                <Border Grid.Row="2" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Margin="20,0,20,10">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" Background="#F5F7F7">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="36"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="36"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="Gốc" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Padding="8,6"/>
+                            <TextBlock Grid.Column="3" Text="Dịch" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Padding="8,6"/>
+                            <Border Grid.ColumnSpan="4" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,0,0,1" VerticalAlignment="Bottom"/>
+                        </Grid>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="360">
+                            <ItemsControl x:Name="LofterUpdateList" Margin="4">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="36"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="36"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top" Margin="8,4,0,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="15" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" Margin="4,4,10,0"/>
+                                            <CheckBox Grid.Column="2" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top" Margin="8,4,0,0"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding TranslatedTitle}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="4,4,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="20,0,20,16">
+                    <Button Content="Hủy" Width="90" Style="{StaticResource NovelActionButton}" Click="OnLofterUpdateCancelClick"/>
+                    <Button x:Name="LofterUpdateConfirmButton" Content="Cập nhật đã chọn" Width="150" Style="{StaticResource NovelPrimaryButton}" Margin="8,0,0,0" Click="OnLofterUpdateConfirmClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    </Grid>
+</UserControl>
