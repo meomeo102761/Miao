@@ -8,7 +8,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Microsoft.EntityFrameworkCore;
 using Miao.Core.Data;
 using Miao.Core.Models;
@@ -21,7 +20,7 @@ namespace Miao.UI.Views.Pages
     {
         private const int ItemsPerRow = 5;
         private const int RowsPerPage = 3;
-        private const int PageSize = ItemsPerRow * RowsPerPage; // 15
+        private const int PageSize = ItemsPerRow * RowsPerPage;
         private const string CompletedStatus = "Hoàn thành";
 
         private List<Novel> _allNovels = new();
@@ -30,7 +29,7 @@ namespace Miao.UI.Views.Pages
         private List<Novel> _completedFull = new();
         private int _currentPage = 1;
         private const int PreviewRowsPerPage = 2;
-        private const int PreviewPageSize = ItemsPerRow * PreviewRowsPerPage; // 10
+        private const int PreviewPageSize = ItemsPerRow * PreviewRowsPerPage;
 
         private int _latestPage = 1;
         private int _completedPage = 1;
@@ -50,7 +49,6 @@ namespace Miao.UI.Views.Pages
         private void LoadNovels()
         {
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
-
             _allNovels = db.Novels.ToList();
 
             var chapterCounts = db.Chapters
@@ -122,7 +120,6 @@ namespace Miao.UI.Views.Pages
         {
             int totalPages = Math.Max(1, (int)Math.Ceiling(_latestFull.Count / (double)PreviewPageSize));
             if (_latestPage > totalPages) _latestPage = totalPages;
-
             LatestPreviewList.ItemsSource = _latestFull.Skip((_latestPage - 1) * PreviewPageSize).Take(PreviewPageSize).ToList();
             BuildPageButtons(LatestPageButtonsPanel, totalPages, _latestPage, p => { _latestPage = p; RenderLatestPage(); });
         }
@@ -131,7 +128,6 @@ namespace Miao.UI.Views.Pages
         {
             int totalPages = Math.Max(1, (int)Math.Ceiling(_completedFull.Count / (double)PreviewPageSize));
             if (_completedPage > totalPages) _completedPage = totalPages;
-
             CompletedPreviewList.ItemsSource = _completedFull.Skip((_completedPage - 1) * PreviewPageSize).Take(PreviewPageSize).ToList();
             BuildPageButtons(CompletedPageButtonsPanel, totalPages, _completedPage, p => { _completedPage = p; RenderCompletedPage(); });
         }
@@ -194,7 +190,6 @@ namespace Miao.UI.Views.Pages
         {
             int totalPages = Math.Max(1, (int)Math.Ceiling(_filteredNovels.Count / (double)PageSize));
             if (_currentPage > totalPages) _currentPage = totalPages;
-
             NovelsList.ItemsSource = _filteredNovels.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
             BuildPageButtons(PageButtonsPanel, totalPages, _currentPage, p => { _currentPage = p; RenderPage(); });
         }
@@ -203,10 +198,7 @@ namespace Miao.UI.Views.Pages
         {
             panel.Children.Clear();
 
-            var pageButtonStyle = (Style)this.FindResource("PageButton")!;
-
             var prevBtn = new Button { Content = "‹ Trước", IsEnabled = currentPage > 1 };
-            prevBtn.Styles.Add(pageButtonStyle);
             prevBtn.Classes.Add("pageButton");
             prevBtn.Click += (s, e) => onPageSelected(currentPage - 1);
             panel.Children.Add(prevBtn);
@@ -220,7 +212,6 @@ namespace Miao.UI.Views.Pages
                 }
 
                 var btn = new Button { Content = p.ToString() };
-                btn.Styles.Add(pageButtonStyle);
                 btn.Classes.Add("pageButton");
                 if (p == currentPage) btn.Classes.Add("active");
                 int page = p;
@@ -229,7 +220,6 @@ namespace Miao.UI.Views.Pages
             }
 
             var nextBtn = new Button { Content = "Sau ›", IsEnabled = currentPage < totalPages };
-            nextBtn.Styles.Add(pageButtonStyle);
             nextBtn.Classes.Add("pageButton");
             nextBtn.Click += (s, e) => onPageSelected(currentPage + 1);
             panel.Children.Add(nextBtn);
@@ -239,14 +229,11 @@ namespace Miao.UI.Views.Pages
         {
             const int windowSize = 2;
             var pages = new List<int> { 1 };
-
             int start = Math.Max(2, currentPage - windowSize);
             int end = Math.Min(totalPages - 1, currentPage + windowSize);
-
             if (start > 2) pages.Add(-1);
             for (int i = start; i <= end; i++) pages.Add(i);
             if (end < totalPages - 1) pages.Add(-1);
-
             if (totalPages > 1) pages.Add(totalPages);
             return pages.Distinct();
         }
@@ -254,17 +241,14 @@ namespace Miao.UI.Views.Pages
         private static string RemoveDiacritics(string text)
         {
             if (string.IsNullOrEmpty(text)) return text;
-
             var normalized = text.Normalize(NormalizationForm.FormD);
             var sb = new StringBuilder();
-
             foreach (var ch in normalized)
             {
                 var category = CharUnicodeInfo.GetUnicodeCategory(ch);
                 if (category != UnicodeCategory.NonSpacingMark)
                     sb.Append(ch);
             }
-
             return sb.ToString().Replace('Đ', 'D').Replace('đ', 'd').Normalize(NormalizationForm.FormC);
         }
 
