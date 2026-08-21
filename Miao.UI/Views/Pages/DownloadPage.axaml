@@ -58,7 +58,7 @@
                              IsChecked="True" IsCheckedChanged="OnLofterTargetChanged" Margin="0,0,0,6"/>
                 <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="34" Margin="20,0,0,10">
                     <TextBox x:Name="LofterNewTitleBox" Padding="8,0" VerticalContentAlignment="Center"
-                             BorderThickness="0" FontFamily="Arial" FontSize="13" Watermark="Nhập tên truyện..."/>
+                             BorderThickness="0" FontFamily="Arial" FontSize="13" PlaceholderText="Nhập tên truyện..."/>
                 </Border>
 
                 <RadioButton x:Name="LofterExistingNovelRadio" Content="Thêm vào truyện đã có (cùng blog này)"
