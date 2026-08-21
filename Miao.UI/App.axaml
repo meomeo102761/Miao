@@ -14,10 +14,6 @@
   <Application.Styles>
     <FluentTheme />
     <Style Selector="TextBlock"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
-    <!-- Chữ trong thanh menu phải ghi đè màu chữ mặc định -->
-    <Style Selector="Button.TopNavButton TextBlock"><Setter Property="Foreground" Value="White"/></Style>
-    <Style Selector="Button.DownloadSubButton TextBlock"><Setter Property="Foreground" Value="White"/></Style>
-    <Style Selector="Button.MobileNavItem TextBlock"><Setter Property="Foreground" Value="White"/></Style>
     <Style Selector="TextBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/><Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/></Style>
     <Style Selector="ComboBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/></Style>
     <Style Selector="ComboBoxItem"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/></Style>
