@@ -18,9 +18,11 @@ namespace Miao.Core.Services
 
         public CTranslate2Provider(string? endpoint = null)
         {
-            _endpoint = string.IsNullOrWhiteSpace(endpoint)
-                ? AppSettingsService.Instance.Settings.CTranslate2Endpoint
-                : endpoint;
+            // Do not read AppSettingsService here. NovelDetailPage creates its
+            // translation services when the page is constructed, and that can
+            // happen before the platform has initialized AppSettingsService.
+            // The settings are read lazily in TranslateAsync instead.
+            _endpoint = endpoint ?? string.Empty;
         }
 
         public async Task<string> TranslateAsync(string text)
@@ -47,13 +49,17 @@ namespace Miao.Core.Services
                     "Hãy kiểm tra Python, dependencies và TranslateServer/ct2_model.");
             }
 
+            var endpoint = string.IsNullOrWhiteSpace(_endpoint)
+                ? settings.CTranslate2Endpoint
+                : _endpoint;
+
             var payload = new { text };
             var content = new StringContent(
                 JsonSerializer.Serialize(payload),
                 Encoding.UTF8,
                 "application/json");
 
-            var response = await _http.PostAsync(_endpoint, content);
+            var response = await _http.PostAsync(endpoint, content);
             response.EnsureSuccessStatusCode();
 
             var responseJson = await response.Content.ReadAsStringAsync();
