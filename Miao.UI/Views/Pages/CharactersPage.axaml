@@ -1,5 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Miao.UI.Views.Pages.CharactersPage">
-    <TextBlock Text="Nhân vật (đang phát triển)" Margin="20"/>
+             x:Class="Miao.UI.Views.Pages.CharactersPage"
+             Background="{StaticResource BgMain}">
+    <StackPanel Margin="24" Spacing="12">
+        <TextBlock Text="Nhân vật" Classes="pageTitle"/>
+        <Border Background="{StaticResource AccentJadeSoft}"
+                BorderBrush="{StaticResource BorderSoft}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="18">
+            <TextBlock Text="Trang quản lý nhân vật đang được phát triển."
+                       Classes="bodyText"
+                       Foreground="{StaticResource TextMuted}"/>
+        </Border>
+    </StackPanel>
 </UserControl>
