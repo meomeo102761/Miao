@@ -1,0 +1,264 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:reader="clr-namespace:Miao.UI.Views.Pages.Reader"
+             xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core"
+             x:Class="Miao.UI.Views.Pages.ReaderPage"
+             FontFamily="Arial"
+             FontSize="15"
+             Loaded="OnReaderLoaded"
+             Unloaded="OnReaderUnloaded">
+
+    <UserControl.Styles>
+
+        <Style Selector="Button.ReaderNavButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+
+        <Style Selector="Button.ReaderToolButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="MinWidth" Value="42"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.ReaderNavButton:pointerover /template/ ContentPresenter,
+                         Button.ReaderToolButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+        <Style Selector="Button.ReaderLibraryButton">
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="Button.ReaderLibraryButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+        <Style Selector="Button.ReaderActionButton">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="18"/>
+        </Style>
+        <Style Selector="Button.ReaderActionButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+
+        <Style Selector="Button.ReaderPrimaryButton">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="18"/>
+        </Style>
+        <Style Selector="Button.ReaderPrimaryButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+        <Style Selector="Button.ReaderMenuItemButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Button.ReaderMenuItemButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+
+    </UserControl.Styles>
+
+    <UserControl.Styles>
+
+        <ContextMenu x:Key="ReaderTextContextMenu">
+            <MenuItem Header="Thêm" Click="OnContextAddStyledClick"/>
+            <MenuItem Header="Copy" Click="OnContextCopyClick"/>
+        </ContextMenu>
+    </UserControl.Styles>
+
+    <Grid x:Name="ReaderRoot" Background="#F7F5F0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Thanh trên -->
+        <Border x:Name="ReaderTopBar" Grid.Row="0" Background="White"
+                BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,0,0,1" Padding="22,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="‹ " FontSize="15" Foreground="{StaticResource AccentJade}"
+                                   Cursor="Hand" PointerPressed="OnNovelTitleClick"/>
+                        <TextBlock x:Name="NovelTitleText" FontSize="15" Foreground="{StaticResource AccentJade}"
+                                   Cursor="Hand" PointerPressed="OnNovelTitleClick"/>
+                    </StackPanel>
+                    <TextBlock x:Name="ChapterTitleText" FontSize="18" FontWeight="Bold" Foreground="#333333" Margin="0,8,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button x:Name="EditButton" Content="✏" Classes="ReaderToolButton"
+                            Click="OnToggleEdit" ToolTip.Tip="Sửa bản gốc"/>
+                    <Button x:Name="InsertImageButton" Content="🖼" Classes="ReaderToolButton"
+                            Click="OnInsertImageClick" ToolTip.Tip="Chèn ảnh" IsVisible="False"/>
+                    <Button Content="Aa" Classes="ReaderToolButton"
+                            Click="OnToggleFontPanel" ToolTip.Tip="Font, cỡ chữ"/>
+                    <Button x:Name="FavoriteButton" Content="☆" Classes="ReaderToolButton" FontSize="20"
+                            Click="OnToggleFavorite" ToolTip.Tip="Yêu thích"/>
+                    <Button x:Name="PinButton" Content="📌" Classes="ReaderToolButton"
+                            Click="OnTogglePin" ToolTip.Tip="Ghim chương này"/>
+                    <Button x:Name="AddLibraryButton" Content="＋" Classes="ReaderLibraryButton"
+                            Click="OnAddToLibraryReaderClick" ToolTip.Tip="Thêm vào thư viện"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Nội dung chương (block-based) + panel font -->
+        <Grid Grid.Row="1">
+            <ScrollViewer x:Name="ReaderScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="20,35,20,45" MaxWidth="1140">
+                    <Border x:Name="ReadingCard" HorizontalAlignment="Stretch" Background="#FFFDF8"
+                            BorderBrush="#E8E3D9" BorderThickness="1" Padding="70,55,70,65">
+                        <StackPanel>
+                            <TextBlock x:Name="ChapterHeadingText" HorizontalAlignment="Center" TextAlignment="Center"
+                                       FontSize="25" FontWeight="SemiBold" Foreground="#333333"
+                                       TextWrapping="Wrap" Margin="0,0,0,30"/>
+                            <Border Height="1" Background="#E5E0D7" Margin="80,0,80,32"/>
+
+                            <!-- Thay RichTextBox/FlowDocument: mỗi dòng gốc là 1 khối text hoặc ảnh -->
+                            <ItemsControl x:Name="BlocksList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="reader:ReaderBlockViewModel">
+                                        <Grid Margin="0,0,0,10">
+
+                                            <!-- Đọc bình thường -->
+                                            <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap"
+                                                                  IsVisible="{Binding ShowTextView}"
+                                                                  ContextMenu="{StaticResource ReaderTextContextMenu}"
+                                                                  ContextRequested="OnTextBlockContextRequested"
+                                                                  Tag="{Binding}"/>
+
+                                            <!-- Đang sửa: TextBox nhiều dòng cho từng khối -->
+                                            <TextBox Text="{Binding Text}" TextWrapping="Wrap" AcceptsReturn="True"
+                                                     BorderThickness="0" Background="Transparent" Padding="0"
+                                                     IsVisible="{Binding ShowTextEdit}"
+                                                     GotFocus="OnBlockTextBoxFocused"/>
+
+                                            <!-- Khối ảnh -->
+                                            <Grid IsVisible="{Binding IsImage}" HorizontalAlignment="Center">
+                                                <Image Source="{Binding ImagePath, {StaticResource CoverImageConverter}}"
+                                                       Stretch="Uniform" StretchDirection="DownOnly" MaxWidth="640"/>
+                                                <Button Content="✕" Classes="ReaderToolButton" FontSize="13"
+                                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                        IsVisible="{Binding IsEditing}"
+                                                        Click="OnRemoveImageBlockClick" Tag="{Binding}"/>
+                                            </Grid>
+
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock x:Name="TranslatingText" Text="Đang dịch..." FontStyle="Italic"
+                                       Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center"
+                                       Margin="0,30,0,0" IsVisible="False"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </ScrollViewer>
+
+            <Border x:Name="FontPanel" Width="250" Background="White" CornerRadius="8" Padding="14"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,20,0"
+                    BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" IsVisible="False">
+                <StackPanel>
+                    <TextBlock Text="Font" FontSize="12" Foreground="{StaticResource TextMuted}"/>
+                    <ComboBox x:Name="FontFamilyBox" Margin="0,4,0,10" FontSize="15" SelectionChanged="OnFontChanged">
+                        <ComboBoxItem Content="Arial"/>
+                        <ComboBoxItem Content="Times New Roman"/>
+                        <ComboBoxItem Content="Georgia"/>
+                        <ComboBoxItem Content="Segoe UI"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Cỡ chữ" FontSize="12" Foreground="{StaticResource TextMuted}"/>
+                    <Slider x:Name="FontSizeSlider" Minimum="12" Maximum="26" ValueChanged="OnFontSizeChanged"/>
+                    <TextBlock x:Name="FontSizeValueText" FontSize="15" HorizontalAlignment="Right" Margin="0,-4,0,8"/>
+
+                    <TextBlock Text="Giãn dòng" FontSize="12" Foreground="{StaticResource TextMuted}"/>
+                    <Slider x:Name="LineHeightSlider" Minimum="1.0" Maximum="2.2" ValueChanged="OnLineHeightChanged"/>
+                    <TextBlock x:Name="LineHeightValueText" FontSize="15" HorizontalAlignment="Right" Margin="0,-4,0,8"/>
+
+                    <TextBlock Text="Nền đọc" FontSize="12" Foreground="{StaticResource TextMuted}"/>
+                    <ComboBox x:Name="ReaderBackgroundBox" FontSize="15" SelectionChanged="OnReaderBackgroundChanged">
+                        <ComboBoxItem Content="Trắng" Tag="#FFFFFF"/>
+                        <ComboBoxItem Content="Nâu nhạt" Tag="#FFFDF8"/>
+                        <ComboBoxItem Content="Đen" Tag="#171717"/>
+                    </ComboBox>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Thanh dưới -->
+        <Border x:Name="ReaderBottomBar" Grid.Row="2" Background="White"
+                BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0" Padding="22,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="PrevButton" Grid.Column="0" Content="←  Chương trước" Classes="ReaderNavButton"
+                        HorizontalAlignment="Left" Click="OnPrevClick"/>
+
+                <ComboBox x:Name="ChapterComboBox" Grid.Column="1" Width="300" Height="34" FontSize="15"
+                          HorizontalContentAlignment="Center" SelectedValueBinding="{Binding Number}" SelectionChanged="OnChapterSelected">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChapterSelectItem">
+                            <TextBlock Text="{Binding Number, StringFormat='Chương {0}'}" FontSize="15" HorizontalAlignment="Center"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <Button x:Name="NextButton" Grid.Column="2" Content="Chương sau  →" Classes="ReaderNavButton"
+                        HorizontalAlignment="Right" Click="OnNextClick"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

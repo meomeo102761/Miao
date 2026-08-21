@@ -39,7 +39,7 @@ namespace Miao.UI.Views.Pages
         private class SearchFilterLayout
         {
             public List<string> GroupOrder { get; set; } = new();
-            public Dictionary<string, List<int>> TagOrder { get; set; } = new();
+            public Dictionary<string, List<Guid>> TagOrder { get; set; } = new();
         }
 
         public NovelEditPage(Guid novelId)

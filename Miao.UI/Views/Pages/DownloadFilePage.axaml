@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Miao.UI.Views.Pages"
              x:Class="Miao.UI.Views.Pages.DownloadFilePage"
              Background="{StaticResource BgMain}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -18,7 +19,7 @@
                 <!-- Danh sách các file đã chọn, mỗi file 1 dòng có thể sửa tên truyện/tác giả -->
                 <ItemsControl x:Name="FilesList">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="local:ImportFileRow">
                             <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6"
                                     Padding="12" Margin="0,0,0,10" Background="White">
                                 <StackPanel>

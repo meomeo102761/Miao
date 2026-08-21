@@ -1,7 +1,8 @@
-<local:ConfirmablePage x:Class="Miao.UI.Views.Pages.CustomLibraryDetailPage"
+﻿<local:ConfirmablePage x:Class="Miao.UI.Views.Pages.CustomLibraryDetailPage"
       xmlns="https://github.com/avaloniaui"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+      xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core"
       Background="{StaticResource BgMain}">
 
     <UserControl.Styles>
@@ -122,12 +123,12 @@
                                 Cursor="Hand"
                                 PointerPressed="OnBackToLibrariesClick"
                                 Margin="0,32,0,0"/>
-                        <TextBlock x:Name="TitleText" Style="{StaticResource PageTitle}" Margin="0,4,0,0"/>
+                        <TextBlock x:Name="TitleText" Classes="pageTitle" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <Button x:Name="EditButton" Grid.Column="1" Content="Sửa" Width="70" Height="34"
                             VerticalAlignment="Bottom" Margin="0,0,0,16"
-                            Style="{StaticResource JadeButton}" Click="OnEditModeClick"/>
+                            Classes="jade" Click="OnEditModeClick"/>
                 </Grid>
 
                 <ItemsControl x:Name="NovelsList" HorizontalAlignment="Stretch" Margin="0,20,0,0">
@@ -137,7 +138,7 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="models:Novel">
                             <StackPanel Margin="8,0,8,16" HorizontalAlignment="Stretch">
                                 <Grid Height="280" ClipToBounds="True">
                                     <Border Background="#CFEAE5">
@@ -188,7 +189,7 @@
                 </ItemsControl>
 
                 <TextBlock x:Name="EmptyText" Text="Thư viện này chưa có truyện nào — bấm ➕ khi đọc 1 truyện để thêm vào đây."
-                           Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}" FontStyle="Italic" IsVisible="False"
+                           Classes="bodyText" Foreground="{StaticResource TextMuted}" FontStyle="Italic" IsVisible="False"
                            HorizontalAlignment="Center" Margin="0,20,0,0"/>
 
                 <StackPanel x:Name="PagerPanel" Orientation="Horizontal" HorizontalAlignment="Center"

@@ -15,7 +15,7 @@ namespace Miao.UI.Views.Pages
 {
     public class CustomLibrarySummary
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Name { get; set; } = "";
         public int Count { get; set; }
     }
@@ -23,8 +23,6 @@ namespace Miao.UI.Views.Pages
     public partial class CustomLibrariesPage : ConfirmablePage
     {
         private bool _isEditMode;
-        private Point _dragStartPoint;
-        private CustomLibrarySummary? _draggedItem;
 
         protected override Control ConfirmCardElement => ConfirmCard;
         protected override TextBlock ConfirmMessageTextElement => ConfirmMessageText;
@@ -78,6 +76,11 @@ namespace Miao.UI.Views.Pages
                 AppNavigator.NavigateTo(new CustomLibraryDetailPage(lib.Id, lib.Name));
         }
 
+        private void OnLibraryItemDrop(object? sender, DragEventArgs e)
+        {
+            // TODO: xử lý logic kéo-thả đổi vị trí giữa các thư viện
+        }
+
         // ----- Chế độ Sửa -----
 
         private void OnEditModeClick(object? sender, RoutedEventArgs e)
@@ -91,83 +94,48 @@ namespace Miao.UI.Views.Pages
         {
             foreach (var el in FindVisualChildren<Control>(LibrariesList))
             {
-                if (el.Name == "DragHandleIcon" || el.Name == "LibraryEditControls")
+                if (el.Name == "MoveButtonsPanel" || el.Name == "LibraryEditControls")
                     el.IsVisible = _isEditMode;
             }
         }
 
         // ----- Kéo-thả đổi thứ tự -----
-        // LƯU Ý: Avalonia DragDrop chạy bất đồng bộ (async), khác WPF DoDragDrop chạy đồng bộ.
-        // Nên test kỹ phần này trên cả Desktop lẫn Android (Android hỗ trợ kéo-thả hạn chế hơn).
 
-        private void OnDragHandlePointerPressed(object? sender, PointerPressedEventArgs e)
+        private void OnMoveUpClick(object? sender, RoutedEventArgs e)
         {
-            _dragStartPoint = e.GetPosition(null);
+            if (sender is not Control c || c.Tag is not CustomLibrarySummary lib) return;
+            if (LibrariesList.ItemsSource is not List<CustomLibrarySummary> items) return;
+
+            var index = items.FindIndex(x => x.Id == lib.Id);
+            if (index <= 0) return;
+
+            (items[index - 1], items[index]) = (items[index], items[index - 1]);
+            SaveOrderAndReload(items);
         }
 
-        private async void OnDragHandlePointerMoved(object? sender, PointerEventArgs e)
+        private void OnMoveDownClick(object? sender, RoutedEventArgs e)
         {
-            if (!_isEditMode || !e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-            if (sender is not Control c || c.DataContext is not CustomLibrarySummary lib) return;
+            if (sender is not Control c || c.Tag is not CustomLibrarySummary lib) return;
+            if (LibrariesList.ItemsSource is not List<CustomLibrarySummary> items) return;
 
-            var pos = e.GetPosition(null);
-            var diff = _dragStartPoint - pos;
+            var index = items.FindIndex(x => x.Id == lib.Id);
+            if (index < 0 || index >= items.Count - 1) return;
 
-            const double minDragDistance = 4; // Avalonia không có SystemParameters.MinimumHorizontalDragDistance sẵn
-            if (Math.Abs(diff.X) > minDragDistance || Math.Abs(diff.Y) > minDragDistance)
-            {
-                _draggedItem = lib;
-                var data = new DataObject();
-                data.Set("library", lib);
-                await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
-            }
+            (items[index], items[index + 1]) = (items[index + 1], items[index]);
+            SaveOrderAndReload(items);
         }
 
-        private void OnLibraryItemDrop(object? sender, DragEventArgs e)
+        private void SaveOrderAndReload(List<CustomLibrarySummary> items)
         {
-            if (_draggedItem == null) return;
-            if (sender is not Control c || c.DataContext is not CustomLibrarySummary target)
+            using var db = new MiaoDbContext(AppPaths.DbFilePath);
+            for (int i = 0; i < items.Count; i++)
             {
-                _draggedItem = null;
-                return;
+                var entity = db.CustomLibraries.Find(items[i].Id);
+                if (entity != null) entity.SortOrder = i;
             }
-            if (target.Id == _draggedItem.Id)
-            {
-                _draggedItem = null;
-                return;
-            }
-
-            if (LibrariesList.ItemsSource is not List<CustomLibrarySummary> items)
-            {
-                _draggedItem = null;
-                return;
-            }
-
-            var oldIndex = items.FindIndex(x => x.Id == _draggedItem.Id);
-            var newIndex = items.FindIndex(x => x.Id == target.Id);
-            if (oldIndex < 0 || newIndex < 0)
-            {
-                _draggedItem = null;
-                return;
-            }
-
-            var moved = _draggedItem;
-            items.RemoveAt(oldIndex);
-            items.Insert(newIndex, moved);
-
-            using (var db = new MiaoDbContext(AppPaths.DbFilePath))
-            {
-                for (int i = 0; i < items.Count; i++)
-                {
-                    var entity = db.CustomLibraries.Find(items[i].Id);
-                    if (entity != null) entity.SortOrder = i;
-                }
-                db.SaveChanges();
-            }
-
-            _draggedItem = null;
+            db.SaveChanges();
             LoadLibraries();
-        }
+        }        
 
         // ----- Đổi tên -----
 

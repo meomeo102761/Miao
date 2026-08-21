@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Miao.UI.Views.Pages.AddToLibraryView"
+             xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core"
              Width="360" Height="300">
     <Border Background="White" CornerRadius="8" Padding="16">
         <Grid>
@@ -25,10 +26,10 @@
             <ScrollViewer Grid.Row="2">
                 <ItemsControl x:Name="LibrariesList">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="models:CustomLibrary">
                             <Button Content="{Binding Name}" HorizontalContentAlignment="Left"
-                                    Background="White" BorderThickness="0" Padding="8,6" Cursor="Hand"
-                                    Click="OnLibraryClick" Tag="{Binding}"/>
+                                    Background="White" BorderThickness="0" Padding="8,6"
+                                    Cursor="Hand" Click="OnLibraryClick" Tag="{Binding}"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

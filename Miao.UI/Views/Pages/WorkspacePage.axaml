@@ -1,20 +1,21 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Miao.UI.Views.Pages"
              x:Class="Miao.UI.Views.Pages.WorkspacePage"
              Background="{StaticResource BgMain}"
              FontFamily="Segoe UI"
              FontSize="15">
 
-    <UserControl.Resources>
+    <UserControl.Styles>
 
-        <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Style Selector="TextBlock.PageTitle">
             <Setter Property="Foreground" Value="#444444"/>
             <Setter Property="FontSize" Value="22"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
 
-        <Style x:Key="NovelActionButton" TargetType="Button">
+        <Style Selector="Button.NovelActionButton">
             <Setter Property="Height" Value="36"/>
             <Setter Property="Padding" Value="16,0"/>
             <Setter Property="Margin" Value="0,0,8,0"/>
@@ -30,20 +31,22 @@
             <Setter Property="Background" Value="#F0F0F0"/>
         </Style>
 
-        <Style x:Key="NovelPrimaryButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}">
+        <!-- Trước: x:Key="NovelPrimaryButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
+        <Style Selector="Button.NovelActionButton.NovelPrimaryButton">
             <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
 
-        <Style x:Key="NovelDangerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}">
+        <!-- Trước: x:Key="NovelDangerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
+        <Style Selector="Button.NovelActionButton.NovelDangerButton">
             <Setter Property="Background" Value="#E0503A"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
 
-        <Style x:Key="PagerButton" TargetType="Button">
+        <Style Selector="Button.PagerButton">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -54,13 +57,12 @@
             <Setter Property="Margin" Value="3,0,0,0"/>
         </Style>
 
-        <!-- Thay cho DataTrigger IsCurrent của WPF: gán class "current" động theo binding -->
         <Style Selector="Button.pagerNumber.current">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
-    </UserControl.Resources>
+    </UserControl.Styles>
 
     <ScrollViewer>
     <StackPanel Margin="20" MaxWidth="1000">
@@ -68,21 +70,21 @@
         <StackPanel Orientation="Horizontal" Cursor="Hand" HorizontalAlignment="Left"
                     PointerPressed="OnBackToNovelClick">
             <TextBlock Text="‹ " FontSize="20" Foreground="{StaticResource AccentJade}" VerticalAlignment="Center"/>
-            <TextBlock x:Name="TitleText" Style="{StaticResource PageTitle}" Foreground="{StaticResource AccentJade}"/>
+            <TextBlock x:Name="TitleText" Classes="PageTitle" Foreground="{StaticResource AccentJade}"/>
         </StackPanel>
 
         <TextBlock Text="Không gian làm việc — bấm vào chương để sửa trực tiếp"
                    FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,0,0,14"/>
 
         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-            <Button Content="✚ Tạo quyển" Style="{StaticResource NovelActionButton}" Classes="novelAction" Click="OnCreateVolumeClick"/>
-            <Button x:Name="BulkDeleteButton" Style="{StaticResource NovelDangerButton}"
+            <Button Content="✚ Tạo quyển" Classes="NovelActionButton novelAction" Click="OnCreateVolumeClick"/>
+            <Button x:Name="BulkDeleteButton" Classes="NovelActionButton NovelDangerButton"
                     Click="OnBulkDeleteChaptersClick" IsVisible="False"/>
         </StackPanel>
 
         <ItemsControl x:Name="VolumesList">
             <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="local:WorkspacePage+VolumeGroup">
                     <Expander Margin="0,0,0,12" IsExpanded="True">
 
                         <Expander.Header>
@@ -97,9 +99,9 @@
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal"
                                             IsVisible="{Binding CanManage}">
-                                    <Button Content="✎" Style="{StaticResource PagerButton}" ToolTip.Tip="Sửa quyển"
+                                    <Button Content="✎" Classes="PagerButton" ToolTip.Tip="Sửa quyển"
                                             Click="OnEditVolumeClick" Tag="{Binding}"/>
-                                    <Button Content="🗑" Style="{StaticResource PagerButton}" ToolTip.Tip="Xóa quyển"
+                                    <Button Content="🗑" Classes="PagerButton" ToolTip.Tip="Xóa quyển"
                                             Click="OnDeleteVolumeClick" Tag="{Binding}"/>
                                 </StackPanel>
                             </Grid>
@@ -109,7 +111,7 @@
 
                             <ItemsControl ItemsSource="{Binding PagedChapters}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
+                                    <DataTemplate x:DataType="local:WorkspacePage+ChapterRow">
                                         <Grid Height="42" Margin="0,0,0,5">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26"/>
@@ -147,9 +149,9 @@
                                                                 IsVisible="{Binding ShowGlobalIndex}"/>
                                                     </DockPanel>
 
-                                                    <Button Grid.Column="1" Content="✎" Style="{StaticResource PagerButton}"
+                                                    <Button Grid.Column="1" Content="✎" Classes="PagerButton"
                                                             ToolTip.Tip="Sửa tên chương" Click="OnEditChapterClick" Tag="{Binding}"/>
-                                                    <Button Grid.Column="2" Content="✕" Style="{StaticResource PagerButton}"
+                                                    <Button Grid.Column="2" Content="✕" Classes="PagerButton"
                                                             ToolTip.Tip="Xóa chương" Click="OnDeleteChapterClick" Tag="{Binding}"/>
                                                 </Grid>
                                             </Border>
@@ -160,7 +162,7 @@
 
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,3"
                                         IsVisible="{Binding ShowPager}">
-                                <Button Content="‹" Style="{StaticResource PagerButton}"
+                                <Button Content="‹" Classes="PagerButton"
                                         Click="OnGroupPrevPageClick" Tag="{Binding}"/>
 
                                 <ItemsControl ItemsSource="{Binding PagerItems}">
@@ -170,14 +172,14 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
+                                        <DataTemplate x:DataType="local:WorkspacePage+PagerItem">
                                             <Grid>
                                                 <TextBlock Text="…" FontSize="12" Margin="4,0"
                                                            Foreground="{StaticResource TextMuted}"
                                                            VerticalAlignment="Center"
                                                            IsVisible="{Binding IsEllipsis}"/>
-                                                <Button Content="{Binding Label}" Style="{StaticResource PagerButton}"
-                                                        Classes="pagerNumber" Classes.current="{Binding IsCurrent}"
+                                                <Button Content="{Binding Label}" Classes="PagerButton pagerNumber"
+                                                        Classes.current="{Binding IsCurrent}"
                                                         Click="OnGroupPageClick" Tag="{Binding}"
                                                         IsVisible="{Binding IsPage}"/>
                                             </Grid>
@@ -185,7 +187,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <Button Content="›" Style="{StaticResource PagerButton}"
+                                <Button Content="›" Classes="PagerButton"
                                         Click="OnGroupNextPageClick" Tag="{Binding}"/>
                             </StackPanel>
 
@@ -232,7 +234,7 @@
                     <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
                         <ItemsControl x:Name="ManualPickList">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="local:WorkspacePage+PickItem">
                                     <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                               Foreground="#333" FontSize="15" Margin="0,3"/>
                                 </DataTemplate>
@@ -245,8 +247,8 @@
                            TextWrapping="Wrap" IsVisible="False"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Tạo quyển" Width="105" Style="{StaticResource NovelPrimaryButton}" Click="OnCreateVolumeSaveClick"/>
-                    <Button Content="Hủy" Width="85" Style="{StaticResource NovelActionButton}" Click="OnCreateVolumeCancelClick"/>
+                    <Button Content="Tạo quyển" Width="105" Classes="NovelActionButton NovelPrimaryButton" Click="OnCreateVolumeSaveClick"/>
+                    <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnCreateVolumeCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -259,9 +261,9 @@
                          Margin="0,0,0,14" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Lưu" Width="85" Style="{StaticResource NovelPrimaryButton}" Click="OnEditVolumeSaveClick"/>
-                    <Button Content="Xóa quyển" Width="95" Style="{StaticResource NovelActionButton}" Click="OnEditVolumeDeleteClick"/>
-                    <Button Content="Hủy" Width="85" Style="{StaticResource NovelActionButton}" Click="OnEditVolumeCancelClick"/>
+                    <Button Content="Lưu" Width="85" Classes="NovelActionButton NovelPrimaryButton" Click="OnEditVolumeSaveClick"/>
+                    <Button Content="Xóa quyển" Width="95" Classes="NovelActionButton" Click="OnEditVolumeDeleteClick"/>
+                    <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnEditVolumeCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -274,8 +276,8 @@
                          Margin="0,0,0,14" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Lưu" Width="85" Style="{StaticResource NovelPrimaryButton}" Click="OnEditChapterSaveClick"/>
-                    <Button Content="Hủy" Width="85" Style="{StaticResource NovelActionButton}" Click="OnEditChapterCancelClick"/>
+                    <Button Content="Lưu" Width="85" Classes="NovelActionButton NovelPrimaryButton" Click="OnEditChapterSaveClick"/>
+                    <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnEditChapterCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -286,8 +288,8 @@
                 <TextBlock x:Name="ConfirmMessageText" FontSize="13" Foreground="#444" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Xác nhận" Width="95" Style="{StaticResource NovelDangerButton}" Click="OnConfirmYesClick"/>
-                    <Button Content="Hủy" Width="85" Style="{StaticResource NovelActionButton}" Click="OnConfirmCancelClick"/>
+                    <Button Content="Xác nhận" Width="95" Classes="NovelActionButton NovelDangerButton" Click="OnConfirmYesClick"/>
+                    <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnConfirmCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>

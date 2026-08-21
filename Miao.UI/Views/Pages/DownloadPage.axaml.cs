@@ -221,8 +221,8 @@ namespace Miao.UI.Views.Pages
 
         private void OnApplyRangeClick(object? sender, RoutedEventArgs e)
         {
-            if (!Guid.TryParse(FromChapterBox.Text?.Trim(), out var from)) from = int.MinValue;
-            if (!Guid.TryParse(ToChapterBox.Text?.Trim(), out var to)) to = int.MaxValue;
+            if (!int.TryParse(FromChapterBox.Text?.Trim(), out var from)) from = int.MinValue;
+            if (!int.TryParse(ToChapterBox.Text?.Trim(), out var to)) to = int.MaxValue;
 
             foreach (var item in _chapterItems)
                 item.IsSelected = !item.IsAlreadyDownloaded && item.Number >= from && item.Number <= to;

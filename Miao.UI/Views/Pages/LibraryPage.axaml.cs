@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -204,7 +205,8 @@ namespace Miao.UI.Views.Pages
 
             var pageButtonStyle = (Style)this.FindResource("PageButton")!;
 
-            var prevBtn = new Button { Content = "‹ Trước", Style = pageButtonStyle, IsEnabled = currentPage > 1 };
+            var prevBtn = new Button { Content = "‹ Trước", IsEnabled = currentPage > 1 };
+            prevBtn.Styles.Add(pageButtonStyle);
             prevBtn.Classes.Add("pageButton");
             prevBtn.Click += (s, e) => onPageSelected(currentPage - 1);
             panel.Children.Add(prevBtn);
@@ -217,7 +219,8 @@ namespace Miao.UI.Views.Pages
                     continue;
                 }
 
-                var btn = new Button { Content = p.ToString(), Style = pageButtonStyle };
+                var btn = new Button { Content = p.ToString() };
+                btn.Styles.Add(pageButtonStyle);
                 btn.Classes.Add("pageButton");
                 if (p == currentPage) btn.Classes.Add("active");
                 int page = p;
@@ -225,7 +228,8 @@ namespace Miao.UI.Views.Pages
                 panel.Children.Add(btn);
             }
 
-            var nextBtn = new Button { Content = "Sau ›", Style = pageButtonStyle, IsEnabled = currentPage < totalPages };
+            var nextBtn = new Button { Content = "Sau ›", IsEnabled = currentPage < totalPages };
+            nextBtn.Styles.Add(pageButtonStyle);
             nextBtn.Classes.Add("pageButton");
             nextBtn.Click += (s, e) => onPageSelected(currentPage + 1);
             panel.Children.Add(nextBtn);

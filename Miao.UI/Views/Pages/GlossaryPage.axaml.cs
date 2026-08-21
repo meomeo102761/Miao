@@ -32,6 +32,7 @@ namespace Miao.UI.Views.Pages
         private bool _isEditMode;
         private Point _dragStartPoint;
         private GlossarySetRowViewModel? _draggedSet;
+        private PointerPressedEventArgs? _dragPressedEvent;
 
         private ObservableCollection<string> BuildPageItems(int currentPage, int totalPages)
         {
@@ -172,7 +173,7 @@ namespace Miao.UI.Views.Pages
 
         private void OnToggleSetClick(object? sender, PointerPressedEventArgs e)
         {
-            if (sender is not StyledElement fe || fe.Tag is not GlossarySetRowViewModel vm) return;
+            if (sender is not Control fe || fe.Tag is not GlossarySetRowViewModel vm) return;
 
             vm.IsExpanded = !vm.IsExpanded;
             if (vm.IsExpanded && vm.AllEntries.Count == 0)
@@ -270,7 +271,7 @@ namespace Miao.UI.Views.Pages
         {
             if (sender is not Button btn ||
                 btn.Tag is not GlossarySetRowViewModel vm ||
-                !Guid.TryParse(btn.Content?.ToString(), out var page))
+                !int.TryParse(btn.Content?.ToString(), out var page))
                 return;
 
             if (page < 1) return;
@@ -459,25 +460,37 @@ namespace Miao.UI.Views.Pages
         private void OnSetDragHandleMouseDown(object? sender, PointerPressedEventArgs e)
         {
             _dragStartPoint = e.GetPosition(this);
+            _dragPressedEvent = e;
         }
 
         private async void OnSetDragHandleMouseMove(object? sender, PointerEventArgs e)
         {
-            if (!_isEditMode || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-            if (sender is not StyledElement fe || fe.DataContext is not GlossarySetRowViewModel vm) return;
+            if (!_isEditMode ||
+                _dragPressedEvent == null ||
+                !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                return;
+
+            if (sender is not Control control || control.DataContext is not GlossarySetRowViewModel vm)
+                return;
 
             var pos = e.GetPosition(this);
             var diff = _dragStartPoint - pos;
 
-            if (Math.Abs(diff.X) > DragThreshold || Math.Abs(diff.Y) > DragThreshold)
-            {
-                _draggedSet = vm;
-                var data = new DataObject();
-                data.Set(DataFormats.Text, vm.Id.ToString());
+            if (Math.Abs(diff.X) <= DragThreshold && Math.Abs(diff.Y) <= DragThreshold)
+                return;
 
-                if (fe is Control control)
-                    await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
-            }
+            _draggedSet = vm;
+
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText(vm.Id.ToString()));
+
+            var pressedEvent = _dragPressedEvent;
+            _dragPressedEvent = null;
+
+            await DragDrop.DoDragDropAsync(
+                pressedEvent,
+                data,
+                DragDropEffects.Move);
         }
 
         private void OnSetItemDrop(object? sender, DragEventArgs e)

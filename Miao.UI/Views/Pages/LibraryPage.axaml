@@ -1,11 +1,11 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Miao.UI.Views.Pages.LibraryPage"
              Background="{StaticResource BgMain}">
 
-    <UserControl.Resources>
+    <UserControl.Styles>
 
-        <Style x:Key="PageButton" TargetType="Button">
+        <Style Selector="Button.pageButton">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
@@ -28,7 +28,7 @@
             <Setter Property="Foreground" Value="#BBB"/>
         </Style>
 
-        <Style x:Key="SectionLinkText" TargetType="TextBlock">
+        <Style Selector="TextBlock.sectionLinkText">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
@@ -36,6 +36,10 @@
             <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
+
+    </UserControl.Styles>
+
+    <UserControl.Resources>
 
         <DataTemplate x:Key="NovelCardTemplate">
             <Border Width="200" Margin="15,0,15,16" Background="White"
@@ -97,7 +101,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Text="Thư viện" Grid.Column="0" Style="{StaticResource PageTitle}"
+            <TextBlock Text="Thư viện" Grid.Column="0" Classes="pageTitle"
                        Margin="0" VerticalAlignment="Center"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -108,14 +112,14 @@
                              FontFamily="Arial" FontSize="15" KeyDown="SearchBox_KeyDown"/>
                 </Border>
                 <Button Content="Tìm" Width="65" Height="38" Margin="8,0,0,0"
-                        Style="{StaticResource JadeButton}" Click="OnSearchClick"/>
+                        Classes="jade" Click="OnSearchClick"/>
             </StackPanel>
         </Grid>
 
         <!-- Dải xem trước: Mới nhất -->
         <StackPanel x:Name="LatestSection" Grid.Row="1" Margin="0,0,0,24">
             <TextBlock Text="Mới nhất" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
-            <TextBlock Text="Xem tất cả »" Style="{StaticResource SectionLinkText}" PointerPressed="OnShowAllLatestClick"/>
+            <TextBlock Text="Xem tất cả »" Classes="sectionLinkText" PointerPressed="OnShowAllLatestClick"/>
 
             <ItemsControl x:Name="LatestPreviewList" ItemTemplate="{StaticResource NovelCardTemplate}" Margin="-15,10,-15,0">
                 <ItemsControl.ItemsPanel>
@@ -131,7 +135,7 @@
         <!-- Dải xem trước: Hoàn thành -->
         <StackPanel x:Name="CompletedSection" Grid.Row="2" Margin="0,0,0,24">
             <TextBlock Text="Hoàn thành" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
-            <TextBlock Text="Xem tất cả »" Style="{StaticResource SectionLinkText}" PointerPressed="OnShowAllCompletedClick"/>
+            <TextBlock Text="Xem tất cả »" Classes="sectionLinkText" PointerPressed="OnShowAllCompletedClick"/>
 
             <ItemsControl x:Name="CompletedPreviewList" ItemTemplate="{StaticResource NovelCardTemplate}" Margin="-15,10,-15,0">
                 <ItemsControl.ItemsPanel>
@@ -153,7 +157,7 @@
                 <TextBlock x:Name="ListSectionTitleText" Grid.Column="0" Text="Tất cả truyện"
                            FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
                 <TextBlock x:Name="BackToFullListLink" Grid.Column="1" Text="‹ Quay lại danh sách đầy đủ"
-                           Style="{StaticResource SectionLinkText}" Margin="0" IsVisible="False"
+                           Classes="sectionLinkText" Margin="0" IsVisible="False"
                            PointerPressed="OnBackToFullListClick"/>
             </Grid>
         </Border>

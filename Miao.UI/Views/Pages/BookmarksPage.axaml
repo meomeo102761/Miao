@@ -41,7 +41,7 @@
 
     <StackPanel Margin="20" MaxWidth="1140">
 
-        <TextBlock Text="Bookmarks" Style="{StaticResource PageTitle}" Margin="0"/>
+        <TextBlock Text="Bookmarks" Classes="PageTitle" Margin="0"/>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
             <Button x:Name="ReadingTabButton" Classes="navButton" Width="150" Click="OnReadingTabClick"/>
@@ -51,7 +51,7 @@
         <Border Background="#DEE8E6" CornerRadius="6" Padding="16,10" Margin="0,0,0,4">
             <DockPanel VerticalAlignment="Center">
                 <CheckBox x:Name="SelectAllCheckBox" DockPanel.Dock="Left" VerticalAlignment="Center"
-                          Checked="OnSelectAllChanged" Unchecked="OnSelectAllChanged"/>
+                          IsCheckedChanged="OnSelectAllChanged"/>
                 <Button Content="Xoá" DockPanel.Dock="Right" Width="80" Classes="navButton"
                         Foreground="{StaticResource AccentJade}" Background="White" VerticalAlignment="Center"
                         Click="OnDeleteSelectedClick"/>
@@ -62,7 +62,7 @@
 
         <ItemsControl x:Name="ItemsList">
             <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="local:BookmarkRow">
                     <Border Background="White" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1" Padding="16,14">
                         <DockPanel>
                             <CheckBox IsChecked="{Binding IsSelected}" DockPanel.Dock="Left"

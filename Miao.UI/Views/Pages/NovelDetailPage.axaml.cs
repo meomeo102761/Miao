@@ -43,14 +43,14 @@ namespace Miao.UI.Views.Pages
         private ItemsControl RelatedList = null!;
 
         private List<ChapterListItem> _allChapters = new();
-        private Dictionary<int, string> _volumeNames = new();
-        private Dictionary<int, int> _volumeChapterCounts = new();
+        private Dictionary<Guid, string> _volumeNames = new();
+        private Dictionary<Guid, int> _volumeChapterCounts = new();
         private int _chapterPage = 1;
 
         private List<GlossarySetEntry> _nameEntries = new();
         private GlossarySetEntry? _editingEntry;
         private bool _showDuplicateNamesOnly;
-        private int? _viewingSetId;
+        private Guid? _viewingSetId;
         private string _viewingSetName = "";
 
         private Action? _pendingConfirmAction;
@@ -63,31 +63,31 @@ namespace Miao.UI.Views.Pages
         private readonly ObservableCollection<LofterUpdateItem> _lofterUpdateItems = new();
         private IDownloadSource? _lofterUpdateSource;
 
-        private class ChapterListItem
+        internal class ChapterListItem
         {
             public int Number { get; set; }
             public string DisplayTitle { get; set; } = "";
-            public int? VolumeId { get; set; }
+            public Guid? VolumeId { get; set; }
         }
 
-        private class ChapterSection
+        internal class ChapterSection
         {
-            public int? VolumeId { get; set; }
+            public Guid? VolumeId { get; set; }
             public string? Header { get; set; }
             public bool HasHeader => !string.IsNullOrEmpty(Header);
             public List<ChapterListItem> Chapters { get; set; } = new();
         }
 
-        private class SetOptionItem
+        internal class SetOptionItem
         {
-            public int Id { get; set; }
+            public Guid Id { get; set; }
             public string Name { get; set; } = "";
             public bool IsApplied { get; set; }
         }
 
-        private class RelatedNovelItem
+        internal class RelatedNovelItem
         {
-            public int Id { get; set; }
+            public Guid Id { get; set; }
             public string DisplayTitle { get; set; } = "";
             public string Author { get; set; } = "";
             public string DirectionTag { get; set; } = "";
@@ -96,7 +96,7 @@ namespace Miao.UI.Views.Pages
             public Bitmap? CoverBitmap { get; set; }
         }
 
-        private class LofterUpdateItem : INotifyPropertyChanged
+        internal class LofterUpdateItem : INotifyPropertyChanged
         {
             private bool _isSelected = true;
             public bool IsSelected
@@ -130,7 +130,7 @@ namespace Miao.UI.Views.Pages
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
-                new FanqieDownloadSource(_browser, _browser, ocr),
+                new FanqieDownloadSource(_browser, PlatformServices.ScreenshotFetcher, ocr),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
@@ -158,15 +158,11 @@ namespace Miao.UI.Views.Pages
 
             if (isNarrow)
             {
-                SidebarGapColumn.Width = new GridLength(0);
-                SidebarColumn.Width = new GridLength(0);
                 RelatedSlotWide.Content = null;
                 RelatedSlotNarrow.Content = _relatedContent;
             }
             else
             {
-                SidebarGapColumn.Width = new GridLength(24);
-                SidebarColumn.Width = new GridLength(300);
                 RelatedSlotNarrow.Content = null;
                 RelatedSlotWide.Content = _relatedContent;
             }
@@ -443,7 +439,7 @@ namespace Miao.UI.Views.Pages
 
         // ===================== Điều hướng =====================
 
-        private void OnRelatedClick(int relatedId) => AppNavigator.NavigateTo(new NovelDetailPage(relatedId));
+        private void OnRelatedClick(Guid relatedId) => AppNavigator.NavigateTo(new NovelDetailPage(relatedId));
 
         private void OnEditMenuClick(object? sender, RoutedEventArgs e) => EditPopup.IsOpen = !EditPopup.IsOpen;
 
@@ -1141,7 +1137,7 @@ namespace Miao.UI.Views.Pages
             ConfigureSelectSetsCloseButton();
         }
 
-        private static SetOptionItem ToOption(GlossarySet s, HashSet<int> appliedIds)
+        private static SetOptionItem ToOption(GlossarySet s, HashSet<Guid> appliedIds)
             => new() { Id = s.Id, Name = s.Name, IsApplied = appliedIds.Contains(s.Id) };
 
         private void OnSetSearchChanged(object? sender, TextChangedEventArgs e) => RefreshSelectSetsCard();
@@ -1537,9 +1533,9 @@ namespace Miao.UI.Views.Pages
                     {
                         Content = row,
                         Tag = library.Id,
-                        Style = (Avalonia.Styling.Style)this.FindResource("MenuItemButton")!,
                         HorizontalContentAlignment = HorizontalAlignment.Stretch
                     };
+                    libraryButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("MenuItemButton")!);
                     libraryButton.Click += OnLibraryItemClick;
                     panel.Children.Add(libraryButton);
                 }
@@ -1547,7 +1543,8 @@ namespace Miao.UI.Views.Pages
 
             panel.Children.Add(new Separator { Margin = new Thickness(4, 3, 4, 3) });
 
-            var createButton = new Button { Content = "+ Thêm danh sách mới", Style = (Avalonia.Styling.Style)this.FindResource("MenuItemButton")! };
+            var createButton = new Button { Content = "+ Thêm danh sách mới" };
+            createButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("MenuItemButton")!);
             createButton.Click += OnCreateLibraryClick;
             panel.Children.Add(createButton);
 
@@ -1627,16 +1624,17 @@ namespace Miao.UI.Views.Pages
             nameRow.Children.Add(_newLibraryNameBox);
             panel.Children.Add(nameRow);
 
-            var addButton = new Button { Content = "Thêm", Width = 80, Style = (Avalonia.Styling.Style)this.FindResource("NovelPrimaryButton")! };
+            var addButton = new Button { Content = "Thêm", Width = 80 };
+            addButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("NovelPrimaryButton")!);
             addButton.Click += OnConfirmCreateLibraryClick;
 
             var cancelButton = new Button
             {
                 Content = "Hủy",
                 Width = 80,
-                Style = (Avalonia.Styling.Style)this.FindResource("NovelActionButton")!,
                 Margin = new Thickness(8, 0, 0, 0)
             };
+            cancelButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("NovelActionButton")!);
             cancelButton.Click += OnCancelCreateLibraryClick;
 
             var buttonRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
@@ -1717,10 +1715,10 @@ namespace Miao.UI.Views.Pages
             var deleteButton = new Button
             {
                 Content = "🗑 Xóa truyện",
-                Style = (Avalonia.Styling.Style)this.FindResource("MenuItemButton")!,
                 FontSize = 13,
                 Tag = "DeleteNovelButton"
             };
+            deleteButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("MenuItemButton")!);
             deleteButton.Click += OnDeleteNovelClick;
 
             menu.Children.Add(separator);

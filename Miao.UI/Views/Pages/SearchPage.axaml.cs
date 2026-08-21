@@ -12,6 +12,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Avalonia.Layout;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -20,6 +21,13 @@ using Miao.UI.Services;
 
 namespace Miao.UI.Views.Pages
 {
+    public class BlockTagSuggestItem
+    {
+        public Tag Tag { get; set; } = null!;
+        public string Name => Tag.Name;
+        public bool IsBlocked { get; set; }
+    }
+    
     public partial class SearchPage : UserControl
     {
         private const int VisibleGroupCount = 6;
@@ -38,6 +46,7 @@ namespace Miao.UI.Views.Pages
         private string _blockSuggestKeyword = "";
 
         private Point _dragStartPoint;
+        private PointerPressedEventArgs? _dragPressedEventArgs;
         private TagCategoryGroup? _dragGroup;
         private TagCheckItem? _dragTag;
 
@@ -142,7 +151,7 @@ namespace Miao.UI.Views.Pages
         private class SearchFilterLayout
         {
             public List<string> GroupOrder { get; set; } = new();
-            public Dictionary<string, List<int>> TagOrder { get; set; } = new();
+            public Dictionary<string, List<Guid>> TagOrder { get; set; } = new();
         }
 
         private SearchFilterLayout LoadLayout()
@@ -241,6 +250,7 @@ namespace Miao.UI.Views.Pages
             if (sender is Control fe && fe.DataContext is TagCategoryGroup group)
             {
                 _dragStartPoint = e.GetPosition(null);
+                _dragPressedEventArgs = e;
                 _dragGroup = group;
             }
         }
@@ -255,21 +265,32 @@ namespace Miao.UI.Views.Pages
                 return;
 
             var group = _dragGroup;
-            var data = new DataObject();
-            data.Set("group", group);
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText($"group:{group.Category}"));
 
             _dragGroup = null;
             _dragTag = null;
 
-            if (sender is Control control)
-                await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+            if (_dragPressedEventArgs == null)
+                return;
+
+            await DragDrop.DoDragDropAsync(
+                _dragPressedEventArgs,
+                data,
+                DragDropEffects.Move);
         }
 
         private void GroupDrop(object? sender, DragEventArgs e)
         {
             try
             {
-                if (e.Data.Get("group") is not TagCategoryGroup source) return;
+                var text = e.DataTransfer.TryGetText();
+                if (string.IsNullOrWhiteSpace(text) || !text.StartsWith("group:"))
+                    return;
+
+                var category = text["group:".Length..];
+                var source = _allGroups.FirstOrDefault(g => g.Category == category);
+                if (source == null) return;
                 if (sender is not Control fe || fe.DataContext is not TagCategoryGroup target) return;
                 if (ReferenceEquals(source, target)) return;
 
@@ -285,6 +306,7 @@ namespace Miao.UI.Views.Pages
             }
             finally
             {
+                _dragPressedEventArgs = null;
                 _dragGroup = null;
                 _dragTag = null;
             }
@@ -300,6 +322,7 @@ namespace Miao.UI.Views.Pages
                 if (itemsControl?.DataContext is TagCategoryGroup group)
                 {
                     _dragStartPoint = e.GetPosition(null);
+                    _dragPressedEventArgs = e;
                     _dragTag = tag;
                     _dragGroup = group;
                 }
@@ -317,22 +340,38 @@ namespace Miao.UI.Views.Pages
 
             var tag = _dragTag;
             var group = _dragGroup;
-            var data = new DataObject();
-            data.Set("tag", tag);
-            data.Set("tagGroup", group);
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText($"tag:{group.Category}:{tag.TagId}"));
 
             _dragTag = null;
             _dragGroup = null;
 
-            await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+            if (_dragPressedEventArgs == null)
+                return;
+
+            await DragDrop.DoDragDropAsync(
+                _dragPressedEventArgs,
+                data,
+                DragDropEffects.Move);
         }
 
         private void TagDrop(object? sender, DragEventArgs e)
         {
             try
             {
-                if (e.Data.Get("tag") is not TagCheckItem sourceTag) return;
-                if (e.Data.Get("tagGroup") is not TagCategoryGroup sourceGroup) return;
+                var text = e.DataTransfer.TryGetText();
+                if (string.IsNullOrWhiteSpace(text) || !text.StartsWith("tag:"))
+                    return;
+
+                var parts = text.Split(':', 3);
+                if (parts.Length != 3 || !Guid.TryParse(parts[2], out var tagId))
+                    return;
+
+                var sourceGroup = _allGroups.FirstOrDefault(g => g.Category == parts[1]);
+                var sourceTag = sourceGroup?.Tags.FirstOrDefault(t => t.TagId == tagId);
+
+                if (sourceGroup == null || sourceTag == null)
+                    return;
                 if (sender is not Control fe || fe.DataContext is not TagCheckItem targetTag) return;
 
                 var targetItemsControl = FindParent<ItemsControl>(fe);
@@ -353,6 +392,7 @@ namespace Miao.UI.Views.Pages
             }
             finally
             {
+                _dragPressedEventArgs = null;
                 _dragTag = null;
                 _dragGroup = null;
             }
@@ -471,7 +511,7 @@ namespace Miao.UI.Views.Pages
 
         private void OnDeleteTagClick(object? sender, RoutedEventArgs e)
         {
-            if (sender is not Control fe || fe.Tag is not int tagId) return;
+            if (sender is not Control fe || fe.Tag is not Guid tagId) return;
 
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
             var tag = db.Tags.FirstOrDefault(t => t.Id == tagId);
@@ -552,13 +592,6 @@ namespace Miao.UI.Views.Pages
         }
 
         // ================= CHẶN TAG =================
-
-        private class BlockTagSuggestItem
-        {
-            public Tag Tag { get; set; } = null!;
-            public string Name => Tag.Name;
-            public bool IsBlocked { get; set; }
-        }
 
         private void OnBlockTagSuggestChanged(object? sender, TextChangedEventArgs e)
         {
@@ -686,8 +719,8 @@ namespace Miao.UI.Views.Pages
             if (TimeMonthRadio.IsChecked == true &&
                 TimeMonthBox.SelectedItem is ComboBoxItem mi &&
                 TimeYearBox.SelectedItem is ComboBoxItem yi &&
-                Guid.TryParse(mi.Content?.ToString(), out int month) &&
-                Guid.TryParse(yi.Content?.ToString(), out int year))
+                int.TryParse(mi.Content?.ToString(), out int month) &&
+                int.TryParse(yi.Content?.ToString(), out int year))
             {
                 query = query.Where(n => n.AddedAt.Month == month && n.AddedAt.Year == year);
             }

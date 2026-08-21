@@ -4,13 +4,6 @@
              x:Class="Miao.UI.App"
              RequestedThemeVariant="Default">
 
-    <Application.Styles>
-        <FluentTheme />
-        <Style Selector="TextBox">
-            <Setter Property="CornerRadius" Value="8"/>
-        </Style>
-    </Application.Styles>
-
     <Application.Resources>
         <SolidColorBrush x:Key="AccentJade" Color="#2FBF9F"/>
         <SolidColorBrush x:Key="AccentJadeHover" Color="#25A88A"/>
@@ -21,5 +14,161 @@
 
         <conv:CoverImageConverter x:Key="CoverImageConverter"/>
     </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <Style Selector="TextBox">
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+
+        <!-- Tiêu đề trang: TextBlock Classes="pageTitle" -->
+        <Style Selector="TextBlock.pageTitle">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+
+        <!-- Text nội dung thường: TextBlock Classes="bodyText" -->
+        <Style Selector="TextBlock.bodyText">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
+
+        <!-- Nút chính màu jade: Button Classes="jade" -->
+        <Style Selector="Button.jade">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.jade:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+        <!-- Nút phụ trong toolbar (Áp dụng / Chọn tất cả / Bỏ chọn): Button Classes="navButton" -->
+        <Style Selector="Button.navButton">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,4"/>
+        </Style>
+        <Style Selector="Button.navButton:pointerover">
+            <Setter Property="Background" Value="#F5F5F5"/>
+        </Style>
+
+        <!-- Ô nhập liệu trong form sửa: TextBox Classes="editTextBox" -->
+        <Style Selector="TextBox.editTextBox">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="10,0"/>
+        </Style>
+
+        <!-- Nút outline nhỏ (VD "Chọn ảnh từ máy"): Button Classes="smallOutline" -->
+        <Style Selector="Button.smallOutline">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+        <Style Selector="Button.smallOutline:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <!-- Nút nhỏ màu đỏ (sửa/xóa): Button Classes="smallDanger" -->
+        <Style Selector="Button.smallDanger">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#B94A48"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="4,0"/>
+        </Style>
+
+        <!-- Đường kẻ phân cách section: Border Classes="sectionLine" -->
+        <Style Selector="Border.sectionLine">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="Margin" Value="0,16"/>
+        </Style>
+
+        <!-- Khung chip bo tròn bao quanh 1 field: Border Classes="fieldChip" -->
+        <Style Selector="Border.fieldChip">
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+        </Style>
+
+        <!-- Label chữ nhỏ bên trong FieldChip: TextBlock Classes="fieldChipText" -->
+        <Style Selector="TextBlock.fieldChipText">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
+
+        <!-- ComboBox bo góc: ComboBox Classes="roundedComboBox" -->
+        <Style Selector="ComboBox.roundedComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+
+        <!-- Nút to bo tròn (Cập nhật / Xóa / Quay lại): Button Classes="bigRound" -->
+        <Style Selector="Button.bigRound">
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+    </Application.Styles>
 
 </Application>

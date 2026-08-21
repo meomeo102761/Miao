@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -14,7 +15,7 @@ namespace Miao.UI.Models
     {
         private bool _isSelected;
 
-        public int TagId { get; set; }
+        public Guid TagId { get; set; }
         public string Name { get; set; } = string.Empty;
 
         public bool IsSelected

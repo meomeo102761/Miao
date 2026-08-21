@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -22,7 +23,7 @@ namespace Miao.UI.Views.Pages
         private List<Chapter> _allChapters = new();
         private Volume? _editingVolume;
         private Action? _pendingConfirmAction;
-        private readonly HashSet<int> _selectedChapterIds = new();
+        private readonly HashSet<Guid> _selectedChapterIds = new();
 
         public WorkspacePage(Guid novelId)
         {
@@ -55,7 +56,7 @@ namespace Miao.UI.Views.Pages
                 orderedForIndex.AddRange(_allChapters.Where(c => c.VolumeId == vol.Id).OrderBy(c => c.Number));
             orderedForIndex.AddRange(_allChapters.Where(c => c.VolumeId == null).OrderBy(c => c.Number));
 
-            var globalIndex = new Dictionary<int, int>();
+            var globalIndex = new Dictionary<Guid, int>();
             for (int i = 0; i < orderedForIndex.Count; i++)
                 globalIndex[orderedForIndex[i].Id] = i + 1;
 
@@ -154,9 +155,9 @@ namespace Miao.UI.Views.Pages
         private static readonly IBrush MarkerHasContentBrush = new SolidColorBrush(Color.FromRgb(0x2E, 0x9E, 0x4F));
         private static readonly IBrush MarkerEmptyBrush = new SolidColorBrush(Color.FromRgb(0xCC, 0xCC, 0xCC));
 
-        private class ChapterRow
+        public class ChapterRow
         {
-            public int Id { get; set; }
+            public Guid Id { get; set; }
             public int Number { get; set; }
             public string Title { get; set; } = "";
             public string StatusText { get; set; } = "";
@@ -168,7 +169,7 @@ namespace Miao.UI.Views.Pages
             public IBrush MarkerBrush => HasContent ? MarkerHasContentBrush : MarkerEmptyBrush;
         }
 
-        private class PagerItem
+        public class PagerItem
         {
             public VolumeGroup Group { get; set; } = null!;
             public int Page { get; set; }
@@ -178,14 +179,14 @@ namespace Miao.UI.Views.Pages
             public string Label => IsEllipsis ? "…" : Page.ToString();
         }
 
-        private class VolumeGroup : INotifyPropertyChanged
+        public class VolumeGroup : INotifyPropertyChanged
         {
             private readonly int _pageSize;
             private int _currentPage = 1;
 
             public VolumeGroup(int pageSize) => _pageSize = pageSize;
 
-            public int? VolumeId { get; set; }
+            public Guid? VolumeId { get; set; }
             public string Name { get; set; } = "";
             public List<ChapterRow> AllChapters { get; set; } = new();
 
@@ -249,9 +250,9 @@ namespace Miao.UI.Views.Pages
                 => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        private class PickItem
+        public class PickItem
         {
-            public int ChapterId { get; set; }
+            public Guid ChapterId { get; set; }
             public string Label { get; set; } = "";
             public bool IsSelected { get; set; }
         }
@@ -388,12 +389,12 @@ namespace Miao.UI.Views.Pages
                 return;
             }
 
-            List<int> chapterIdsToAssign;
+            List<Guid> chapterIdsToAssign;
 
             if (RangeModeRadio.IsChecked == true)
             {
-                if (!Guid.TryParse(RangeFromBox.Text?.Trim(), out var from) ||
-                    !Guid.TryParse(RangeToBox.Text?.Trim(), out var to) ||
+                if (!int.TryParse(RangeFromBox.Text?.Trim(), out var from) ||
+                    !int.TryParse(RangeToBox.Text?.Trim(), out var to) ||
                     from > to)
                 {
                     ShowError(CreateVolumeErrorText, "Phạm vi chương không hợp lệ.");
@@ -410,7 +411,7 @@ namespace Miao.UI.Views.Pages
                 chapterIdsToAssign = (ManualPickList.ItemsSource as IEnumerable<PickItem>)?
                     .Where(p => p.IsSelected)
                     .Select(p => p.ChapterId)
-                    .ToList() ?? new List<int>();
+                    .ToList() ?? new List<Guid>();
             }
 
             if (chapterIdsToAssign.Count == 0)
@@ -555,7 +556,7 @@ namespace Miao.UI.Views.Pages
 
         // ================= SỬA TÊN CHƯƠNG =================
 
-        private int? _editingChapterId;
+        private Guid? _editingChapterId;
         private string _editingChapterNewTitle = "";
 
         private void OnEditChapterClick(object? sender, RoutedEventArgs e)

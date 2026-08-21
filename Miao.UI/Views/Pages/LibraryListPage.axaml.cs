@@ -48,9 +48,7 @@ namespace Miao.UI.Views.Pages
         {
             PageButtonsPanel.Children.Clear();
 
-            var pageButtonStyle = (Style)this.FindResource("PageButton")!;
-
-            var prevBtn = new Button { Content = "‹ Trước", Style = pageButtonStyle, IsEnabled = _currentPage > 1 };
+            var prevBtn = new Button { Content = "‹ Trước", IsEnabled = _currentPage > 1 };
             prevBtn.Classes.Add("pageButton");
             prevBtn.Click += (s, e) => { _currentPage--; RenderPage(); };
             PageButtonsPanel.Children.Add(prevBtn);
@@ -64,12 +62,12 @@ namespace Miao.UI.Views.Pages
                         Text = "...",
                         Foreground = Brushes.Gray,
                         VerticalAlignment = VerticalAlignment.Center,
-                        Margin = new Thickness(4, 0, 4, 0)
+                        Margin = new Avalonia.Thickness(4, 0, 4, 0)
                     });
                     continue;
                 }
 
-                var btn = new Button { Content = p.ToString(), Style = pageButtonStyle };
+                var btn = new Button { Content = p.ToString() };
                 btn.Classes.Add("pageButton");
                 if (p == _currentPage) btn.Classes.Add("active");
                 int page = p;
@@ -77,7 +75,7 @@ namespace Miao.UI.Views.Pages
                 PageButtonsPanel.Children.Add(btn);
             }
 
-            var nextBtn = new Button { Content = "Sau ›", Style = pageButtonStyle, IsEnabled = _currentPage < totalPages };
+            var nextBtn = new Button { Content = "Sau ›", IsEnabled = _currentPage < totalPages };
             nextBtn.Classes.Add("pageButton");
             nextBtn.Click += (s, e) => { _currentPage++; RenderPage(); };
             PageButtonsPanel.Children.Add(nextBtn);

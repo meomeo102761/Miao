@@ -1,5 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+      xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core"
       x:Class="Miao.UI.Views.Pages.DownloadPage"
       Background="{StaticResource BgMain}">
 
@@ -14,11 +16,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Tải truyện" Style="{StaticResource PageTitle}"/>
+        <TextBlock Grid.Row="0" Text="Tải truyện" Classes="pageTitle"/>
 
         <DockPanel Grid.Row="1" Margin="0,0,0,8" Height="34">
             <Button x:Name="FetchButton" Content="Hiện chương" DockPanel.Dock="Right" MinWidth="90" Height="34"
-                    Style="{StaticResource JadeButton}" Margin="8,0,0,0" Click="OnFetchClick"/>
+                    Classes="jade" Margin="8,0,0,0" Click="OnFetchClick"/>
             <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6">
                 <TextBox x:Name="UrlTextBox" Padding="8,0" VerticalContentAlignment="Center"
                          BorderThickness="0" FontFamily="Arial" FontSize="13"/>
@@ -26,22 +28,22 @@
         </DockPanel>
 
         <TextBlock x:Name="StatusText" Grid.Row="2" Text="Nhập link mục lục rồi bấm &quot;Hiện chương&quot;."
-                   Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}" Margin="0,4,0,12"/>
+                   Classes="bodyText" Foreground="{StaticResource TextMuted}" Margin="0,4,0,12"/>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
-            <TextBlock Text="Từ chương" VerticalAlignment="Center" Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"/>
+            <TextBlock Text="Từ chương" VerticalAlignment="Center" Classes="bodyText" Foreground="{StaticResource TextMuted}"/>
             <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Width="60" Height="28" Margin="6,0">
                 <TextBox x:Name="FromChapterBox" Padding="4,0" VerticalContentAlignment="Center"
                          BorderThickness="0" TextAlignment="Center" FontFamily="Arial" FontSize="13"/>
             </Border>
-            <TextBlock Text="đến" VerticalAlignment="Center" Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"/>
+            <TextBlock Text="đến" VerticalAlignment="Center" Classes="bodyText" Foreground="{StaticResource TextMuted}"/>
             <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Width="60" Height="28" Margin="6,0">
                 <TextBox x:Name="ToChapterBox" Padding="4,0" VerticalContentAlignment="Center"
                          BorderThickness="0" TextAlignment="Center" FontFamily="Arial" FontSize="13"/>
             </Border>
-            <Button Content="Áp dụng" Style="{StaticResource NavButton}" Margin="8,0,0,0" Click="OnApplyRangeClick"/>
-            <Button Content="Chọn tất cả" Style="{StaticResource NavButton}" Margin="8,0,0,0" Click="OnSelectAllClick"/>
-            <Button Content="Bỏ chọn" Style="{StaticResource NavButton}" Margin="8,0,0,0" Click="OnDeselectAllClick"/>
+            <Button Content="Áp dụng" Classes="navButton" Margin="8,0,0,0" Click="OnApplyRangeClick"/>
+            <Button Content="Chọn tất cả" Classes="navButton" Margin="8,0,0,0" Click="OnSelectAllClick"/>
+            <Button Content="Bỏ chọn" Classes="navButton" Margin="8,0,0,0" Click="OnDeselectAllClick"/>
         </StackPanel>
 
         <Border Grid.Row="4" x:Name="LofterOptionsPanel" IsVisible="False"
@@ -49,21 +51,21 @@
                 Background="#F8FAFA" Padding="12" Margin="0,0,0,12">
             <StackPanel>
                 <TextBlock Text="Lofter là blog cá nhân, có thể chứa nhiều truyện khác nhau — chọn truyện áp dụng cho các chương sắp tải:"
-                           Style="{StaticResource BodyText}" Foreground="{StaticResource TextMuted}"
+                           Classes="bodyText" Foreground="{StaticResource TextMuted}"
                            TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                 <RadioButton x:Name="LofterNewNovelRadio" Content="Tạo truyện mới" GroupName="LofterTarget"
-                             IsChecked="True" Checked="OnLofterTargetChanged" Margin="0,0,0,6"/>
+                             IsChecked="True" IsCheckedChanged="OnLofterTargetChanged" Margin="0,0,0,6"/>
                 <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="34" Margin="20,0,0,10">
                     <TextBox x:Name="LofterNewTitleBox" Padding="8,0" VerticalContentAlignment="Center"
                              BorderThickness="0" FontFamily="Arial" FontSize="13" Watermark="Nhập tên truyện..."/>
                 </Border>
 
                 <RadioButton x:Name="LofterExistingNovelRadio" Content="Thêm vào truyện đã có (cùng blog này)"
-                             GroupName="LofterTarget" Checked="OnLofterTargetChanged" Margin="0,0,0,6"/>
+                             GroupName="LofterTarget" IsCheckedChanged="OnLofterTargetChanged" Margin="0,0,0,6"/>
                 <ComboBox x:Name="LofterExistingNovelsCombo" IsEnabled="False" Margin="20,0,0,0">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="models:Novel">
                             <TextBlock Text="{Binding DisplayTitle}"/>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
@@ -94,7 +96,7 @@
                             PointerWheelChanged="ChaptersScrollViewer_PointerWheelChanged">
                     <ItemsControl x:Name="ChaptersList" Margin="4">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="local:ChapterCheckItem">
                                 <Grid Margin="0,3">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="30"/>
@@ -140,7 +142,7 @@
         </Border>
 
         <Button Grid.Row="6" x:Name="DownloadButton" Content="Tải các chương đã chọn"
-                Style="{StaticResource JadeButton}" HorizontalAlignment="Right"
+                Classes="jade" HorizontalAlignment="Right"
                 Margin="0,16,0,0" Click="OnDownloadClick"/>
     </Grid>
 </UserControl>

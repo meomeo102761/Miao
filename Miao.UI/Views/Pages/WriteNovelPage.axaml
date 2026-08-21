@@ -1,0 +1,6 @@
+<!-- WriteNovelPage.axaml -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.WriteNovelPage">
+    <TextBlock Text="Viết truyện (đang phát triển)" Margin="20"/>
+</UserControl>

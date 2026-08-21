@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Miao.UI.Views.Pages.AuthorPage"
-             Background="{StaticResource BgMain}">
+             xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core"
+             x:Class="Miao.UI.Views.Pages.AuthorPage" >
 
     <UserControl.Styles>
         <Style Selector="Button.pageButton">
@@ -49,7 +49,7 @@
                        Foreground="{StaticResource AccentJade}" Cursor="Hand"
                        PointerPressed="OnBackToAuthorListClick" Margin="0,32,0,0"/>
 
-            <TextBlock x:Name="AuthorNameText" Style="{StaticResource PageTitle}" Margin="0,4,0,16"/>
+            <TextBlock x:Name="AuthorNameText" Classes="PageTitle" Margin="0,4,0,16"/>
         </StackPanel>
 
         <ItemsControl x:Name="NovelsList" Grid.Row="1" Margin="0,16,0,0">
@@ -60,7 +60,7 @@
             </ItemsControl.ItemsPanel>
 
             <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="models:Novel">
                     <Border HorizontalAlignment="Center" Margin="12,0,12,16"
                             Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}">
                         <StackPanel HorizontalAlignment="Center">

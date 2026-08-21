@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Miao.UI.Models;assembly=Miao.UI"
              x:Class="Miao.UI.Views.Pages.TagPickerView"
              Width="420" Height="560">
+
     <Border Background="White" CornerRadius="8">
         <Grid Margin="16">
             <Grid.RowDefinitions>
@@ -17,14 +19,14 @@
                         Click="OnAddNewTagClick"/>
                 <Border BorderBrush="#CFE6E2" BorderThickness="1" CornerRadius="6">
                     <TextBox x:Name="SearchBox" Padding="6" BorderThickness="0"
-                             Watermark="Tìm hoặc gõ tên tag mới rồi bấm + Thêm"
+                             PlaceholderText="Tìm hoặc gõ tên tag mới rồi bấm + Thêm"
                              TextChanged="OnSearchChanged"/>
                 </Border>
             </DockPanel>
             <ScrollViewer Grid.Row="2">
                 <ItemsControl x:Name="CategoriesList">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="ui:TagCategoryGroup">
                             <StackPanel Margin="0,0,0,12">
                                 <TextBlock Text="{Binding Category}" FontWeight="Bold" FontSize="12"
                                            Foreground="{StaticResource AccentJade}" Margin="0,0,0,4"/>
@@ -35,7 +37,7 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
+                                        <DataTemplate x:DataType="ui:TagCheckItem">
                                             <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}"
                                                       Margin="0,0,10,6" FontSize="12"/>
                                         </DataTemplate>

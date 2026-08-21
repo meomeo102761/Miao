@@ -14,7 +14,7 @@ namespace Miao.UI.Views.Pages
 {
     public class BookmarkRow : INotifyPropertyChanged
     {
-        public int NovelId { get; set; }
+        public Guid NovelId { get; set; }
         public int? ChapterNumber { get; set; }
         public string NovelTitle { get; set; } = "";
         public string AuthorLabel { get; set; } = "";

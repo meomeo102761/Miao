@@ -1,4 +1,4 @@
-<local:ConfirmablePage xmlns="https://github.com/avaloniaui"
+﻿<local:ConfirmablePage xmlns="https://github.com/avaloniaui"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:local="clr-namespace:Miao.UI.Views.Pages"
       x:Class="Miao.UI.Views.Pages.CustomLibrariesPage"
@@ -83,7 +83,7 @@
             <RowDefinition Height="500"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Thư viện riêng" Style="{StaticResource PageTitle}"/>
+        <TextBlock Grid.Row="0" Text="Thư viện riêng" Classes="pageTitle"/>
 
         <Grid Grid.Row="1" Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
@@ -96,20 +96,20 @@
             <Border Grid.Column="0" BorderBrush="#BBBBBB" BorderThickness="1" CornerRadius="5" Height="30"
                     Width="280" HorizontalAlignment="Left">
                 <TextBox x:Name="NewNameBox" Padding="11,0" BorderThickness="0" VerticalContentAlignment="Center"
-                         FontFamily="Arial" FontSize="15" Watermark="Tên bộ sưu tập mới"/>
+                         FontFamily="Arial" FontSize="15" PlaceholderText="Tên bộ sưu tập mới"/>
             </Border>
 
             <Button Grid.Column="1" Content="+ Tạo mới" Width="90" Margin="8,0,0,0"
-                    Style="{StaticResource JadeButton}" Click="OnCreateClick"/>
+                    Classes="jade" Click="OnCreateClick"/>
 
             <Button x:Name="EditModeButton" Grid.Column="3" Content="Sửa" Width="70"
-                    Style="{StaticResource JadeButton}" Click="OnEditModeClick"/>
+                    Classes="jade" Click="OnEditModeClick"/>
         </Grid>
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl x:Name="LibrariesList">
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="local:CustomLibrarySummary">
                         <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"
                                 CornerRadius="6" Padding="22,10,27,5" Margin="0,0,0,8"
                                 DragDrop.AllowDrop="True" DragDrop.Drop="OnLibraryItemDrop">
@@ -120,11 +120,10 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock x:Name="DragHandleIcon" Grid.Column="0" Text="⋮⋮" FontSize="18"
-                                           Foreground="#999999" Cursor="SizeAll" IsVisible="False"
-                                           VerticalAlignment="Center" Margin="0,0,14,0"
-                                           PointerPressed="OnDragHandlePointerPressed"
-                                           PointerMoved="OnDragHandlePointerMoved"/>
+                                <StackPanel Grid.Column="0" Orientation="Vertical" IsVisible="False" x:Name="MoveButtonsPanel" Margin="0,0,14,0">
+                                    <Button Content="▲" FontSize="10" Padding="4,2" Click="OnMoveUpClick" Tag="{Binding}"/>
+                                    <Button Content="▼" FontSize="10" Padding="4,2" Click="OnMoveDownClick" Tag="{Binding}"/>
+                                </StackPanel>
 
                                 <StackPanel Grid.Column="1" Cursor="Hand" PointerPressed="OnLibraryClick" Tag="{Binding}">
                                     <TextBlock Text="{Binding Name}" FontFamily="Roboto" FontSize="17.6" Foreground="#555555"/>
@@ -153,7 +152,7 @@
                     <TextBox x:Name="RenameBox" FontSize="15" BorderThickness="0" VerticalContentAlignment="Center"/>
                 </Border>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Lưu" Classes="dialogPrimary" Style="{StaticResource JadeButton}" Click="OnRenameSaveClick"/>
+                    <Button Content="Lưu" Classes="dialogPrimary jade" Click="OnRenameSaveClick"/>
                     <Button Content="Hủy" Classes="dialogSecondary" Click="OnRenameCancelClick"/>
                 </StackPanel>
             </StackPanel>

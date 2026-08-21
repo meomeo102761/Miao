@@ -19,7 +19,7 @@ namespace Miao.UI.Views.Pages
         private const int RowsPerPage = 3;
         private const int PageSize = ItemsPerRow * RowsPerPage;
 
-        private readonly int _libraryId;
+        private readonly Guid _libraryId;
         private bool _isEditMode;
 
         private List<Novel> _allNovels = new();
