@@ -3,31 +3,27 @@
              xmlns:conv="clr-namespace:Miao.UI.Converters"
              x:Class="Miao.UI.App"
              RequestedThemeVariant="Default">
-
     <Application.Resources>
-        <!-- Bảng màu chung của ứng dụng -->
         <SolidColorBrush x:Key="AccentJade" Color="#2FBF9F"/>
-        <SolidColorBrush x:Key="AccentJadeHover" Color="#25A88A"/>
+        <SolidColorBrush x:Key="AccentJadeHover" Color="#63D8BE"/>
+        <SolidColorBrush x:Key="AccentJadePressed" Color="#25A88A"/>
         <SolidColorBrush x:Key="AccentJadeSoft" Color="#E7F8F3"/>
         <SolidColorBrush x:Key="AccentJadeSoftHover" Color="#D5F1E8"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#333333"/>
         <SolidColorBrush x:Key="TextMuted" Color="#777777"/>
         <SolidColorBrush x:Key="BorderSoft" Color="#CFE9E1"/>
         <SolidColorBrush x:Key="BgMain" Color="#FFFFFF"/>
-
         <conv:CoverImageConverter x:Key="CoverImageConverter"/>
     </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
 
-        <!-- Kiểu chữ mặc định cho toàn bộ giao diện -->
         <Style Selector="TextBlock">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
-
         <Style Selector="TextBox">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
@@ -37,102 +33,86 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
-
-        <Style Selector="ComboBox">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-        </Style>
-
-        <Style Selector="ComboBoxItem">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-        </Style>
-
-        <Style Selector="CheckBox">
+        <Style Selector="ComboBox, ComboBoxItem, CheckBox, RadioButton, ToggleSwitch">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
 
-        <Style Selector="RadioButton">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        </Style>
-
-        <Style Selector="ToggleSwitch">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        </Style>
-
-        <!-- Nút mặc định: bỏ nền xám Fluent, dùng outline xanh ngọc -->
+        <!-- Nút mặc định: xanh ngọc, chữ trắng, căn giữa -->
         <Style Selector="Button">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="CornerRadius" Value="7"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+        <Style Selector="Button /template/ ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
         </Style>
         <Style Selector="Button:pressed">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadePressed}"/>
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadePressed}"/>
         </Style>
 
-        <!-- Tiêu đề trang -->
-        <Style Selector="TextBlock.pageTitle">
+        <!-- Tiêu đề chính của từng trang -->
+        <Style Selector="TextBlock.pageTitle, TextBlock.PageTitle">
             <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontSize" Value="25"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="TextBlock.pageTitle">
             <Setter Property="Margin" Value="0,0,0,16"/>
         </Style>
-        <Style Selector="TextBlock.PageTitle">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-        </Style>
-
         <Style Selector="TextBlock.bodyText">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
 
-        <!-- Nút chính màu xanh ngọc -->
         <Style Selector="Button.jade">
             <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Height" Value="30"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.jade:pointerover">
             <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
         </Style>
 
-        <!-- Nút phụ -->
-        <Style Selector="Button.navButton">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        <Style Selector="Button.navButton, Button.smallOutline, Button.bigRound">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
-        <Style Selector="Button.navButton:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        <Style Selector="Button.navButton:pointerover, Button.smallOutline:pointerover, Button.bigRound:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
         </Style>
 
         <Style Selector="TextBox.editTextBox">
@@ -146,31 +126,16 @@
             <Setter Property="Padding" Value="10,0"/>
         </Style>
 
-        <Style Selector="Button.smallOutline">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="10,5"/>
-        </Style>
-        <Style Selector="Button.smallOutline:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-
         <Style Selector="Button.smallDanger">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#B94A48"/>
+            <Setter Property="Background" Value="#B94A48"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="#B94A48"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style Selector="Border.sectionLine">
@@ -178,20 +143,17 @@
             <Setter Property="Background" Value="{StaticResource BorderSoft}"/>
             <Setter Property="Margin" Value="0,16"/>
         </Style>
-
         <Style Selector="Border.fieldChip">
             <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
             <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
-
         <Style Selector="TextBlock.fieldChipText">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
-
         <Style Selector="ComboBox.roundedComboBox">
             <Setter Property="Height" Value="30"/>
             <Setter Property="Background" Value="White"/>
@@ -202,16 +164,5 @@
             <Setter Property="Padding" Value="8,0"/>
             <Setter Property="CornerRadius" Value="6"/>
         </Style>
-
-        <Style Selector="Button.bigRound">
-            <Setter Property="Width" Value="120"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="CornerRadius" Value="20"/>
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
     </Application.Styles>
-
 </Application>
