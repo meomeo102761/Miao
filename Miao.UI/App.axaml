@@ -14,29 +14,27 @@
   <Application.Styles>
     <FluentTheme />
     <Style Selector="TextBlock"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
+    <!-- Chữ trong thanh menu phải ghi đè màu chữ mặc định -->
+    <Style Selector="Button.TopNavButton TextBlock"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.DownloadSubButton TextBlock"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.MobileNavItem TextBlock"><Setter Property="Foreground" Value="White"/></Style>
     <Style Selector="TextBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/><Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/></Style>
     <Style Selector="ComboBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/></Style>
     <Style Selector="ComboBoxItem"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/></Style>
     <Style Selector="CheckBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="RadioButton"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="ToggleSwitch"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
-
-    <!-- Nút chung: xanh ngọc, chữ trắng, nội dung căn giữa -->
     <Style Selector="Button"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="7"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Padding" Value="12,6"/></Style>
     <Style Selector="Button /template/ ContentPresenter"><Setter Property="Background" Value="{StaticResource AccentJade}"/></Style>
     <Style Selector="Button:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/><Setter Property="BorderBrush" Value="{StaticResource AccentJadeHover}"/></Style>
     <Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/></Style>
     <Style Selector="Button:pressed"><Setter Property="Background" Value="{StaticResource AccentJadePressed}"/></Style>
     <Style Selector="Button:pressed /template/ ContentPresenter"><Setter Property="Background" Value="{StaticResource AccentJadePressed}"/></Style>
-
-    <!-- Chỉ tiêu đề chính của trang dùng cỡ 25 -->
     <Style Selector="TextBlock.pageTitle"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="25"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/><Setter Property="Margin" Value="0,0,0,16"/></Style>
     <Style Selector="TextBlock.PageTitle"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="25"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/></Style>
     <Style Selector="TextBlock.bodyText"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
-
     <Style Selector="Button.jade"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
     <Style Selector="Button.jade:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/></Style>
-
     <Style Selector="Button.navButton"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
     <Style Selector="Button.navButton:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/></Style>
     <Style Selector="Button.smallOutline"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/></Style>
