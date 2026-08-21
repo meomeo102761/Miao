@@ -4,56 +4,51 @@
              x:Class="Miao.UI.Views.Pages.DownloadFilePage"
              Background="{StaticResource BgMain}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid MaxWidth="1140" Margin="20,20,20,20">
+        <Grid MaxWidth="1140" Margin="20">
             <StackPanel HorizontalAlignment="Left" MaxWidth="700">
                 <TextBlock Text="Tải truyện bằng file" Classes="PageTitle"/>
                 <TextBlock Text="Hỗ trợ file .txt và .docx (tự tách chương theo dòng &quot;Chương X&quot;), và .epub (đọc theo cấu trúc chương có sẵn). Có thể chọn nhiều file cùng lúc."
-                           Classes="BodyText" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                           Classes="bodyText" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                 <Button Content="Chọn file..." Width="120" HorizontalAlignment="Left"
-                        Classes="JadeButton" Margin="0,0,0,16" Click="OnBrowseClick"/>
+                        Classes="jade" Margin="0,0,0,16" Click="OnBrowseClick"/>
 
-                <TextBlock x:Name="StatusText" Text="" Classes="BodyText" Foreground="{StaticResource TextMuted}"
+                <TextBlock x:Name="StatusText" Text="" Classes="bodyText" Foreground="{StaticResource TextMuted}"
                            Margin="0,0,0,16" TextWrapping="Wrap"/>
 
-                <!-- Danh sách các file đã chọn, mỗi file 1 dòng có thể sửa tên truyện/tác giả -->
                 <ItemsControl x:Name="FilesList">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="local:ImportFileRow">
-                            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6"
+                            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8"
                                     Padding="12" Margin="0,0,0,10" Background="White">
                                 <StackPanel>
                                     <DockPanel Margin="0,0,0,8">
                                         <Button Content="Xóa" DockPanel.Dock="Right" Width="60"
-                                                Classes="NavButton"
+                                                Classes="navButton"
                                                 Click="OnRemoveFileClick" Tag="{Binding}"/>
-                                        <TextBlock Text="{Binding FileName}" FontFamily="Arial" FontSize="15"
-                                                   FontWeight="Bold" Foreground="{StaticResource TextPrimary}"
+                                        <TextBlock Text="{Binding FileName}" FontWeight="Bold"
                                                    TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                     </DockPanel>
 
-                                    <!-- Avalonia: bind thẳng bool vào IsVisible, không cần converter -->
                                     <TextBlock Text="{Binding ErrorMessage}" Foreground="#C0392B"
-                                               FontFamily="Arial" FontSize="15" TextWrapping="Wrap"
+                                               TextWrapping="Wrap"
                                                IsVisible="{Binding HasError}"
                                                Margin="0,0,0,8"/>
 
                                     <StackPanel IsVisible="{Binding ShowFields}">
-                                        <TextBlock Text="Tên truyện" Classes="BodyText" FontWeight="Bold"
+                                        <TextBlock Text="Tên truyện" Classes="bodyText" FontWeight="Bold"
                                                    Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8">
-                                            <TextBox Text="{Binding Title}"
-                                                     Padding="8" BorderThickness="0" FontFamily="Arial" FontSize="15"/>
+                                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,8">
+                                            <TextBox Text="{Binding Title}" Padding="8" BorderThickness="0"/>
                                         </Border>
 
-                                        <TextBlock Text="Tác giả" Classes="BodyText" FontWeight="Bold"
+                                        <TextBlock Text="Tác giả" Classes="bodyText" FontWeight="Bold"
                                                    Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8">
-                                            <TextBox Text="{Binding Author}"
-                                                     Padding="8" BorderThickness="0" FontFamily="Arial" FontSize="15"/>
+                                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,8">
+                                            <TextBox Text="{Binding Author}" Padding="8" BorderThickness="0"/>
                                         </Border>
 
-                                        <TextBlock Text="{Binding ChapterCountLabel}" Classes="BodyText"
+                                        <TextBlock Text="{Binding ChapterCountLabel}" Classes="bodyText"
                                                    Foreground="{StaticResource TextMuted}"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -62,7 +57,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <Button x:Name="ImportButton" Content="Nhập tất cả vào Thư viện" Classes="JadeButton"
+                <Button x:Name="ImportButton" Content="Nhập tất cả vào Thư viện" Classes="jade"
                         Width="180" HorizontalAlignment="Left" Margin="0,8,0,0"
                         IsVisible="False" Click="OnImportClick"/>
             </StackPanel>
