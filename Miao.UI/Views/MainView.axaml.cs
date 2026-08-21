@@ -20,6 +20,8 @@ namespace Miao.UI.Views
 
             SizeChanged += OnSizeChanged;
 
+            LegacyDatabaseMigrator.MigrateIfNeeded(AppPaths.DbFilePath);
+
             using (var db = new Miao.Core.Data.MiaoDbContext(AppPaths.DbFilePath))
             {
                 db.Database.Migrate();
