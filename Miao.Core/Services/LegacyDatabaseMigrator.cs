@@ -25,25 +25,38 @@ namespace Miao.Core.Services
                 throw new InvalidOperationException("Database directory could not be determined.");
 
             var tempPath = Path.Combine(directory, $"miao-migration-{Guid.NewGuid():N}.db");
-            var backupPath = Path.Combine(directory, $"miao-legacy-backup-{DateTime.Now:yyyyMMdd-HHmmss}.db");
+            var backupPath = Path.Combine(directory, $"miao-legacy-backup-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.db");
 
             try
             {
                 using (var newDb = new MiaoDbContext(tempPath))
                 {
                     newDb.Database.Migrate();
+                    newDb.Database.CloseConnection();
                 }
 
+                SqliteConnection.ClearAllPools();
+
                 CopyLegacyData(dbPath, tempPath);
+                SqliteConnection.ClearAllPools();
 
                 File.Move(dbPath, backupPath);
                 File.Move(tempPath, dbPath);
             }
             catch
             {
+                // Microsoft.Data.Sqlite can keep pooled handles alive after a connection
+                // has been disposed. Clear them before removing the temporary database so
+                // a migration failure does not mask the original exception with an IOException.
+                SqliteConnection.ClearAllPools();
+
                 if (File.Exists(tempPath))
                     File.Delete(tempPath);
                 throw;
+            }
+            finally
+            {
+                SqliteConnection.ClearAllPools();
             }
         }
 
@@ -65,12 +78,8 @@ namespace Miao.Core.Services
             return false;
         }
 
-        private static void CopyLegacyData(string sourcePath, string targetPath)
+        private static void CopyLegacyData(SqliteConnection source, SqliteConnection target, SqliteTransaction transaction)
         {
-            using var source = Open(sourcePath);
-            using var target = Open(targetPath);
-
-            using var transaction = target.BeginTransaction();
             Execute(target, transaction, "PRAGMA foreign_keys = OFF;");
 
             var novels = LoadIds(source, "Novels");
@@ -122,7 +131,6 @@ namespace Miao.Core.Services
                 });
 
             Execute(target, transaction, "PRAGMA foreign_keys = ON;");
-            transaction.Commit();
         }
 
         private static void CopyNovels(SqliteConnection source, SqliteConnection target, SqliteTransaction transaction, TableInfo ids)
@@ -248,7 +256,7 @@ namespace Miao.Core.Services
 
         private static SqliteConnection Open(string path)
         {
-            var connection = new SqliteConnection($"Data Source={path};");
+            var connection = new SqliteConnection($"Data Source={path};Pooling=False");
             connection.Open();
             return connection;
         }
