@@ -63,11 +63,11 @@
 
         <DataTemplate x:Key="NovelCardTemplate">
             <Border Width="200" Margin="15,0,15,16" Background="White"
-                    BorderBrush="{StaticResource AccentJade}" BorderThickness="1"
                     Cursor="Hand"
                     PointerPressed="OnNovelClick" Tag="{Binding}">
                 <StackPanel HorizontalAlignment="Center">
-                    <Border Width="200" Height="280" Background="White" ClipToBounds="True">
+                    <Border Width="200" Height="280" Background="White" ClipToBounds="True"
+                            BorderBrush="{StaticResource AccentJade}" BorderThickness="1">
                         <Grid>
                             <TextBlock Text="₍^. .^₎Ⳋ" FontSize="30" HorizontalAlignment="Center"
                                        VerticalAlignment="Center" Opacity="0.6"/>

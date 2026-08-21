@@ -256,14 +256,7 @@ namespace Miao.UI.Views.Pages
         {
             if (sender is not Control fe || fe.Tag is not Novel novel) return;
 
-            try
-            {
-                AppNavigator.NavigateTo(new NovelDetailPage(novel.Id));
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[OnNovelClick] Lỗi khi mở NovelDetailPage: {ex}");
-            }
+            AppNavigator.NavigateTo(new NovelDetailPage(novel.Id));   // bỏ hẳn try/catch tạm thời
         }
     }
 }

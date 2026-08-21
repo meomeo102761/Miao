@@ -13,7 +13,7 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Padding" Value="18,4"/>
             <Setter Property="Height" Value="65"/>
             <Setter Property="Template">
                 <ControlTemplate>
@@ -94,9 +94,22 @@
             <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
         </Style>
 
+        <Style Selector="Button.TopNavButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.DownloadSubButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.MobileNavItem TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
     </UserControl.Styles>
 
-    <Grid PointerMoved="OnRootPointerMoved">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="65"/>
             <RowDefinition Height="*"/>
@@ -108,13 +121,23 @@
                 <Button x:Name="MenuToggleButton" Content="🐾 Menu" DockPanel.Dock="Right" Classes="TopNavButton" Width="110" IsVisible="False" Click="OnMenuToggleClick"/>
                 <StackPanel x:Name="NavButtonsPanel" Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Top">
                     <Button Content="Tìm truyện" Classes="TopNavButton" Click="GoSearch"/>
-                    <Grid x:Name="DownloadMenuArea" Width="105" Height="60">
+                    <Grid x:Name="DownloadMenuArea"
+                        Width="105" Height="60"
+                        PointerEntered="OnDownloadMenuEnter">
+
                         <Button Content="Tải truyện" Width="105" Height="60" Classes="TopNavButton"/>
-                        <Popup x:Name="DownloadPopup" PlacementTarget="{Binding #DownloadMenuArea}" Placement="Bottom" IsLightDismissEnabled="True">
-                            <Border Background="{StaticResource AccentJade}" MinWidth="105"><StackPanel>
-                                <Button Content="Bằng link" Classes="DownloadSubButton" Click="GoDownloadLink"/>
-                                <Button Content="Bằng file" Classes="DownloadSubButton" Click="GoDownloadFile"/>
-                            </StackPanel></Border>
+
+                        <Popup x:Name="DownloadPopup"
+                            PlacementTarget="{Binding #DownloadMenuArea}"
+                            Placement="Bottom"
+                            IsLightDismissEnabled="True">
+
+                            <Border Background="{StaticResource AccentJade}" MinWidth="105">
+                                <StackPanel>
+                                    <Button Content="Bằng link" Classes="DownloadSubButton" Click="GoDownloadLink"/>
+                                    <Button Content="Bằng file" Classes="DownloadSubButton" Click="GoDownloadFile"/>
+                                </StackPanel>
+                            </Border>
                         </Popup>
                     </Grid>
                     <Button Content="Thư viện" Classes="TopNavButton" Click="GoCustomLibraries"/>
