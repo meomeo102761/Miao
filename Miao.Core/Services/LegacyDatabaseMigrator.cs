@@ -45,9 +45,6 @@ namespace Miao.Core.Services
             }
             catch
             {
-                // Microsoft.Data.Sqlite can keep pooled handles alive after a connection
-                // has been disposed. Clear them before removing the temporary database so
-                // a migration failure does not mask the original exception with an IOException.
                 SqliteConnection.ClearAllPools();
 
                 if (File.Exists(tempPath))
@@ -76,6 +73,16 @@ namespace Miao.Core.Services
             }
 
             return false;
+        }
+
+        private static void CopyLegacyData(string sourcePath, string targetPath)
+        {
+            using var source = Open(sourcePath);
+            using var target = Open(targetPath);
+            using var transaction = target.BeginTransaction();
+
+            CopyLegacyData(source, target, transaction);
+            transaction.Commit();
         }
 
         private static void CopyLegacyData(SqliteConnection source, SqliteConnection target, SqliteTransaction transaction)
