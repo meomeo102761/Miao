@@ -198,7 +198,7 @@ namespace Miao.UI.Views.Pages
         {
             panel.Children.Clear();
 
-            var prevBtn = new Button { Content = "‹ Trước", IsEnabled = currentPage > 1 };
+            var prevBtn = new Button { Content = "‹ ", IsEnabled = currentPage > 1 };
             prevBtn.Classes.Add("pageButton");
             prevBtn.Click += (s, e) => onPageSelected(currentPage - 1);
             panel.Children.Add(prevBtn);
@@ -219,7 +219,7 @@ namespace Miao.UI.Views.Pages
                 panel.Children.Add(btn);
             }
 
-            var nextBtn = new Button { Content = "Sau ›", IsEnabled = currentPage < totalPages };
+            var nextBtn = new Button { Content = " ›", IsEnabled = currentPage < totalPages };
             nextBtn.Classes.Add("pageButton");
             nextBtn.Click += (s, e) => onPageSelected(currentPage + 1);
             panel.Children.Add(nextBtn);
@@ -254,8 +254,16 @@ namespace Miao.UI.Views.Pages
 
         private void OnNovelClick(object? sender, PointerPressedEventArgs e)
         {
-            if (sender is Control fe && fe.Tag is Novel novel)
+            if (sender is not Control fe || fe.Tag is not Novel novel) return;
+
+            try
+            {
                 AppNavigator.NavigateTo(new NovelDetailPage(novel.Id));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OnNovelClick] Lỗi khi mở NovelDetailPage: {ex}");
+            }
         }
     }
 }

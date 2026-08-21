@@ -15,15 +15,35 @@
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="MinWidth" Value="32"/>
         </Style>
 
-        <Style Selector="Button.pageButton:pointerover">
-            <Setter Property="Background" Value="#E6F7F3"/>
+        <!-- FluentTheme tô nền lên ContentPresenter bên trong template, không phải lên
+            Background của Button — đây là lý do dù đã set Background="Transparent"
+            vẫn thấy nền xám khi hover/pressed. Ép luôn 3 trạng thái này. -->
+        <Style Selector="Button.pageButton /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
         </Style>
+        <Style Selector="Button.pageButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.pageButton:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- Hover: đổi màu chữ thay vì tô nền, để vẫn có phản hồi khi rê chuột -->
+        <Style Selector="Button.pageButton:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+
         <Style Selector="Button.pageButton.active">
             <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
+        <Style Selector="Button.pageButton.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+        </Style>
+
         <Style Selector="Button.pageButton:disabled">
             <Setter Property="Foreground" Value="#BBB"/>
         </Style>
@@ -43,19 +63,20 @@
 
         <DataTemplate x:Key="NovelCardTemplate">
             <Border Width="200" Margin="15,0,15,16" Background="White"
-                    BorderThickness="0" Cursor="Hand"
+                    BorderBrush="{StaticResource AccentJade}" BorderThickness="1"
+                    Cursor="Hand"
                     PointerPressed="OnNovelClick" Tag="{Binding}">
                 <StackPanel HorizontalAlignment="Center">
                     <Border Width="200" Height="280" Background="White" ClipToBounds="True">
                         <Grid>
-                            <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                            <TextBlock Text="₍^. .^₎Ⳋ" FontSize="30" HorizontalAlignment="Center"
                                        VerticalAlignment="Center" Opacity="0.6"/>
                             <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}"
                                    Width="200" Height="280" Stretch="UniformToFill"/>
                         </Grid>
                     </Border>
 
-                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17.6"
+                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17"
                                FontWeight="Bold" Foreground="#444" Margin="0,8,0,0"
                                TextAlignment="Left" HorizontalAlignment="Stretch"
                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
@@ -102,6 +123,7 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Text="Thư viện" Grid.Column="0" Classes="pageTitle"
+                       FontWeight="Bold" FontSize="22" Foreground="{StaticResource AccentJade}"
                        Margin="0" VerticalAlignment="Center"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

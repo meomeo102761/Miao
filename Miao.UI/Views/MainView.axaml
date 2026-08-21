@@ -2,7 +2,101 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Miao.UI.Views.MainView">
 
-    <Grid>
+    <UserControl.Styles>
+
+        <!-- Nút trên thanh menu ngang -->
+        <Style Selector="Button.TopNavButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Height" Value="65"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        FontFamily="{TemplateBinding FontFamily}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.TopNavButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+        <!-- Nút con trong dropdown "Tải truyện" -->
+        <Style Selector="Button.DownloadSubButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        FontFamily="{TemplateBinding FontFamily}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.DownloadSubButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+        <!-- Nút trong popup menu mobile -->
+        <Style Selector="Button.MobileNavItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        FontFamily="{TemplateBinding FontFamily}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.MobileNavItem:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
+    </UserControl.Styles>
+
+    <Grid PointerMoved="OnRootPointerMoved">
         <Grid.RowDefinitions>
             <RowDefinition Height="65"/>
             <RowDefinition Height="*"/>
@@ -39,21 +133,15 @@
 
                     <Button Content="Tìm truyện" Classes="TopNavButton" Click="GoSearch"/>
 
-                    <Grid x:Name="DownloadMenuArea"
-                          Width="105" Height="60"
-                          PointerEntered="OnDownloadMenuEnter"
-                          PointerExited="OnDownloadMenuLeave">
-
+                    <Grid x:Name="DownloadMenuArea" Width="105" Height="60">
                         <Button Content="Tải truyện" Width="105" Height="60" Classes="TopNavButton"/>
 
                         <Popup x:Name="DownloadPopup"
-                               PlacementTarget="{Binding #DownloadMenuArea}"
-                               Placement="Bottom">
+                            PlacementTarget="{Binding #DownloadMenuArea}"
+                            Placement="Bottom"
+                            IsLightDismissEnabled="True">
 
-                            <Border Width="105"
-                                    Background="#1C8F76"
-                                    PointerEntered="OnDownloadMenuEnter"
-                                    PointerExited="OnDownloadMenuLeave">
+                            <Border Background="{StaticResource AccentJade}" MinWidth="105">
                                 <StackPanel>
                                     <Button Content="Bằng link" Classes="DownloadSubButton" Click="GoDownloadLink"/>
                                     <Button Content="Bằng file" Classes="DownloadSubButton" Click="GoDownloadFile"/>
@@ -77,8 +165,7 @@
         <!-- Popup menu dạng danh sách khi màn hình hẹp -->
         <Popup x:Name="MobileNavPopup"
                PlacementTarget="{Binding #MenuToggleButton}"
-               Placement="Bottom"
-               HorizontalOffset="-90"
+               Placement="BottomEdgeAlignedRight"
                IsLightDismissEnabled="True">
             <Border Width="200"
                     Background="{StaticResource AccentJade}"

@@ -39,19 +39,28 @@ namespace Miao.UI.Views.Pages
         {
             InitializeComponent();
 
-            var tessdataPath = Path.Combine(AppContext.BaseDirectory, "tessdata");
-            var ocr = new OcrService(tessdataPath);
+            OcrService? ocr = null;
+            try
+            {
+                var tessdataPath = Path.Combine(AppContext.BaseDirectory, "tessdata");
+                ocr = new OcrService(tessdataPath);
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Cảnh báo: OCR không khả dụng ({ex.Message}). Nguồn Fanqie sẽ bị tắt.";
+            }
 
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
-                new FanqieDownloadSource(_browser, _screenshotFetcher, ocr),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
                 new WikidichDownloadSource(_browser),
-                //new Novel543DownloadSource(_browser)
             };
+
+            if (ocr != null)
+                _sources.Insert(1, new FanqieDownloadSource(_browser, _screenshotFetcher, ocr));
 
             ChaptersList.ItemsSource = _chapterItems;
         }

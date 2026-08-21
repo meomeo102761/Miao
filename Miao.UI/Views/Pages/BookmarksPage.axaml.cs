@@ -106,8 +106,19 @@ namespace Miao.UI.Views.Pages
             ReadingTabButton.Content = $"Đang đọc ({readingCount})";
             FavoriteTabButton.Content = $"Yêu thích ({favCount})";
 
-            ReadingTabButton.Background = _showingReading ? (IBrush)this.FindResource("AccentJadeHover")! : Brushes.White;
-            FavoriteTabButton.Background = !_showingReading ? (IBrush)this.FindResource("AccentJadeHover")! : Brushes.White;
+            var activeBrush = GetAccentBrush();
+
+            ReadingTabButton.Background = _showingReading ? activeBrush : Brushes.White;
+            FavoriteTabButton.Background = !_showingReading ? activeBrush : Brushes.White;
+        }
+
+        private IBrush GetAccentBrush()
+        {
+            if (this.TryFindResource("AccentJadeHover", out var value) && value is IBrush brush)
+                return brush;
+
+            // Fallback khi resource chưa resolve được (ví dụ control chưa attach vào visual tree)
+            return new SolidColorBrush(Color.Parse("#2E7D32"));
         }
 
         // ================= DANH SÁCH + PHÂN TRANG (50 dòng/trang) =================
@@ -142,7 +153,7 @@ namespace Miao.UI.Views.Pages
 
             var prevBtn = new Button
             {
-                Content = "‹ Trước",
+                Content = "‹ ",
                 Classes = { "pageButton" },
                 IsEnabled = _currentPage > 1
             };
@@ -176,7 +187,7 @@ namespace Miao.UI.Views.Pages
 
             var nextBtn = new Button
             {
-                Content = "Sau ›",
+                Content = " ›",
                 Classes = { "pageButton" },
                 IsEnabled = _currentPage < totalPages
             };

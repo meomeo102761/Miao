@@ -63,28 +63,6 @@ namespace Miao.UI.Views.Pages
         private readonly ObservableCollection<LofterUpdateItem> _lofterUpdateItems = new();
         private IDownloadSource? _lofterUpdateSource;
 
-        internal class ChapterListItem
-        {
-            public int Number { get; set; }
-            public string DisplayTitle { get; set; } = "";
-            public Guid? VolumeId { get; set; }
-        }
-
-        internal class ChapterSection
-        {
-            public Guid? VolumeId { get; set; }
-            public string? Header { get; set; }
-            public bool HasHeader => !string.IsNullOrEmpty(Header);
-            public List<ChapterListItem> Chapters { get; set; } = new();
-        }
-
-        internal class SetOptionItem
-        {
-            public Guid Id { get; set; }
-            public string Name { get; set; } = "";
-            public bool IsApplied { get; set; }
-        }
-
         internal class RelatedNovelItem
         {
             public Guid Id { get; set; }
@@ -94,29 +72,6 @@ namespace Miao.UI.Views.Pages
             public string Status { get; set; } = "";
             public string ReadProgress { get; set; } = "";
             public Bitmap? CoverBitmap { get; set; }
-        }
-
-        internal class LofterUpdateItem : INotifyPropertyChanged
-        {
-            private bool _isSelected = true;
-            public bool IsSelected
-            {
-                get => _isSelected;
-                set { _isSelected = value; OnChanged(nameof(IsSelected)); }
-            }
-
-            private string _translatedTitle = "";
-            public string TranslatedTitle
-            {
-                get => _translatedTitle;
-                set { _translatedTitle = value; OnChanged(nameof(TranslatedTitle)); }
-            }
-
-            public string Title { get; set; } = "";
-            public string ChapterUrl { get; set; } = "";
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-            private void OnChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         public NovelDetailPage(Guid novelId)

@@ -1,5 +1,9 @@
+using System;
+using Avalonia;  
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Threading;  
 using Miao.Core.Services;
 using Miao.UI.Services;
 using Miao.UI.Views.Pages;
@@ -58,11 +62,45 @@ namespace Miao.UI.Views
             MobileNavPopup.IsOpen = !MobileNavPopup.IsOpen;
         }
 
-        private void OnDownloadMenuEnter(object? sender, PointerEventArgs e) => DownloadPopup.IsOpen = true;
-        private void OnDownloadMenuLeave(object? sender, PointerEventArgs e) => DownloadPopup.IsOpen = false;
+        private DispatcherTimer? _downloadCloseTimer;
+
+        private void OnRootPointerMoved(object? sender, PointerEventArgs e)
+        {
+            var pos = e.GetPosition(this);
+
+            var buttonTopLeft = DownloadMenuArea.TranslatePoint(new Point(0, 0), this) ?? default;
+            var buttonRect = new Rect(buttonTopLeft, DownloadMenuArea.Bounds.Size);
+            bool overButton = buttonRect.Contains(pos);
+
+            bool overPopup = false;
+            if (DownloadPopup.IsOpen && DownloadPopup.Child is Control popupContent)
+            {
+                var popupTopLeft = popupContent.TranslatePoint(new Point(0, 0), this) ?? default;
+                var popupRect = new Rect(popupTopLeft, popupContent.Bounds.Size);
+                overPopup = popupRect.Contains(pos);
+            }
+
+            if (overButton || overPopup)
+            {
+                _downloadCloseTimer?.Stop();
+                if (!DownloadPopup.IsOpen)
+                    DownloadPopup.IsOpen = true;
+            }
+            else if (DownloadPopup.IsOpen && (_downloadCloseTimer == null || !_downloadCloseTimer.IsEnabled))
+            {
+                _downloadCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+                _downloadCloseTimer.Tick += (s, args) =>
+                {
+                    _downloadCloseTimer!.Stop();
+                    DownloadPopup.IsOpen = false;
+                };
+                _downloadCloseTimer.Start();
+            }
+        }
 
         private void OnMobileGoSearch(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoSearch(s, e); }
         private void OnMobileGoAuthorList(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoAuthorList(s, e); }
+        private void OnDownloadMenuToggleClick(object? sender, RoutedEventArgs e) { DownloadPopup.IsOpen = !DownloadPopup.IsOpen; }
         private void OnMobileGoDownloadLink(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoDownloadLink(s, e); }
         private void OnMobileGoDownloadFile(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoDownloadFile(s, e); }
         private void OnMobileGoCustomLibraries(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoCustomLibraries(s, e); }
