@@ -164,8 +164,21 @@ namespace Miao.Core.Services
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
+                var oldId = reader.GetInt64(0);
+                var novelId = reader.GetInt64(1);
+
+                // A few old databases can contain orphaned volumes whose NovelId
+                // points to a novel that has already been deleted. Do not create
+                // an invalid Volume row in the new database. Removing its mapping
+                // also makes any chapter that referenced it fall back to VolumeId=NULL.
+                if (!novels.Ids.ContainsKey(novelId))
+                {
+                    ids.Ids.Remove(oldId);
+                    continue;
+                }
+
                 Insert(target, transaction, "Volumes", new[] { "Id", "NovelId", "Name", "SortOrder" },
-                    new object?[] { ids.Ids[reader.GetInt64(0)], MapId(novels, reader.GetValue(1)), reader.GetString(2), reader.GetInt32(3) });
+                    new object?[] { ids.Ids[oldId], novels.Ids[novelId], reader.GetString(2), reader.GetInt32(3) });
             }
         }
 
@@ -176,8 +189,9 @@ namespace Miao.Core.Services
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
+                var volumeId = reader.IsDBNull(12) ? null : MapNullableId(volumes, reader.GetValue(12));
                 Insert(target, transaction, "Chapters", new[] { "Id", "NovelId", "VolumeId", "Number", "Title", "TranslatedTitle", "OriginalContent", "DisplayContent", "Status", "SourceUrl", "DownloadedAt", "LastEditedAt", "IsPinned" },
-                    new object?[] { ids.Ids[reader.GetInt64(0)], MapId(novels, reader.GetValue(1)), reader.IsDBNull(12) ? null : MapNullableId(volumes, reader.GetValue(12)), reader.GetInt32(2), reader.GetString(3), reader.GetString(4), reader.GetString(5), reader.GetString(6), reader.GetInt32(7), reader.GetString(8), reader.GetValue(9), reader.IsDBNull(10) ? null : reader.GetValue(10), reader.GetBoolean(11) });
+                    new object?[] { ids.Ids[reader.GetInt64(0)], MapId(novels, reader.GetValue(1)), volumeId, reader.GetInt32(2), reader.GetString(3), reader.GetString(4), reader.GetString(5), reader.GetString(6), reader.GetInt32(7), reader.GetString(8), reader.GetValue(9), reader.IsDBNull(10) ? null : reader.GetValue(10), reader.GetBoolean(11) });
             }
         }
 
