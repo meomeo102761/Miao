@@ -6,7 +6,7 @@
 
     <Application.Resources>
         <SolidColorBrush x:Key="AccentJade" Color="#2FBF9F"/>
-        <SolidColorBrush x:Key="AccentJadeHover" Color="#25A88A"/>
+        <SolidColorBrush x:Key="AccentJadeHover" Color="#7BCFC2"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#333333"/>
         <SolidColorBrush x:Key="TextMuted" Color="#888888"/>
         <SolidColorBrush x:Key="BorderSoft" Color="#DDDDDD"/>
@@ -101,7 +101,7 @@
             <Setter Property="Padding" Value="10,5"/>
         </Style>
         <Style Selector="Button.smallOutline:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
 
