@@ -261,9 +261,10 @@
                         <Border Width="200" Margin="15,0,15,16" Background="White"
                                 Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}">
                             <StackPanel>
-                                <Border Width="200" Height="280" Background="White" ClipToBounds="True">
+                                <Border Width="200" Height="280" Background="White" ClipToBounds="True" 
+                                        BorderBrush="{StaticResource AccentJade}" BorderThickness="1">
                                     <Grid>
-                                        <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                                        <TextBlock Text="₍^. .^₎Ⳋ" FontSize="30" HorizontalAlignment="Center"
                                                    VerticalAlignment="Center" Opacity="0.6"/>
                                         <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}"
                                                Width="200" Height="280" Stretch="UniformToFill"/>

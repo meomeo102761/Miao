@@ -142,7 +142,7 @@
                             <StackPanel Margin="8,0,8,16" HorizontalAlignment="Stretch">
                                 <Grid Height="280" ClipToBounds="True">
                                     <Border Background="#CFEAE5">
-                                        <TextBlock Text="📖" FontSize="30" HorizontalAlignment="Center"
+                                        <TextBlock Text="₍^. .^₎Ⳋ" FontSize="30" HorizontalAlignment="Center"
                                                 VerticalAlignment="Center" Opacity="0.6"/>
                                     </Border>
                                     <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill"/>

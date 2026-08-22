@@ -45,8 +45,9 @@
                     <Border Background="White" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1" Padding="16,14">
                         <DockPanel>
                             <CheckBox IsChecked="{Binding IsSelected}" DockPanel.Dock="Left" VerticalAlignment="Center" Width="50"/>
-                            <Border DockPanel.Dock="Left" Width="64" Height="90" Background="#F0F7F6" Margin="0,0,16,0" ClipToBounds="True">
-                                <Grid><TextBlock Text="📖" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/><Image Source="{Binding CoverPath, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill"/></Grid>
+                            <Border DockPanel.Dock="Left" Width="64" Height="90" Background="White" BorderBrush="{StaticResource AccentJade}"
+                                    BorderThickness="1" Margin="0,0,16,0" ClipToBounds="True">
+                                <Grid><TextBlock Text="₍^. .^₎Ⳋ" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/><Image Source="{Binding CoverPath, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill"/></Grid>
                             </Border>
                             <StackPanel VerticalAlignment="Center" Cursor="Hand" PointerPressed="OnItemClick" Tag="{Binding}">
                                 <TextBlock Text="{Binding NovelTitle}" FontSize="17.6" FontWeight="Bold" Foreground="{StaticResource AccentJade}"/>

@@ -131,7 +131,7 @@ namespace Miao.UI.Views.Pages
             var border = new Border
             {
                 Background = Brushes.White,
-                BorderBrush = (IBrush)this.FindResource("BorderSoft")!,
+                BorderBrush = this.FindResource("BorderSoft") as IBrush ?? Brushes.LightGray,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(12),
@@ -1673,7 +1673,8 @@ namespace Miao.UI.Views.Pages
                 FontSize = 13,
                 Tag = "DeleteNovelButton"
             };
-            deleteButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("MenuItemButton")!);
+            if (this.FindResource("MenuItemButton") is Avalonia.Styling.Style menuItemStyle)
+            deleteButton.Styles.Add(menuItemStyle);
             deleteButton.Click += OnDeleteNovelClick;
 
             menu.Children.Add(separator);
