@@ -295,6 +295,25 @@ namespace Miao.UI.Views.Pages
             hanVietBox.Text = string.IsNullOrWhiteSpace(converted) ? original : converted;
         }
 
+        private void OnNewNameTextChanged(object? sender, TextChangedEventArgs e)
+        {
+            if (sender is not TextBox nameBox || nameBox.Tag is not GlossarySetRowViewModel vm) return;
+            if (nameBox.Parent is not Grid grid || grid.Parent is not StackPanel panel) return;
+
+            var warning = panel.Children.OfType<TextBlock>().FirstOrDefault(t => t.Name == "AddDupWarning");
+            if (warning == null) return;
+
+            var name = nameBox.Text?.Trim() ?? "";
+            var matches = string.IsNullOrWhiteSpace(name)
+                ? new List<GlossarySetEntry>()
+                : vm.AllEntries.Where(x => string.Equals(x.TranslatedTerm?.Trim(), name, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            warning.IsVisible = matches.Count > 0;
+            warning.Text = matches.Count > 0
+                ? $"⚠ Tên dịch \"{name}\" đã dùng cho: {string.Join(", ", matches.Select(m => m.OriginalTerm))}"
+                : "";
+        }
+
         private void OnAddEntryClick(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
@@ -404,23 +423,81 @@ namespace Miao.UI.Views.Pages
             });
         }
 
+        private void OnEntryCheckChanged(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox cb || cb.Tag is not GlossarySetEntry entry) return;
+
+            var vm = FindVmContaining(entry.GlossarySetId);
+            if (vm == null) return;
+
+            if (cb.IsChecked == true) vm.SelectedEntryIds.Add(entry.Id);
+            else vm.SelectedEntryIds.Remove(entry.Id);
+        }
+
+        private void OnDeleteSelectedEntriesClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
+            if (vm.SelectedEntryIds.Count == 0) return;
+
+            ShowConfirm($"Xóa {vm.SelectedEntryIds.Count} tên đã chọn?", () =>
+            {
+                using var db = OpenDb();
+                var toRemove = db.GlossarySetEntries.Where(x => vm.SelectedEntryIds.Contains(x.Id)).ToList();
+                if (toRemove.Count > 0)
+                {
+                    db.GlossarySetEntries.RemoveRange(toRemove);
+                    db.SaveChanges();
+                }
+
+                vm.SelectedEntryIds.Clear();
+                LoadEntriesForSet(vm);
+            });
+        }
+
         private void OnEditSaveClick(object? sender, RoutedEventArgs e)
         {
             if (_editingEntry == null) return;
 
+            var original = EditOriginalText.Text?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(original)) return;
+
             using var db = OpenDb();
             var entry = db.GlossarySetEntries.Find(_editingEntry.Id);
-            if (entry != null)
-            {
-                entry.HanViet = EditHanVietBox.Text?.Trim() ?? "";
-                entry.TranslatedTerm = EditNameBox.Text ?? "";
-                db.SaveChanges();
-            }
+            if (entry == null) return;
+
+            bool isDuplicate = db.GlossarySetEntries.Any(x =>
+                x.GlossarySetId == entry.GlossarySetId &&
+                x.Id != entry.Id &&
+                x.OriginalTerm == original);
+            if (isDuplicate) return;
+
+            entry.OriginalTerm = original;
+            entry.HanViet = EditHanVietBox.Text?.Trim() ?? "";
+            entry.TranslatedTerm = EditNameBox.Text ?? "";
+            db.SaveChanges();
 
             ModalService.Close();
 
             var vm = FindVmContaining(_editingEntry.GlossarySetId);
             if (vm != null) LoadEntriesForSet(vm);
+        }
+
+        private void OnEditNameTextChanged(object? sender, TextChangedEventArgs e)
+        {
+            if (_editingEntry == null) return;
+
+            var name = EditNameBox.Text?.Trim() ?? "";
+            var vm = FindVmContaining(_editingEntry.GlossarySetId);
+
+            var matches = string.IsNullOrWhiteSpace(name) || vm == null
+                ? new List<GlossarySetEntry>()
+                : vm.AllEntries.Where(x => x.Id != _editingEntry.Id &&
+                    string.Equals(x.TranslatedTerm?.Trim(), name, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            EditNameDupWarning.IsVisible = matches.Count > 0;
+            EditNameDupWarning.Text = matches.Count > 0
+                ? $"⚠ Tên dịch \"{name}\" đã dùng cho: {string.Join(", ", matches.Select(m => m.OriginalTerm))}"
+                : "";
         }
 
         private void OnEditCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
@@ -438,7 +515,21 @@ namespace Miao.UI.Views.Pages
             _isEditMode = !_isEditMode;
             EditModeButton.Content = _isEditMode ? "Xong" : "Sửa";
             BulkActionsBar.IsVisible = _isEditMode;
+
+            if (!_isEditMode)
+            {
+                foreach (var vm in AllRowViewModels())
+                    vm.SelectedEntryIds.Clear();
+            }
+
             UpdateSetEditControlsVisibility();
+        }
+
+        private IEnumerable<GlossarySetRowViewModel> AllRowViewModels()
+        {
+            var shared = SharedList.ItemsSource as IEnumerable<GlossarySetRowViewModel> ?? Enumerable.Empty<GlossarySetRowViewModel>();
+            var priv = PrivateList.ItemsSource as IEnumerable<GlossarySetRowViewModel> ?? Enumerable.Empty<GlossarySetRowViewModel>();
+            return shared.Concat(priv);
         }
 
         private void UpdateSetEditControlsVisibility()
@@ -449,8 +540,11 @@ namespace Miao.UI.Views.Pages
                 // VisualTreeHelper.GetChild(...) đệ quy thủ công của WPF
                 foreach (var el in list.GetVisualDescendants().OfType<Control>())
                 {
-                    if (el.Name == "SetDragHandleIcon" || el.Name == "SetSelectCheckBox")
+                    if (el.Name is "SetDragHandleIcon" or "SetSelectCheckBox" or "EntrySelectCheckBox" or "EntryBulkActionsBar" or "EntryActionsPanel")
                         el.IsVisible = _isEditMode;
+
+                    if (el is CheckBox cb && el.Name == "EntrySelectCheckBox")
+                        cb.IsChecked = false;
                 }
             }
         }
@@ -604,6 +698,8 @@ namespace Miao.UI.Views.Pages
             get => _pageItems;
             set { _pageItems = value; OnChanged(nameof(PageItems)); }
         }
+
+        public HashSet<Guid> SelectedEntryIds { get; } = new();
 
         // Avalonia: bool trực tiếp cho IsVisible, thay cho Visibility + converter của WPF
         public bool IsEmpty => AllEntries.Count == 0;

@@ -22,6 +22,7 @@ using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
 using Miao.UI.Services;
+using Miao.UI.Views;
 
 namespace Miao.UI.Views.Pages
 {
@@ -299,12 +300,80 @@ namespace Miao.UI.Views.Pages
         private void LoadChapterPage()
         {
             var totalPages = Math.Max(1, (int)Math.Ceiling(_allChapters.Count / (double)ChaptersPerPage));
+            if (_chapterPage > totalPages) _chapterPage = totalPages;
 
             var pageChapters = _allChapters.Skip((_chapterPage - 1) * ChaptersPerPage).Take(ChaptersPerPage).ToList();
             ChaptersList.ItemsSource = BuildChapterSections(pageChapters);
 
             ChapterPagination.IsVisible = totalPages > 1;
-            ChapterPageText.Text = $"{_chapterPage} / {totalPages}";
+            ChapterPrevButton.IsEnabled = _chapterPage > 1;
+            ChapterNextButton.IsEnabled = _chapterPage < totalPages;
+            BuildChapterPageNumbers(totalPages);
+        }
+
+        private void ChangeChapterPage(int newPage)
+        {
+            var scrollViewer = MainView.Current;
+            Point? beforePos = scrollViewer != null
+                ? ChapterPagination.TranslatePoint(new Point(0, 0), scrollViewer)
+                : null;
+
+            _chapterPage = newPage;
+            LoadChapterPage();
+
+            if (scrollViewer != null && beforePos != null)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    var afterPos = ChapterPagination.TranslatePoint(new Point(0, 0), scrollViewer);
+                    if (afterPos != null)
+                    {
+                        var delta = afterPos.Value.Y - beforePos.Value.Y;
+                        var newY = Math.Max(0, scrollViewer.Offset.Y + delta);
+                        scrollViewer.Offset = new Vector(scrollViewer.Offset.X, newY);
+                    }
+                }, DispatcherPriority.Loaded);
+            }
+        }
+
+        private void BuildChapterPageNumbers(int totalPages)
+        {
+            ChapterPageNumbersPanel.Children.Clear();
+
+            foreach (var p in GetChapterPageNumbersToShow(totalPages))
+            {
+                if (p == -1)
+                {
+                    ChapterPageNumbersPanel.Children.Add(new TextBlock
+                    {
+                        Text = "...",
+                        Foreground = Brushes.Gray,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(4, 0, 4, 0)
+                    });
+                    continue;
+                }
+
+                var btn = new Button { Content = p.ToString() };
+                btn.Classes.Add("pageButton");
+                if (p == _chapterPage) btn.Classes.Add("active");
+                int page = p;
+                btn.Click += (s, e) => ChangeChapterPage(page);
+                ChapterPageNumbersPanel.Children.Add(btn);
+            }
+        }
+
+        private IEnumerable<int> GetChapterPageNumbersToShow(int totalPages)
+        {
+            const int windowSize = 2;
+            var pages = new List<int> { 1 };
+            int start = Math.Max(2, _chapterPage - windowSize);
+            int end = Math.Min(totalPages - 1, _chapterPage + windowSize);
+            if (start > 2) pages.Add(-1);
+            for (int i = start; i <= end; i++) pages.Add(i);
+            if (end < totalPages - 1) pages.Add(-1);
+            if (totalPages > 1) pages.Add(totalPages);
+            return pages.Distinct();
         }
 
         private List<ChapterSection> BuildChapterSections(List<ChapterListItem> chapters)
@@ -337,21 +406,13 @@ namespace Miao.UI.Views.Pages
 
         private void OnPreviousChapterPageClick(object? sender, RoutedEventArgs e)
         {
-            if (_chapterPage > 1)
-            {
-                _chapterPage--;
-                LoadChapterPage();
-            }
+            if (_chapterPage > 1) ChangeChapterPage(_chapterPage - 1);
         }
 
         private void OnNextChapterPageClick(object? sender, RoutedEventArgs e)
         {
             var totalPages = Math.Max(1, (int)Math.Ceiling(_allChapters.Count / (double)ChaptersPerPage));
-            if (_chapterPage < totalPages)
-            {
-                _chapterPage++;
-                LoadChapterPage();
-            }
+            if (_chapterPage < totalPages) ChangeChapterPage(_chapterPage + 1);
         }
 
         private static Bitmap? LoadThumb(string? path)
@@ -999,16 +1060,35 @@ namespace Miao.UI.Views.Pages
 
         // ===================== Xuất truyện (EPUB / DOCX / PDF) =====================
 
-        private void OnExportEpubClick(object? sender, RoutedEventArgs e) => _ = ExportNovelAsync(NovelExportFormat.Epub);
+        private NovelExportFormat _pendingExportFormat;
 
-        private void OnExportDocxClick(object? sender, RoutedEventArgs e) => _ = ExportNovelAsync(NovelExportFormat.Docx);
+        private void OnExportEpubClick(object? sender, RoutedEventArgs e) => OpenExportOptions(NovelExportFormat.Epub);
+        private void OnExportDocxClick(object? sender, RoutedEventArgs e) => OpenExportOptions(NovelExportFormat.Docx);
+        private void OnExportPdfClick(object? sender, RoutedEventArgs e) => OpenExportOptions(NovelExportFormat.Pdf);
 
-        private void OnExportPdfClick(object? sender, RoutedEventArgs e) => _ = ExportNovelAsync(NovelExportFormat.Pdf);
-
-        private async Task ExportNovelAsync(NovelExportFormat format)
+        private void OpenExportOptions(NovelExportFormat format)
         {
             EditPopup.IsOpen = false;
+            _pendingExportFormat = format;
+            ShowModal(ExportOptionsCard);
+        }
 
+        private void OnExportUseTranslatedClick(object? sender, RoutedEventArgs e)
+        {
+            ModalService.Close();
+            _ = ExportNovelAsync(_pendingExportFormat, useOriginalContent: false);
+        }
+
+        private void OnExportUseOriginalClick(object? sender, RoutedEventArgs e)
+        {
+            ModalService.Close();
+            _ = ExportNovelAsync(_pendingExportFormat, useOriginalContent: true);
+        }
+
+        private void OnExportOptionsCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
+
+        private async Task ExportNovelAsync(NovelExportFormat format, bool useOriginalContent)
+        {
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
             var novel = db.Novels.FirstOrDefault(n => n.Id == _novelId);
             if (novel == null)
@@ -1032,11 +1112,12 @@ namespace Miao.UI.Views.Pages
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel == null) return;
 
+            var suffix = useOriginalContent ? "_goc" : "";
             var safeName = string.Join("_", novel.DisplayTitle.Split(Path.GetInvalidFileNameChars()));
 
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                SuggestedFileName = $"{safeName}.{ext}",
+                SuggestedFileName = $"{safeName}{suffix}.{ext}",
                 FileTypeChoices = new[] { new FilePickerFileType(filterLabel) { Patterns = new[] { $"*.{ext}" } } }
             });
 
@@ -1046,7 +1127,7 @@ namespace Miao.UI.Views.Pages
             UpdateStatusText.Text = $"Đang xuất file {ext.ToUpperInvariant()}...";
             try
             {
-                NovelExportService.Export(novel, chapters, savePath, format);
+                NovelExportService.Export(novel, chapters, savePath, format, useOriginalContent);
                 UpdateStatusText.Text = $"Đã lưu file: {savePath}";
             }
             catch (Exception ex)
@@ -1490,7 +1571,7 @@ namespace Miao.UI.Views.Pages
                         Tag = library.Id,
                         HorizontalContentAlignment = HorizontalAlignment.Stretch
                     };
-                    libraryButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("MenuItemButton")!);
+                    libraryButton.Classes.Add("MenuItemButton");
                     libraryButton.Click += OnLibraryItemClick;
                     panel.Children.Add(libraryButton);
                 }
@@ -1499,7 +1580,7 @@ namespace Miao.UI.Views.Pages
             panel.Children.Add(new Separator { Margin = new Thickness(4, 3, 4, 3) });
 
             var createButton = new Button { Content = "+ Thêm danh sách mới" };
-            createButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("MenuItemButton")!);
+            createButton.Classes.Add("MenuItemButton");
             createButton.Click += OnCreateLibraryClick;
             panel.Children.Add(createButton);
 
@@ -1580,7 +1661,8 @@ namespace Miao.UI.Views.Pages
             panel.Children.Add(nameRow);
 
             var addButton = new Button { Content = "Thêm", Width = 80 };
-            addButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("NovelPrimaryButton")!);
+            addButton.Classes.Add("NovelActionButton");
+            addButton.Classes.Add("NovelPrimaryButton");
             addButton.Click += OnConfirmCreateLibraryClick;
 
             var cancelButton = new Button
@@ -1589,7 +1671,7 @@ namespace Miao.UI.Views.Pages
                 Width = 80,
                 Margin = new Thickness(8, 0, 0, 0)
             };
-            cancelButton.Styles.Add((Avalonia.Styling.Style)this.FindResource("NovelActionButton")!);
+            cancelButton.Classes.Add("NovelActionButton");
             cancelButton.Click += OnCancelCreateLibraryClick;
 
             var buttonRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
@@ -1670,11 +1752,9 @@ namespace Miao.UI.Views.Pages
             var deleteButton = new Button
             {
                 Content = "🗑 Xóa truyện",
-                FontSize = 13,
                 Tag = "DeleteNovelButton"
             };
-            if (this.FindResource("MenuItemButton") is Avalonia.Styling.Style menuItemStyle)
-            deleteButton.Styles.Add(menuItemStyle);
+            deleteButton.Classes.Add("MenuItemButton");
             deleteButton.Click += OnDeleteNovelClick;
 
             menu.Children.Add(separator);

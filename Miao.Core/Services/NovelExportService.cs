@@ -16,22 +16,17 @@ namespace Miao.Core.Services
 {
     public enum NovelExportFormat { Epub, Docx, Pdf }
 
-    /// <summary>
-    /// Xuất truyện (danh sách chương đã chọn) ra file EPUB / DOCX / PDF để đọc offline
-    /// bằng ứng dụng khác (Kindle, Google Play Books, Word, trình đọc PDF...).
-    /// Nội dung xuất luôn dùng DisplayContent (bản hiển thị — đã dịch/đã sửa nếu có).
-    /// </summary>
     public static class NovelExportService
     {
-        public static void Export(Novel novel, List<Chapter> chapters, string outputPath, NovelExportFormat format)
+        public static void Export(Novel novel, List<Chapter> chapters, string outputPath, NovelExportFormat format, bool useOriginalContent = false)
         {
             var ordered = chapters.OrderBy(c => c.Number).ToList();
 
             switch (format)
             {
-                case NovelExportFormat.Epub: ExportEpub(novel, ordered, outputPath); break;
-                case NovelExportFormat.Docx: ExportDocx(novel, ordered, outputPath); break;
-                case NovelExportFormat.Pdf: ExportPdf(novel, ordered, outputPath); break;
+                case NovelExportFormat.Epub: ExportEpub(novel, ordered, outputPath, useOriginalContent); break;
+                case NovelExportFormat.Docx: ExportDocx(novel, ordered, outputPath, useOriginalContent); break;
+                case NovelExportFormat.Pdf: ExportPdf(novel, ordered, outputPath, useOriginalContent); break;
             }
         }
 
@@ -41,7 +36,7 @@ namespace Miao.Core.Services
         // Cấu trúc tối thiểu hợp lệ: mimetype (lưu thô, không nén) +
         // META-INF/container.xml + OEBPS/content.opf + toc.ncx + các .xhtml.
         // ---------------------------------------------------------------
-        private static void ExportEpub(Novel novel, List<Chapter> chapters, string outputPath)
+        private static void ExportEpub(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
         {
             if (File.Exists(outputPath)) File.Delete(outputPath);
 
@@ -79,7 +74,7 @@ namespace Miao.Core.Services
                     """);
                 order++;
 
-                var bodyHtml = string.Join("\n", (ch.DisplayContent ?? "")
+                var bodyHtml = string.Join("\n", GetContent(ch, useOriginalContent)
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                     .Select(line => $"<p>{XmlEscape(line.Trim())}</p>"));
 
@@ -137,11 +132,14 @@ namespace Miao.Core.Services
 
         private static string XmlEscape(string text) =>
             (text ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+        
+        private static string GetContent(Chapter ch, bool useOriginal) =>
+            useOriginal ? (ch.OriginalContent ?? "") : (ch.DisplayContent ?? "");
 
         // ---------------------------------------------------------------
         // DOCX — dùng DocumentFormat.OpenXml (đã có sẵn trong project).
         // ---------------------------------------------------------------
-        private static void ExportDocx(Novel novel, List<Chapter> chapters, string outputPath)
+        private static void ExportDocx(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
         {
             if (File.Exists(outputPath)) File.Delete(outputPath);
 
@@ -157,7 +155,7 @@ namespace Miao.Core.Services
             {
                 body.AppendChild(MakeParagraph($"Chương {ch.Number}: {ch.DisplayTitle}", "Heading1", 28));
 
-                var lines = (ch.DisplayContent ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var lines = GetContent(ch, useOriginalContent).Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 foreach (var line in lines)
                 {
                     var p = new Paragraph();
@@ -188,7 +186,7 @@ namespace Miao.Core.Services
         // ---------------------------------------------------------------
         // PDF — dùng QuestPDF (đã có sẵn trong project, license Community).
         // ---------------------------------------------------------------
-        private static void ExportPdf(Novel novel, List<Chapter> chapters, string outputPath)
+        private static void ExportPdf(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
@@ -212,7 +210,7 @@ namespace Miao.Core.Services
                             col.Item().Text($"Chương {ch.Number}: {ch.DisplayTitle}").FontSize(16).Bold();
                             col.Item().PaddingVertical(6);
 
-                            foreach (var line in (ch.DisplayContent ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                            foreach (var line in GetContent(ch, useOriginalContent).Split('\n', StringSplitOptions.RemoveEmptyEntries))
                                 col.Item().Text(line.Trim()).ParagraphSpacing(4);
                         }
                     });

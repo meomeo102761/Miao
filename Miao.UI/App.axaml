@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="BgMain" Color="#FFFFFF"/>
     <conv:CoverImageConverter x:Key="CoverImageConverter"/>
   </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
     <Style Selector="TextBlock"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>

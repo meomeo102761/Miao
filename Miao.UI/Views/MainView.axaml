@@ -164,7 +164,12 @@
                 <Button Content="⚙ Cài đặt" Classes="MobileNavItem" Click="OnMobileGoSettings"/>
             </StackPanel></Border>
         </Popup>
-        <ScrollViewer x:Name="MainScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ContentControl x:Name="ContentHost"/></ScrollViewer>
+        <ScrollViewer x:Name="MainScrollViewer" Grid.Row="1"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled"
+                    BringIntoViewOnFocusChange="False">
+            <ContentControl x:Name="ContentHost"/>
+        </ScrollViewer>
         <Grid x:Name="ModalOverlay" Grid.RowSpan="2" Background="#66000000" IsVisible="False" ZIndex="1000" PointerPressed="OnModalOverlayClick"><ContentControl x:Name="ModalContent" HorizontalAlignment="Center" VerticalAlignment="Center" PointerPressed="OnModalContentClick"/></Grid>
     </Grid>
 </UserControl>

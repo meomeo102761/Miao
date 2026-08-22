@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Avalonia;
 using Avalonia.Controls;
+using Miao.UI.Views;
 
 namespace Miao.UI.Services
 {
     public static class AppNavigator
     {
-        // ContentControl chính, được gán từ MainView khi khởi tạo
         public static ContentControl? MainContent { get; set; }
-
-        // Lưu lịch sử điều hướng để hỗ trợ nút "Quay lại" nếu cần sau này
         private static readonly Stack<Control> _history = new();
 
         public static void NavigateTo(Control page)
@@ -21,6 +20,9 @@ namespace Miao.UI.Services
                 _history.Push(current);
 
             MainContent.Content = page;
+
+            if (MainView.Current != null)
+                MainView.Current.Offset = new Vector(0, 0);
         }
 
         public static bool CanGoBack => _history.Count > 0;

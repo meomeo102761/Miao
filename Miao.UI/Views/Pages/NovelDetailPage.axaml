@@ -19,6 +19,26 @@
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
+        <Style Selector="Button.MenuItemButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+        </Style>
+        <Style Selector="Button.ChapterButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+        </Style>
+
+        <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.IconSquareButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.DangerButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F08E86"/>
+        </Style>
+
         <Style Selector="Button.NovelActionButton">
             <Setter Property="Height" Value="36"/>
             <Setter Property="Padding" Value="16,0"/>
@@ -32,7 +52,6 @@
             <Setter Property="CornerRadius" Value="18"/>
         </Style>
 
-        <!-- Trước: x:Key="NovelPrimaryButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
         <Style Selector="Button.NovelActionButton.NovelPrimaryButton">
             <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -42,10 +61,11 @@
 
         <Style Selector="TextBlock.PageTitle">
             <Setter Property="Foreground" Value="#444444"/>
-            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Margin" Value="0,8,0,6"/>
             <Setter Property="FontSize" Value="22"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="30"/>
         </Style>
 
         <Style Selector="TextBlock.TagChipText">
@@ -58,7 +78,6 @@
             <Setter Property="Padding" Value="9,3"/>
         </Style>
 
-        <!-- Trước: x:Key="IconSquareButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
         <Style Selector="Button.NovelActionButton.IconSquareButton">
             <Setter Property="Width" Value="42"/>
             <Setter Property="Height" Value="36"/>
@@ -72,15 +91,6 @@
             <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
 
-        <Style Selector="Button.ChapterButton">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Padding" Value="4"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <!-- Trước: x:Key="PagerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
         <Style Selector="Button.NovelActionButton.PagerButton">
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="32"/>
@@ -99,14 +109,78 @@
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Padding" Value="12,10"/>
             <Setter Property="Margin" Value="0,1"/>
         </Style>
 
-        <!-- Trước: x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
+        <Style Selector="Button.ChapterButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style Selector="Button.pageButton">
+            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="MinWidth" Value="32"/>
+        </Style>
+        <Style Selector="Button.pageButton /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+        </Style>
+        <Style Selector="Button.pageButton.active">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.pageButton.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+        </Style>
+
         <Style Selector="Button.NovelActionButton.DangerButton">
             <Setter Property="Background" Value="#E4574C"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.IconSquareButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.DangerButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+        <Style Selector="Button.MenuItemButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
+        <Style Selector="Button.pageButton.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.NovelActionButton.HoverFillButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.HoverFillButton:pointerover /template/ ContentPresenter">
             <Setter Property="Foreground" Value="White"/>
         </Style>
 
@@ -127,7 +201,7 @@
         </DataTemplate>
     </UserControl.Resources>
 
-        <Grid Margin="20" MaxWidth="1140">
+        <Grid Margin="20,32,20,20" MaxWidth="1140">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -160,7 +234,7 @@
                             <TextBlock x:Name="OriginalTitleText" Foreground="{StaticResource TextMuted}" FontSize="15"
                                        TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="False"/>
 
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,8">
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,4">
                                 <TextBlock Text="Tác giả: " Foreground="{StaticResource TextMuted}" FontSize="15"/>
                                 <TextBlock x:Name="AuthorText" Foreground="{StaticResource AccentJade}" FontSize="15" Cursor="Hand" PointerPressed="OnAuthorClick"/>
                                 <Border x:Name="StatusBadge" Classes="StatusBadgeBorder" Margin="12,0,0,0">
@@ -170,7 +244,7 @@
 
                             <StackPanel Margin="0,0,0,10">
                                 <TextBlock x:Name="MetaLatestText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="MetaUpdateText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="MetaUpdateText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
 
                             <ItemsControl x:Name="TagsList" Margin="0,0,0,14">
@@ -259,9 +333,9 @@
                     </ItemsControl>
 
                     <StackPanel x:Name="ChapterPagination" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,4">
-                        <Button Content="‹" Classes="NovelActionButton PagerButton" Click="OnPreviousChapterPageClick"/>
-                        <TextBlock x:Name="ChapterPageText" VerticalAlignment="Center" Margin="14,0"/>
-                        <Button Content="›" Classes="NovelActionButton PagerButton" Click="OnNextChapterPageClick"/>
+                        <Button x:Name="ChapterPrevButton" Content="‹" Classes="NovelActionButton PagerButton" Click="OnPreviousChapterPageClick"/>
+                        <StackPanel x:Name="ChapterPageNumbersPanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0"/>
+                        <Button x:Name="ChapterNextButton" Content="›" Classes="NovelActionButton PagerButton" Click="OnNextChapterPageClick"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -380,6 +454,32 @@
                     <Button Content="Xóa" Width="90" Classes="NovelActionButton DangerButton" Click="OnConfirmYesClick"/>
                     <Button Content="Hủy" Width="90" Classes="NovelActionButton" Margin="8,0,0,0" Click="OnConfirmNoClick"/>
                 </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="ExportOptionsCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="24">
+            <StackPanel>
+                <TextBlock Text="Chọn nội dung để xuất" FontSize="17" FontWeight="Bold" Margin="0,0,0,16"/>
+
+                <Button x:Name="ExportUseTranslatedButton" Classes="NovelActionButton" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left" Margin="0,0,0,8" CornerRadius="10" Padding="14,10"
+                        Click="OnExportUseTranslatedClick">
+                    <StackPanel>
+                        <TextBlock Text="Bản Việt (đã dịch)" FontWeight="SemiBold" FontSize="15"/>
+                        <TextBlock Text="Nội dung hiển thị hiện tại, đã qua dịch/sửa" Foreground="{StaticResource TextMuted}" FontSize="12.5" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="ExportUseOriginalButton" Classes="NovelActionButton" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left" Margin="0,0,0,16" CornerRadius="10" Padding="14,10"
+                        Click="OnExportUseOriginalClick">
+                    <StackPanel>
+                        <TextBlock Text="Bản gốc" FontWeight="SemiBold" FontSize="15"/>
+                        <TextBlock Text="Nội dung nguyên văn từ nguồn, chưa dịch" Foreground="{StaticResource TextMuted}" FontSize="12.5" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Content="Hủy" Classes="NovelActionButton HoverFillButton" HorizontalAlignment="Center" Click="OnExportOptionsCancelClick"/>
             </StackPanel>
         </Border>
 

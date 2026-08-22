@@ -6,13 +6,67 @@
 
     <UserControl.Styles>
 
+        <Style Selector="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="LineHeight" Value="20"/>
+        </Style>
+
+        <Style Selector="Button.JadeButton">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="18">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.JadeButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+
         <Style Selector="Button.RowEntryButton">
-            <Setter Property="Width" Value="24"/>
-            <Setter Property="Height" Value="24"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
             <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#555555"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.RowEntryButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        </Style>
+        <Style Selector="Button.RowEntryButton:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+
+        <Style Selector="Button.RowEntryButton:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
 
         <!-- Nút ‹ › chuyển trang -->
@@ -24,10 +78,23 @@
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="16">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
         </Style>
-        <Style Selector="Button.PagerButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#F0F0F0"/>
+        <Style Selector="Button.PagerButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        </Style>
+        <Style Selector="Button.PagerButton:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.PagerButton:disabled">
             <Setter Property="Foreground" Value="#CCCCCC"/>
@@ -42,10 +109,27 @@
             <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="18">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
         </Style>
-        <Style Selector="Button.SecondaryButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#F0F0F0"/>
+        <Style Selector="Button.SecondaryButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        </Style>
+        <Style Selector="Button.SecondaryButton:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
 
         <Style Selector="Button.DangerButton">
@@ -57,9 +141,21 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="18">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
         </Style>
-        <Style Selector="Button.DangerButton:pointerover /template/ ContentPresenter">
+        <Style Selector="Button.DangerButton:pointerover /template/ Border#Bg">
             <Setter Property="Background" Value="#C94A40"/>
         </Style>
 
@@ -85,20 +181,32 @@
 
     <UserControl.Resources>
 
+        <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#2FBF9F"/>
+        <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="White"/>
+        <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#E7F8F3"/>
+        <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#D5F1E8"/>
+        <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPressed" Color="#D5F1E8"/>
+        <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#333333"/>
+        <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPointerOver" Color="#333333"/>
+
         <DataTemplate x:Key="EntryRowTemplate" x:DataType="models:GlossarySetEntry">
             <Grid Margin="0,4">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="{Binding OriginalTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
-                <TextBlock Grid.Column="1" Text="{Binding HanViet}" FontFamily="Arial" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
-                <TextBlock Grid.Column="2" Text="{Binding TranslatedTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <CheckBox x:Name="EntrySelectCheckBox" Grid.Column="0" VerticalAlignment="Center"
+                          Margin="0,0,8,0" IsVisible="False" Click="OnEntryCheckChanged" Tag="{Binding}"/>
 
-                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                <TextBlock Grid.Column="1" Text="{Binding OriginalTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="2" Text="{Binding HanViet}" FontFamily="Arial" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="3" Text="{Binding TranslatedTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
+
+                <StackPanel x:Name="EntryActionsPanel" Grid.Column="4" Orientation="Horizontal" IsVisible="False">
                     <Button Content="✎" Classes="RowEntryButton" Click="OnEditEntryClick" Tag="{Binding}"/>
                     <Button Content="✕" Classes="RowEntryButton" Foreground="#B94A48" Click="OnDeleteEntryClick" Tag="{Binding}"/>
                 </StackPanel>
@@ -149,31 +257,43 @@
                             CornerRadius="0,0,8,8" Padding="14">
                         <StackPanel>
 
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="94"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
-                                        VerticalContentAlignment="Center" TextChanged="OnNewOriginalTextChanged"/>
-                                <TextBox Grid.Column="1" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
-                                        VerticalContentAlignment="Center"/>
-                                <TextBox Grid.Column="2" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15" VerticalContentAlignment="Center"/>
-                                <Button Grid.Column="3" Content="+ Thêm" Classes="JadeButton"
-                                        FontSize="15" Padding="14,0" Click="OnAddEntryClick" Tag="{Binding}"/>
-                            </Grid>
+                            <StackPanel Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="94"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
+                                            VerticalContentAlignment="Center" TextChanged="OnNewOriginalTextChanged"/>
+                                    <TextBox Grid.Column="1" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
+                                            VerticalContentAlignment="Center"/>
+                                    <TextBox Grid.Column="2" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15" VerticalContentAlignment="Center"
+                                            TextChanged="OnNewNameTextChanged" Tag="{Binding}"/>
+                                    <Button Grid.Column="3" Content="+ Thêm" Classes="JadeButton"
+                                            FontSize="15" Padding="14,0" Click="OnAddEntryClick" Tag="{Binding}"/>
+                                </Grid>
+                                <TextBlock x:Name="AddDupWarning" Text="" FontSize="13" FontStyle="Italic"
+                                        Foreground="#D9822B" Margin="0,4,0,0" IsVisible="False"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="EntryBulkActionsBar" Orientation="Horizontal" Margin="0,0,0,10" IsVisible="False">
+                                <TextBlock Text="Tick chọn để xóa nhiều tên." FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <Button Content="Xóa đã chọn" Classes="DangerButton" FontSize="13" Height="28" Padding="10,0"
+                                        Click="OnDeleteSelectedEntriesClick" Tag="{Binding}"/>
+                            </StackPanel>
 
                             <Grid Margin="0,0,0,6">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Tên gốc" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
-                                <TextBlock Grid.Column="1" Text="Hán Việt" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
-                                <TextBlock Grid.Column="2" Text="Tên dịch" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Grid.Column="1" Text="Tên gốc" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Grid.Column="2" Text="Hán Việt" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Grid.Column="3" Text="Tên dịch" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
                             </Grid>
 
                             <ItemsControl ItemsSource="{Binding PageEntries}" ItemTemplate="{StaticResource EntryRowTemplate}"/>
@@ -297,15 +417,18 @@
                 Background="White" CornerRadius="12" Width="360" Padding="24">
             <StackPanel>
                 <TextBlock Text="Gốc:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
-                <TextBlock x:Name="EditOriginalText" FontSize="15" Padding="10,8" Background="#F5F5F5" Margin="0,0,0,14"/>
+                <TextBox x:Name="EditOriginalText" FontSize="15" Padding="10,8" Margin="0,0,0,14"
+                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <TextBlock Text="Hán Việt:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditHanVietBox" FontSize="15" Padding="10,8" Margin="0,0,0,14"
                          BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <TextBlock Text="Name:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
-                <TextBox x:Name="EditNameBox" FontSize="15" Padding="10,8" Margin="0,0,0,18"
-                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
+                <TextBox x:Name="EditNameBox" FontSize="15" Padding="10,8" Margin="0,0,0,6"
+                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" TextChanged="OnEditNameTextChanged"/>
+                <TextBlock x:Name="EditNameDupWarning" Text="" FontSize="13" FontStyle="Italic"
+                        Foreground="#D9822B" Margin="0,0,0,12" IsVisible="False"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button Content="Lưu" Width="90" Classes="JadeButton" FontSize="15" Click="OnEditSaveClick"/>
