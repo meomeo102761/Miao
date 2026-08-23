@@ -47,7 +47,78 @@ namespace Miao.Desktop.Services
 
         public async Task<string> FetchFanqieChapterAsync(string url)
         {
-            return await FetchHtmlFastAsync(url);
+            await EnsureInitializedAsync();
+
+            var tcs = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void Handler(
+                object? s,
+                CoreWebView2NavigationCompletedEventArgs e)
+            {
+                tcs.TrySetResult(e.IsSuccess);
+            }
+
+            _webView!.NavigationCompleted += Handler;
+
+            try
+            {
+                _webView.CoreWebView2.Navigate(url);
+
+                var completedTask = await Task.WhenAny(
+                    tcs.Task,
+                    Task.Delay(TimeSpan.FromSeconds(30)));
+
+                if (completedTask != tcs.Task)
+                {
+                    throw new TimeoutException(
+                        $"Không thể tải trang trong 30 giây: {url}");
+                }
+
+                if (!await tcs.Task)
+                {
+                    throw new Exception(
+                        $"WebView2 không tải được trang: {url}");
+                }
+            }
+            finally
+            {
+                _webView.NavigationCompleted -= Handler;
+            }
+
+            // Trang Fanqie render nội dung chương bằng JS SAU KHI điều hướng xong,
+            // nên chờ cố định một khoảng ngắn (như FetchHtmlFastAsync mặc định
+            // 500ms) không ổn định — mạng/máy chậm một chút là chưa kịp render,
+            // gây ra tình trạng "có chương tải được có chương không". Thay vào đó,
+            // poll cho tới khi thấy div.muye-reader-content xuất hiện trong DOM
+            // (hoặc hết thời gian chờ tối đa) rồi mới chụp HTML.
+            const int maxWaitMs = 8000;
+            const int pollIntervalMs = 300;
+            var waitedMs = 0;
+
+            while (waitedMs < maxWaitMs)
+            {
+                var hasContentJson = await _webView.CoreWebView2.ExecuteScriptAsync(
+                    "document.querySelector('div[class*=\"muye-reader-content\"]') ? '1' : '0'");
+
+                var hasContent =
+                    System.Text.Json.JsonSerializer.Deserialize<string>(hasContentJson) == "1";
+
+                if (hasContent)
+                    break;
+
+                await Task.Delay(pollIntervalMs);
+                waitedMs += pollIntervalMs;
+            }
+
+            // Đợi thêm một chút để nội dung render nốt, tránh chụp đúng lúc DOM
+            // đang cập nhật dở dang (cắt cụt giữa chừng).
+            await Task.Delay(400);
+
+            var json = await _webView.CoreWebView2.ExecuteScriptAsync(
+                "document.documentElement.outerHTML");
+
+            return System.Text.Json.JsonSerializer.Deserialize<string>(json) ?? "";
         }
 
         public async Task<string> FetchHtmlAsync(string url)
