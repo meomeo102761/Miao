@@ -15,21 +15,25 @@ namespace Miao.Core.Services
 
         private readonly IPageFetcher _fetcher;
         private readonly FanqieDecryptService _decryptService;
+        private readonly FanqieClientConfig _config;
 
         private static readonly HttpClient Http = CreateHttpClient();
 
         private const string BookApi =
             "https://api5-normal-sinfonlineb.fqnovel.com/reading/bookapi/multi-detail/v/";
 
-        public FanqieDownloadSource(IPageFetcher fetcher)
+        public FanqieDownloadSource(
+            IPageFetcher fetcher,
+            IScreenshotFetcher screenshotFetcher,
+            OcrService ocr)
         {
             _fetcher = fetcher;
 
-            var config =
+            _config =
                 FanqieClientConfig.FromEnvironment();
 
             _decryptService =
-                new FanqieDecryptService(config);
+                new FanqieDecryptService(_config);
         }
 
         public bool CanHandle(string url)
@@ -227,21 +231,84 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(itemId))
                 return "";
 
+            // Đường 1: API giải mã "chính thức" (AES + gunzip) — chỉ dùng được
+            // khi đã cấu hình MIAO_FANQIE_REG_KEY, nên bỏ qua sớm nếu chưa có
+            // để khỏi tốn 1 request chắc chắn lỗi.
+            if (!string.IsNullOrWhiteSpace(_config.RegKey))
+            {
+                try
+                {
+                    var content =
+                        await _decryptService.GetChapterContentAsync(
+                            itemId);
+
+                    if (!string.IsNullOrWhiteSpace(content))
+                        return CleanContent(content);
+
+                    System.Diagnostics.Debug.WriteLine(
+                        "[FANQIE] DECRYPT trả về rỗng, thử fallback HTML.");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[FANQIE] DECRYPT ERROR, thử fallback HTML: {ex}");
+                }
+            }
+
+            // Đường 2 (fallback, KHÔNG cần REG_KEY): mở thẳng trang đọc bằng
+            // trình duyệt thật (WebView2, qua IPageFetcher.FetchFanqieChapterAsync),
+            // lấy phần nội dung thô rồi giải mã bảng thế ký tự PUA.
+            // Lưu ý: Miao không track được chương nào VIP/free (chapter list
+            // của app không có cờ này) nên đường này chạy cho MỌI chương.
+            // Trên thực tế đa số web đọc kiểu Fanqie chỉ khóa ở lớp giao diện —
+            // HTML gốc vẫn chứa sẵn nội dung (đã obfuscate bằng PUA) kể cả
+            // chương bị khóa, nên fallback này thường đọc được cả chương VIP.
+            // Nếu về sau Fanqie thắt chặt và chặn thật ở server, đường này sẽ
+            // trả về rỗng cho chương VIP và cần quay lại dùng REG_KEY/API ngoài.
+            return await GetChapterContentViaHtmlFallbackAsync(
+                chapterUrl);
+        }
+
+        private async Task<string> GetChapterContentViaHtmlFallbackAsync(
+            string chapterUrl)
+        {
             try
             {
-                var content =
-                    await _decryptService.GetChapterContentAsync(
-                        itemId);
+                var html =
+                    await _fetcher.FetchFanqieChapterAsync(
+                        chapterUrl);
 
-                if (string.IsNullOrWhiteSpace(content))
+                if (string.IsNullOrWhiteSpace(html))
                     return "";
 
-                return CleanContent(content);
+                var match =
+                    Regex.Match(
+                        html,
+                        "<div class=\"muye-reader-content.*?\">(.*?)</div>",
+                        RegexOptions.Singleline);
+
+                if (!match.Success)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        "[FANQIE] FALLBACK: không tìm thấy muye-reader-content " +
+                        "trong HTML (trang có thể đã đổi cấu trúc, hoặc bị chặn).");
+
+                    return "";
+                }
+
+                var rawContent =
+                    match.Groups[1].Value;
+
+                var decoded =
+                    FanqiePuaDecoder.Decode(
+                        rawContent);
+
+                return CleanContent(decoded);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(
-                    $"[FANQIE] DECRYPT ERROR: {ex}");
+                    $"[FANQIE] FALLBACK HTML ERROR: {ex}");
 
                 return "";
             }
