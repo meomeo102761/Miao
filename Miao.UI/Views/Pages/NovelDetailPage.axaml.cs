@@ -34,9 +34,9 @@ namespace Miao.UI.Views.Pages
         private readonly Guid _novelId;
         private readonly IPageFetcher _browser = PlatformServices.PageFetcher;
         private readonly List<IDownloadSource> _sources;
-        private readonly TranslationService _titleTranslator = new();
+        private readonly TranslationService _titleTranslator = TranslationService.CreateFromSettings();
         private readonly FileImportService _fileImportService = new();
-        private readonly TranslationService _fileContentTranslator = new();
+        private readonly TranslationService _fileContentTranslator = TranslationService.CreateFromSettings();
 
         private string _authorName = "";
         private string _sourceUrl = "";
@@ -94,7 +94,7 @@ namespace Miao.UI.Views.Pages
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
-                new FanqieDownloadSource(_browser),
+                new FanqieDownloadSource(_browser, PlatformServices.ScreenshotFetcher, ocr),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),

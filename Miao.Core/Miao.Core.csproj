@@ -24,5 +24,19 @@
     <PackageReference Include="Google.Apis.Drive.v3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\Data\translate\zh_to_vi\Name.json">
+      <Link>translate\zh_to_vi\Name.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Data\translate\zh_to_vi\VP.json">
+      <Link>translate\zh_to_vi\VP.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Data\translate\zh_to_vi\HanViet.json">
+      <Link>translate\zh_to_vi\HanViet.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
 </Project>

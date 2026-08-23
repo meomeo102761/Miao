@@ -8,19 +8,9 @@ namespace Miao.Core.Services
         DichNgay,
         Dictionary
     }
-
-    /// <summary>
-    /// Đầu mối điều phối engine dịch.
-    ///
-    /// TranslationService không trực tiếp thực hiện việc dịch.
-    /// Nó chọn một ITranslationProvider:
-    ///
-    /// - DichNgayProvider
-    /// - DictionaryTranslationProvider
-    /// </summary>
     public sealed class TranslationService
     {
-        private ITranslationProvider _provider;
+        private ITranslationProvider _provider = null!;
 
         public TranslationEngine Engine { get; private set; }
 
@@ -29,6 +19,27 @@ namespace Miao.Core.Services
             TranslationOptions? options = null)
         {
             SetEngine(engine, options);
+        }
+
+        public Task<string> TranslateChapterAsync(string text)
+        {
+            return TranslateAsync(text);
+        }
+
+        public static TranslationEngine ParseEngine(string? value)
+        {
+            return string.Equals(value, "Dictionary", StringComparison.OrdinalIgnoreCase)
+                ? TranslationEngine.Dictionary
+                : TranslationEngine.DichNgay;
+        }
+
+        public static TranslationService CreateFromSettings(
+            TranslationOptions? options = null)
+        {
+            var engine = ParseEngine(
+                AppSettingsService.Instance.Settings.TranslationEngine);
+
+            return new TranslationService(engine, options);
         }
 
         public void SetEngine(

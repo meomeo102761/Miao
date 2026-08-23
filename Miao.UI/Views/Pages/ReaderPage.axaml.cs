@@ -381,7 +381,7 @@ namespace Miao.UI.Views.Pages
 
             try
             {
-                var translator = new TranslationService(new CTranslate2Provider());
+                var translator = TranslationService.CreateFromSettings();
                 var diff = DiffLines(oldOriginalLines, newOriginalLines);
 
                 var linesToTranslate = diff.Count(d =>

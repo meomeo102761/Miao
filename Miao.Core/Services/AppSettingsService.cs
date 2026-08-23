@@ -66,8 +66,11 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(Settings.DataFolder))
                 Settings.DataFolder = configFolder;
 
-            if (string.IsNullOrWhiteSpace(Settings.TranslationEngine))
+            if (string.IsNullOrWhiteSpace(Settings.TranslationEngine) ||
+                string.Equals(Settings.TranslationEngine, "CT2", StringComparison.OrdinalIgnoreCase))
+            {
                 Settings.TranslationEngine = "DichNgay";
+            }
 
             if (string.IsNullOrWhiteSpace(Settings.DichNgayEndpoint))
             {

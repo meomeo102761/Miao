@@ -26,7 +26,6 @@ namespace Miao.Core.Services
                 return list.ToArray();
             }
 
-            // null hoặc kiểu khác -> mảng rỗng thay vì throw
             return Array.Empty<string>();
         }
 

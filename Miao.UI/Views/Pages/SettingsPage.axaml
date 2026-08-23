@@ -24,12 +24,12 @@
                 <ComboBox x:Name="TranslationEngineBox" MaxWidth="500" Height="34" HorizontalAlignment="Stretch"
                           SelectedValueBinding="{Binding Tag}" x:DataType="ComboBoxItem" Margin="0,0,0,20">
                     <ComboBoxItem Content="Dịch Ngay" Tag="DichNgay"/>
-                    <ComboBoxItem Content="CTranslate2 (CT2)" Tag="CT2"/>
+                    <ComboBoxItem Content="Dictionary (Name/VP/HanViet)" Tag="Dictionary"/>
                 </ComboBox>
-                <TextBlock Text="Dịch Ngay: dùng dịch vụ trực tuyến, không cần chạy server Python."
+                <TextBlock Text="Dịch Ngay: dùng dịch vụ trực tuyến dichngay.com, cần kết nối mạng."
                            Classes="bodyText" FontSize="11.2" Foreground="{StaticResource TextMuted}"
                            TextWrapping="Wrap" Margin="0,0,0,4" MaxWidth="500" HorizontalAlignment="Stretch"/>
-                <TextBlock Text="CT2: dùng model dịch cục bộ, app sẽ tự khởi động server khi cần."
+                <TextBlock Text="Dictionary: dịch offline bằng bộ từ điển Name.json/VP.json/HanViet.json, không cần mạng."
                            Classes="bodyText" FontSize="11.2" Foreground="{StaticResource TextMuted}"
                            TextWrapping="Wrap" Margin="0,0,0,20" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <Button x:Name="SaveButton" Content="Lưu" Width="80" Classes="jade"

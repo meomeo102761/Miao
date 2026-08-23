@@ -7,14 +7,6 @@ using HtmlAgilityPack;
 
 namespace Miao.Core.Services
 {
-    // ======================================================================
-    // KHUÔN MẪU THÊM 1 NGUỒN TẢI MỚI
-    // ======================================================================
-    // Copy nguyên file này, đổi tên FILE + tên CLASS theo site (vd:
-    // TruyenFullDownloadSource), rồi chỉ sửa 6 chỗ đánh dấu "// ĐỔI Ở ĐÂY"
-    // bên dưới. Phần còn lại (fetch HTML, lật trang, trích nội dung...) đã
-    // viết sẵn, thường không cần đụng vào.
-    // ======================================================================
     public class NvrenshuDowloadSource : IDownloadSource
     {
         public string SourceName => "nvrenshu";

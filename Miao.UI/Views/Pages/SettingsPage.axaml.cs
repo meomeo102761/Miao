@@ -23,7 +23,7 @@ namespace Miao.UI.Views.Pages
 
             var engine = AppSettingsService.Instance.Settings.TranslationEngine;
             TranslationEngineBox.SelectedValue =
-                string.Equals(engine, "CT2", StringComparison.OrdinalIgnoreCase) ? "CT2" : "DichNgay";
+                string.Equals(engine, "Dictionary", StringComparison.OrdinalIgnoreCase) ? "Dictionary" : "DichNgay";
         }
 
         private async void OnBrowse(object? sender, RoutedEventArgs e)
@@ -63,7 +63,7 @@ namespace Miao.UI.Views.Pages
         {
             var settings = AppSettingsService.Instance.Settings;
 
-            if (TranslationEngineBox.SelectedValue is string engine && (engine == "DichNgay" || engine == "CT2"))
+            if (TranslationEngineBox.SelectedValue is string engine && (engine == "DichNgay" || engine == "Dictionary"))
                 settings.TranslationEngine = engine;
 
             var newFolderRaw = FolderTextBox.Text?.Trim() ?? "";

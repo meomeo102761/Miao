@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Miao.Core.Services;
 using Miao.UI.Views;
 
 namespace Miao.UI
@@ -23,7 +22,6 @@ namespace Miao.UI
                     {
                         Content = new MainView()
                     };
-                    desktop.ShutdownRequested += OnShutdownRequested;
                     break;
 
                 // Android/iOS/Browser
@@ -33,11 +31,6 @@ namespace Miao.UI
             }
 
             base.OnFrameworkInitializationCompleted();
-        }
-
-        private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
-        {
-            CTranslate2ServerService.Stop();
         }
     }
 }
