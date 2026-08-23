@@ -21,6 +21,7 @@ namespace Miao.UI.Views.Pages
     public partial class DownloadPage : UserControl
     {
         private readonly IPageFetcher _browser = PlatformServices.PageFetcher;
+        private readonly IScreenshotFetcher _screenshotFetcher = PlatformServices.ScreenshotFetcher;
         private readonly List<IDownloadSource> _sources;
         private IDownloadSource? _activeSource;
         private readonly TranslationService _titleTranslator = TranslationService.CreateFromSettings();
@@ -44,12 +45,12 @@ namespace Miao.UI.Views.Pages
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
-                new FanqieDownloadSource(_browser, PlatformServices.ScreenshotFetcher, ocr),
+                new FanqieDownloadSource(_browser, _screenshotFetcher, ocr),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
                 new WikidichDownloadSource(_browser),
-                new Novel543DownloadSource(_browser),
+                //new Novel543DownloadSource(_browser)
             };
 
             ChaptersList.ItemsSource = _chapterItems;
@@ -528,6 +529,16 @@ namespace Miao.UI.Views.Pages
                     continue;
                 }
 
+                // Tải ảnh nhúng trong chương (nếu có [[IMG:url]]) về máy, thay link
+                // CDN gốc bằng đường dẫn file cục bộ — ReaderPage chỉ hiển thị được
+                // ảnh từ file cục bộ (xem CoverImageConverter), link http trực tiếp
+                // sẽ không hiện được.
+                content = await DownloadChapterImagesAsync(
+                    novel.Id,
+                    item.Number,
+                    content,
+                    item.ChapterUrl);
+
                 var translatedTitle = item.Title;
                 if (!_activeSource!.ProvidesTranslatedContent)
                 {
@@ -640,6 +651,87 @@ namespace Miao.UI.Views.Pages
         }
 
         // ================== Bìa truyện ==================
+
+        // Tải từng ảnh trong nội dung chương (dạng [[IMG:https://...]]) về máy và
+        // thay bằng đường dẫn file cục bộ. Áp dụng chung cho mọi nguồn (Fanqie,
+        // Lofter, ...) vì tất cả đều dùng chung quy ước [[IMG:url]].
+        private static readonly HttpClient ChapterImageHttp = new HttpClient();
+
+        private static readonly System.Text.RegularExpressions.Regex ImagePlaceholderPattern =
+            new(@"\[\[IMG:(https?://[^\]]+)\]\]", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private async Task<string> DownloadChapterImagesAsync(
+            Guid novelId,
+            int chapterNumber,
+            string content,
+            string? refererUrl = null)
+        {
+            if (string.IsNullOrEmpty(content) || !content.Contains("[[IMG:"))
+                return content;
+
+            var matches = ImagePlaceholderPattern.Matches(content);
+            if (matches.Count == 0)
+                return content;
+
+            var imageFolder = Path.Combine(
+                AppSettingsService.Instance.Settings.DataFolder,
+                "ChapterImages",
+                novelId.ToString());
+
+            Directory.CreateDirectory(imageFolder);
+
+            var imageIndex = 0;
+
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                var remoteUrl = match.Groups[1].Value;
+                imageIndex++;
+
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, remoteUrl);
+                    request.Headers.UserAgent.ParseAdd(
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+                    // Vài CDN (kể cả Fanqie) chặn hotlink nếu thiếu Referer hợp lệ.
+                    if (!string.IsNullOrWhiteSpace(refererUrl) &&
+                        Uri.TryCreate(refererUrl, UriKind.Absolute, out var refererUri))
+                    {
+                        request.Headers.Referrer = refererUri;
+                    }
+
+                    using var response = await ChapterImageHttp.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+
+                    var bytes = await response.Content.ReadAsByteArrayAsync();
+
+                    var extension = Path.GetExtension(new Uri(remoteUrl).AbsolutePath);
+                    if (string.IsNullOrWhiteSpace(extension) || extension.Length > 5 ||
+                        !new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }
+                            .Contains(extension, StringComparer.OrdinalIgnoreCase))
+                    {
+                        extension = ".jpg";
+                    }
+
+                    var fileName = $"c{chapterNumber}_{imageIndex}{extension}";
+                    var localPath = Path.Combine(imageFolder, fileName);
+
+                    await File.WriteAllBytesAsync(localPath, bytes);
+
+                    content = content.Replace(match.Value, $"[[IMG:{localPath}]]");
+                }
+                catch (Exception ex)
+                {
+                    // Tải ảnh lỗi (mạng, hotlink protection, ảnh đã gỡ...) — giữ
+                    // nguyên placeholder link gốc, không làm hỏng cả chương.
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[CHAPTER IMAGE] Lỗi tải ảnh chương {chapterNumber} ({remoteUrl}): {ex.Message}");
+                }
+            }
+
+            return content;
+        }
 
         private async Task<string> SaveNovelCoverAsync(Guid novelId, string? coverUrl)
         {

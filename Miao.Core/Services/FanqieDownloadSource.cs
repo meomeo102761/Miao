@@ -52,6 +52,33 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(bookId))
                 return ("", "", "", "");
 
+            var (title, author, cover, description) =
+                await GetNovelInfoFromApiAsync(
+                    bookId,
+                    url);
+
+            // Nếu API mobile (hay bị đổi domain/chặn) không trả đủ thông tin,
+            // fallback sang parse thẳng thẻ meta của trang /page/{bookId} —
+            // trang này chắc chắn tải được vì GetChapterListAsync đang dùng nó.
+            if (string.IsNullOrWhiteSpace(title) ||
+                string.IsNullOrWhiteSpace(cover))
+            {
+                var (fbTitle, fbAuthor, fbCover, fbDescription) =
+                    await GetNovelInfoFromPageAsync(
+                        bookId);
+
+                if (string.IsNullOrWhiteSpace(title)) title = fbTitle;
+                if (string.IsNullOrWhiteSpace(author)) author = fbAuthor;
+                if (string.IsNullOrWhiteSpace(cover)) cover = fbCover;
+                if (string.IsNullOrWhiteSpace(description)) description = fbDescription;
+            }
+
+            return (title, author, cover, description);
+        }
+
+        private async Task<(string Title, string Author, string CoverImageUrl, string Description)>
+            GetNovelInfoFromApiAsync(string bookId, string url)
+        {
             try
             {
                 var apiUrl =
@@ -120,10 +147,118 @@ namespace Miao.Core.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(
-                    $"[FANQIE] BOOK INFO ERROR: {ex}");
+                    $"[FANQIE] BOOK INFO API ERROR, thử fallback trang HTML: {ex}");
 
                 return ("", "", "", "");
             }
+        }
+
+        private async Task<(string Title, string Author, string CoverImageUrl, string Description)>
+            GetNovelInfoFromPageAsync(string bookId)
+        {
+            try
+            {
+                var pageUrl =
+                    $"https://fanqienovel.com/page/{bookId}";
+
+                var html =
+                    await _fetcher.FetchHtmlAsync(
+                        pageUrl);
+
+                if (string.IsNullOrWhiteSpace(html))
+                    return ("", "", "", "");
+
+                var doc =
+                    new HtmlDocument();
+
+                doc.LoadHtml(html);
+
+                var title =
+                    GetMetaContent(doc, "og:title", "twitter:title");
+
+                var cover =
+                    GetMetaContent(doc, "og:image", "twitter:image");
+
+                var description =
+                    GetMetaContent(doc, "og:description", "description", "twitter:description");
+
+                // Trang không có meta chuẩn cho tác giả, dò bằng mẫu chữ
+                // "作者:" / "作者：" thường xuất hiện gần tên truyện.
+                var author = "";
+
+                var authorMatch =
+                    Regex.Match(
+                        html,
+                        "作者[:：]\\s*([^\\s<\"']{1,30})");
+
+                if (authorMatch.Success)
+                {
+                    author =
+                        HtmlEntity.DeEntitize(
+                            authorMatch.Groups[1].Value)
+                        .Trim();
+                }
+
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    var titleNode =
+                        doc.DocumentNode.SelectSingleNode("//title");
+
+                    if (titleNode != null)
+                    {
+                        title =
+                            HtmlEntity.DeEntitize(titleNode.InnerText)
+                                .Trim();
+
+                        // Trang thường có dạng "Tên truyện - 番茄小说" hoặc tương tự,
+                        // cắt bớt phần hậu tố sau dấu gạch ngang/gạch dọc nếu có.
+                        title =
+                            Regex.Replace(
+                                title,
+                                @"\s*[-|_｜–—]\s*(番茄小说|fanqienovel).*$",
+                                "",
+                                RegexOptions.IgnoreCase);
+                    }
+                }
+
+                return (
+                    title.Trim(),
+                    author.Trim(),
+                    cover.Trim(),
+                    description.Trim()
+                );
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[FANQIE] BOOK INFO PAGE FALLBACK ERROR: {ex}");
+
+                return ("", "", "", "");
+            }
+        }
+
+        private static string GetMetaContent(
+            HtmlDocument doc,
+            params string[] metaKeys)
+        {
+            foreach (var key in metaKeys)
+            {
+                var node =
+                    doc.DocumentNode.SelectSingleNode(
+                        $"//meta[@property='{key}']") ??
+                    doc.DocumentNode.SelectSingleNode(
+                        $"//meta[@name='{key}']");
+
+                var content =
+                    node?.GetAttributeValue("content", "") ?? "";
+
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    return HtmlEntity.DeEntitize(content).Trim();
+                }
+            }
+
+            return "";
         }
 
         public async Task<List<(int Number, string Title, string ChapterUrl)>>
@@ -281,23 +416,33 @@ namespace Miao.Core.Services
                 if (string.IsNullOrWhiteSpace(html))
                     return "";
 
-                var match =
-                    Regex.Match(
-                        html,
-                        "<div class=\"muye-reader-content.*?\">(.*?)</div>",
-                        RegexOptions.Singleline);
+                // QUAN TRỌNG: không dùng regex "<div ...>(.*?)</div>" để tách nội
+                // dung — non-greedy sẽ dừng ở thẻ </div> ĐẦU TIÊN gặp phải, mà
+                // ảnh trong chương thường được bọc trong 1 <div> con riêng
+                // (vd <div class="img-wrapper"><img .../></div>), khiến toàn bộ
+                // nội dung từ sau ảnh trở đi bị cắt mất. Parse bằng HtmlAgilityPack
+                // (dựng cây DOM thật) để bắt đúng thẻ đóng tương ứng, xử lý được
+                // div lồng nhau.
+                var htmlDoc =
+                    new HtmlDocument();
 
-                if (!match.Success)
+                htmlDoc.LoadHtml(html);
+
+                var contentNode =
+                    htmlDoc.DocumentNode.SelectSingleNode(
+                        "//div[contains(concat(' ', normalize-space(@class), ' '), ' muye-reader-content ')]");
+
+                if (contentNode == null)
                 {
                     System.Diagnostics.Debug.WriteLine(
                         "[FANQIE] FALLBACK: không tìm thấy muye-reader-content " +
-                        "trong HTML (trang có thể đã đổi cấu trúc, hoặc bị chặn).");
+                        "trong HTML (trang có thể đã đổi cấu trúc, chưa render kịp, hoặc bị chặn).");
 
                     return "";
                 }
 
                 var rawContent =
-                    match.Groups[1].Value;
+                    contentNode.InnerHtml;
 
                 var decoded =
                     FanqiePuaDecoder.Decode(
