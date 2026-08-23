@@ -46,6 +46,13 @@
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
 
+        <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="#F0A199"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
         <Style Selector="Button.PagerButton">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>

@@ -23,17 +23,17 @@
             <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
         <Style Selector="Button.NovelActionButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
         <Style Selector="Button.ChapterButton:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
 
         <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.IconSquareButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.DangerButton:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#F08E86"/>
@@ -136,16 +136,16 @@
         </Style>
 
         <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.IconSquareButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.DangerButton:pointerover /template/ ContentPresenter">
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style Selector="Button.NovelActionButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.MenuItemButton:pointerover /template/ ContentPresenter">
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>

@@ -94,18 +94,7 @@
         </Style>
         <Style Selector="Button.BigRoundButton.CancelStyle TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-        </Style>
-
-        <Style Selector="Button.BigRoundButton.CancelStyle">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-        </Style>
-        <Style Selector="Button.BigRoundButton.CancelStyle:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentJadeHover}"/>
-        </Style>
+        </Style>        
 
     </UserControl.Styles>
     <UserControl.Resources>
