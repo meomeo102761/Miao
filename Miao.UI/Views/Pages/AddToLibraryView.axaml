@@ -14,10 +14,8 @@
             <TextBlock Grid.Row="0" Text="Thêm vào thư viện" FontWeight="Bold" FontSize="15" Margin="0,0,0,12"/>
 
             <DockPanel Grid.Row="1" Margin="0,0,0,12" LastChildFill="True">
-                <Button Content="+ Tạo mới" DockPanel.Dock="Right" Width="80"
-                        Background="{StaticResource AccentJade}"
-                        Foreground="White" BorderThickness="0" Margin="8,0,0,0"
-                        Click="OnCreateNewClick"/>
+                <Button Content="+ Tạo mới" Classes="jade" DockPanel.Dock="Right"
+                        Width="80" Margin="8,0,0,0" Click="OnCreateNewClick"/>
                 <Border BorderBrush="#CFE6E2" BorderThickness="1" CornerRadius="6">
                     <TextBox x:Name="NewLibraryNameBox" Padding="6" BorderThickness="0" FontSize="15"/>
                 </Border>
@@ -28,8 +26,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="models:CustomLibrary">
                             <Button Content="{Binding Name}" HorizontalContentAlignment="Left"
-                                    Background="White" BorderThickness="0" Padding="8,6"
-                                    Cursor="Hand" Click="OnLibraryClick" Tag="{Binding}"/>
+                                    Background="White" Foreground="{StaticResource TextPrimary}"
+                                    BorderThickness="0" Padding="8,6" Cursor="Hand" Click="OnLibraryClick" Tag="{Binding}"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

@@ -23,7 +23,7 @@
             <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
         <Style Selector="Button.NovelActionButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
         </Style>
         <Style Selector="Button.ChapterButton:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
@@ -43,20 +43,26 @@
             <Setter Property="Height" Value="36"/>
             <Setter Property="Padding" Value="16,0"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="CornerRadius" Value="18"/>
         </Style>
 
-        <Style Selector="Button.NovelActionButton.NovelPrimaryButton">
+        <Style Selector="Button.NovelActionButton">
             <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style Selector="Button.NovelActionButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.MenuItemButton TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
 
         <Style Selector="TextBlock.PageTitle">
@@ -124,32 +130,6 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
-        <Style Selector="Button.pageButton">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Margin" Value="2,0"/>
-            <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="MinWidth" Value="32"/>
-        </Style>
-        <Style Selector="Button.pageButton /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-        <Style Selector="Button.pageButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
-        </Style>
-        <Style Selector="Button.pageButton.active">
-            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.pageButton.active /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
-        </Style>
-
         <Style Selector="Button.NovelActionButton.DangerButton">
             <Setter Property="Background" Value="#E4574C"/>
             <Setter Property="Foreground" Value="White"/>
@@ -165,23 +145,29 @@
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style Selector="Button.NovelActionButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style Selector="Button.MenuItemButton:pointerover /template/ ContentPresenter">
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        </Style>
-        <Style Selector="Button.pageButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        </Style>
-        <Style Selector="Button.pageButton.active:pointerover /template/ ContentPresenter">
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
+        </Style>       
 
         <Style Selector="Button.NovelActionButton.HoverFillButton:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.HoverFillButton:pointerover /template/ ContentPresenter">
             <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+            <Setter Property="Fill" Value="White"/>
+        </Style>
+
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="SelectionBrush" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
 
     </UserControl.Styles>
@@ -193,22 +179,27 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <CheckBox Grid.Column="0" IsChecked="{Binding IsApplied, Mode=TwoWay}" Click="OnToggleApplyClick" Tag="{Binding}"
-                          VerticalAlignment="Top" Margin="0,2,10,0"/>
-                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15" TextWrapping="Wrap" Cursor="Hand"
-                           PointerPressed="OnViewSetClick" Tag="{Binding}"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="22"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <CheckBox Grid.Row="0" Grid.Column="0" IsChecked="{Binding IsApplied, Mode=TwoWay}" Click="OnToggleApplyClick" Tag="{Binding}"
+                        VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Text="{Binding Name}" FontSize="15" LineHeight="22"
+                        TextWrapping="Wrap" Cursor="Hand" PointerPressed="OnViewSetClick" Tag="{Binding}"/>
             </Grid>
         </DataTemplate>
     </UserControl.Resources>
 
-        <Grid Margin="20,32,20,20" MaxWidth="1140">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid Margin="20" MaxWidth="1140">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" x:Name="InfoGrid">
+            <Grid Grid.Row="0" x:Name="InfoGrid" Margin="0,32,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="24"/>
@@ -230,21 +221,25 @@
                         </Border>
 
                         <StackPanel Grid.Column="1" Margin="20,0">
-                            <TextBlock x:Name="TitleText" Classes="PageTitle"/>
-                            <TextBlock x:Name="OriginalTitleText" Foreground="{StaticResource TextMuted}" FontSize="15"
-                                       TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="False"/>
+                            <SelectableTextBlock x:Name="TitleText" Classes="PageTitle" FontSize="24" FontWeight="Bold"
+                                        Foreground="#333333" TextWrapping="Wrap" MaxWidth="480" LineHeight="32" Padding="0"/>
+                            <SelectableTextBlock x:Name="OriginalTitleText" Foreground="{StaticResource TextMuted}" FontSize="15"
+                                        LineHeight="22" Padding="0" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="False"/>
 
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,4">
-                                <TextBlock Text="Tác giả: " Foreground="{StaticResource TextMuted}" FontSize="15"/>
-                                <TextBlock x:Name="AuthorText" Foreground="{StaticResource AccentJade}" FontSize="15" Cursor="Hand" PointerPressed="OnAuthorClick"/>
+                                <SelectableTextBlock Text="Tác giả: " Foreground="{StaticResource TextMuted}" FontSize="15"/>
+                                <SelectableTextBlock x:Name="AuthorText" Foreground="{StaticResource AccentJade}" FontSize="15" LineHeight="22"
+                                        Padding="0" Cursor="Hand" PointerPressed="OnAuthorClick"/>
                                 <Border x:Name="StatusBadge" Classes="StatusBadgeBorder" Margin="12,0,0,0">
-                                    <TextBlock x:Name="StatusBadgeText" FontSize="15" FontWeight="SemiBold" Foreground="#777777"/>
+                                    <SelectableTextBlock x:Name="StatusBadgeText" FontSize="15" FontWeight="SemiBold" Foreground="#777777"/>
                                 </Border>
                             </StackPanel>
 
                             <StackPanel Margin="0,0,0,10">
-                                <TextBlock x:Name="MetaLatestText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="MetaUpdateText" Foreground="{StaticResource TextMuted}" FontSize="15" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <SelectableTextBlock x:Name="MetaLatestText" Foreground="{StaticResource TextMuted}" FontSize="15" LineHeight="22"
+                                                    Padding="0" TextWrapping="Wrap"/>
+                                <SelectableTextBlock x:Name="MetaUpdateText" Foreground="{StaticResource TextMuted}" FontSize="15" LineHeight="22"
+                                                    Padding="0" TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
 
                             <ItemsControl x:Name="TagsList" Margin="0,0,0,14">
@@ -255,21 +250,23 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="x:String">
-                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Background="#EAF9FB" CornerRadius="10" Padding="9,3" Margin="0,0,6,6">
-                                            <TextBlock Text="{Binding}" Classes="TagChipText"/>
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Background="White"
+                                                BorderBrush="{StaticResource AccentJade}" BorderThickness="1"
+                                                CornerRadius="10" Padding="9,3" Margin="0,0,6,6">
+                                            <TextBlock Text="{Binding}" FontSize="15" Foreground="{StaticResource AccentJade}"/>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <TextBlock x:Name="UpdateStatusText" Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <SelectableTextBlock x:Name="UpdateStatusText" Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                             <WrapPanel>
                                 <Button Content="Đọc" Width="90" Classes="NovelActionButton NovelPrimaryButton" Click="OnReadClick"/>
                                 <Button Content="＋" ToolTip.Tip="Thêm vào thư viện" Classes="NovelActionButton IconSquareButton" Click="OnAddToLibraryClick"/>
                                 <Button x:Name="EditButton" Content="✎ ▾" ToolTip.Tip="Sửa" Width="52" Classes="NovelActionButton IconSquareButton" Click="OnEditMenuClick"/>
 
-                                <Popup x:Name="EditPopup" PlacementTarget="{Binding #EditButton}" Placement="Bottom" IsLightDismissEnabled="True">
+                                <Popup x:Name="EditPopup" Placement="Bottom" IsLightDismissEnabled="True">
                                     <Border Background="White" Width="220" Padding="4" CornerRadius="8" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1">
                                         <StackPanel x:Name="EditMenuPanel">
                                             <Button Content="✎ Sửa truyện" Classes="MenuItemButton" Click="OnEditInfoClick"/>
@@ -295,7 +292,7 @@
 
                 <TextBlock Text="Tác phẩm tóm tắt" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
                 <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,24">
-                    <TextBlock x:Name="DescriptionText" FontSize="15" Foreground="#444" LineHeight="22" TextWrapping="Wrap"/>
+                    <SelectableTextBlock x:Name="DescriptionText" FontSize="15" Foreground="#444" LineHeight="22" TextWrapping="Wrap"/>
                 </Border>
 
             </StackPanel>
@@ -375,9 +372,9 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <Border Grid.ColumnSpan="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0"/>
-                    <Button Grid.Column="0" Content="Lọc lại tên" Classes="MenuItemButton" FontSize="15" HorizontalContentAlignment="Center" Click="OnRefilterNamesClick"/>
-                    <Button Grid.Column="1" Content="Xóa tất cả" Classes="MenuItemButton" FontSize="15" HorizontalContentAlignment="Center" Click="OnClearAllNamesClick"/>
-                    <Button Grid.Column="2" Content="Đóng" Classes="MenuItemButton" FontSize="15" HorizontalContentAlignment="Center" Click="OnCloseNamePopupClickFixed"/>
+                    <Button Grid.Column="0" Content="Lọc lại tên" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalContentAlignment="Center" Click="OnRefilterNamesClick"/>
+                    <Button Grid.Column="1" Content="Xóa tất cả" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalContentAlignment="Center" Click="OnClearAllNamesClick"/>
+                    <Button Grid.Column="2" Content="Đóng" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalContentAlignment="Center" Click="OnCloseNamePopupClickFixed"/>
                 </Grid>
             </Grid>
         </Border>
@@ -385,26 +382,29 @@
         <Border x:Name="NameEditCard" IsVisible="False" Background="White" CornerRadius="12" Width="340" Padding="20">
             <StackPanel>
                 <TextBlock Text="Gốc:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
-                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="32" Padding="8,0" Margin="0,0,0,10">
-                    <TextBox x:Name="EditOriginalText" FontSize="14" BorderThickness="0" Background="White" IsReadOnly="True" Focusable="False" VerticalContentAlignment="Center"/>
-                </Border>
+                <TextBox x:Name="EditOriginalText" FontSize="14" Height="32" Padding="8,0"
+                        Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
+                        VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
-                <TextBlock Text="Hán Việt:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
-                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="32" Padding="8,0" Margin="0,0,0,10">
-                    <TextBox x:Name="EditHanVietBox" FontSize="14" BorderThickness="0" VerticalContentAlignment="Center"/>
-                </Border>
-                <TextBlock Text="Bính Âm:" IsVisible="False"/>
-                <TextBox x:Name="EditPinYinBox" IsVisible="False"/>
+                <TextBlock Text="Hán Việt::" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
+                <TextBox x:Name="EditHanVietBox" FontSize="14" Height="32" Padding="8,0"
+                        Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
+                        VerticalContentAlignment="Center" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Bính Âm:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4" IsVisible="False"/>
+                <TextBox x:Name="EditPinYinBox" FontSize="14" Height="32" Padding="8,0"
+                        Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
+                        VerticalContentAlignment="Center" Margin="0,0,0,10" IsVisible="False"/>
 
                 <TextBlock Text="Dịch:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
-                <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="32" Padding="8,0" Margin="0,0,0,16">
-                    <TextBox x:Name="EditNameBox" FontSize="14" BorderThickness="0" VerticalContentAlignment="Center"/>
-                </Border>
+                <TextBox x:Name="EditNameBox" FontSize="14" Height="32" Padding="8,0"
+                        Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
+                        VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Sửa" Width="90" Classes="NovelActionButton NovelPrimaryButton" FontSize="15" Click="OnNameEditSaveClick"/>
-                    <Button Content="Xóa" Width="90" Classes="NovelActionButton" FontSize="15" Click="OnNameEditDeleteClick"/>
-                    <Button Content="Hủy" Width="90" Classes="NovelActionButton" FontSize="15" Click="OnNameEditCancelToNameList"/>
+                    <Button Content="Sửa" Width="90" Classes="NovelActionButton NovelActionButton" FontSize="15" Margin="0,0,8,0" Click="OnNameEditSaveClick"/>
+                    <Button Content="Xóa" Width="90" Classes="NovelActionButton NovelActionButton" FontSize="15" Margin="0,0,8,0" Click="OnNameEditDeleteClick"/>
+                    <Button Content="Hủy" Width="90" Classes="NovelActionButton NovelActionButton" FontSize="15" Click="OnNameEditCancelToNameList"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -441,7 +441,7 @@
                 </ScrollViewer>
 
                 <Border Grid.Row="2" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0">
-                    <Button Content="Đóng" Classes="MenuItemButton" FontSize="15" HorizontalAlignment="Stretch"
+                    <Button Content="Đóng" Classes="NovelActionButton NovelActionButton" FontSize="15" HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center" Margin="0" Padding="12,10" Click="OnCloseSelectSetsClick"/>
                 </Border>
             </Grid>

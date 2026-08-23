@@ -25,7 +25,10 @@
             </Setter>
         </Style>
         <Style Selector="Button.pageButton:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="#E6F7F3"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeLight}"/>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover">
+            <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style Selector="Button.pageButton:disabled">
             <Setter Property="Foreground" Value="#BBB"/>

@@ -13,6 +13,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Avalonia.Layout;
+using Avalonia.Threading;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -78,6 +79,9 @@ namespace Miao.UI.Views.Pages
 
             _isReady = true;
             DoSearch();
+
+            // Bắt PointerPressed ở pha Tunnel để không bị CheckBox (tên tag) nuốt mất sự kiện
+            AddHandler(PointerPressedEvent, OnTunnelDragStartPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
         }
 
         // ================= NẠP DỮ LIỆU / BỐ CỤC BỘ LỌC =================
@@ -101,7 +105,6 @@ namespace Miao.UI.Views.Pages
 
             ApplySavedLayout();
 
-            _groupsExpanded = false;
             RefreshGroupListsDisplay();
 
             CategoryComboBox.ItemsSource = _allGroups.Select(g => g.Category).Distinct().OrderBy(x => x).ToList();
@@ -123,7 +126,8 @@ namespace Miao.UI.Views.Pages
 
             TagGroupsShowAllButton.IsVisible = !isSearching && extra.Count > 0 && !_groupsExpanded;
 
-            UpdateEditButtons();
+            // Đợi Avalonia dựng xong container mới rồi mới dò nút, tránh bị bỏ sót
+            Dispatcher.UIThread.Post(UpdateEditButtons, DispatcherPriority.Loaded);
         }
 
         private void UpdateEditButtons()
@@ -241,6 +245,56 @@ namespace Miao.UI.Views.Pages
             }
         }
 
+                // ================= BẮT ĐẦU KÉO (Tunnel — chạy trước khi CheckBox đánh dấu Handled) =================
+
+        private void OnTunnelDragStartPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (!IsEditMode) return;
+            if (e.Source is not Visual sourceVisual) return;
+
+            var tagBorder = FindAncestorWithDataContext<TagCheckItem>(sourceVisual, out var tag);
+            if (tagBorder != null)
+            {
+                var itemsControl = FindParent<ItemsControl>(tagBorder);
+                if (itemsControl?.DataContext is TagCategoryGroup tagGroup)
+                {
+                    _dragStartPoint = e.GetPosition(null);
+                    _dragPressedEventArgs = e;
+                    _dragTag = tag;
+                    _dragGroup = tagGroup;
+                }
+                return;
+            }
+
+            var groupPanel = FindAncestorWithDataContext<TagCategoryGroup>(sourceVisual, out var group);
+            if (groupPanel != null)
+            {
+                _dragStartPoint = e.GetPosition(null);
+                _dragPressedEventArgs = e;
+                _dragTag = null;
+                _dragGroup = group;
+            }
+        }
+
+        private static Visual? FindAncestorWithDataContext<T>(Visual start, out T? data) where T : class
+        {
+            Visual? current = start;
+
+            while (current != null)
+            {
+                if (current is StyledElement se && se.DataContext is T match)
+                {
+                    data = match;
+                    return current;
+                }
+
+                current = current.GetVisualParent();
+            }
+
+            data = null;
+            return null;
+        }
+
         // ================= KÉO-THẢ SẮP XẾP NHÓM / TAG =================
 
         private void GroupPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -325,6 +379,7 @@ namespace Miao.UI.Views.Pages
                     _dragPressedEventArgs = e;
                     _dragTag = tag;
                     _dragGroup = group;
+                    e.Handled = true; // chặn không cho bubble lên GroupPointerPressed  
                 }
             }
         }
@@ -333,6 +388,8 @@ namespace Miao.UI.Views.Pages
         {
             if (!IsEditMode || _dragTag == null || _dragGroup == null || !e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
                 return;
+
+            e.Handled = true; // chặn không cho bubble lên GroupPointerMoved
 
             var diff = _dragStartPoint - e.GetPosition(null);
             if (Math.Abs(diff.X) < 6 && Math.Abs(diff.Y) < 6)
@@ -860,10 +917,9 @@ namespace Miao.UI.Views.Pages
                 Height = 32,
                 MinWidth = 80,
                 Margin = new Thickness(8, 0, 0, 0),
-                Background = isDanger ? new SolidColorBrush(Color.FromRgb(0xB9, 0x4A, 0x48)) : new SolidColorBrush(Color.FromRgb(0x2F, 0xBF, 0x9F)),
-                Foreground = Brushes.White,
                 CornerRadius = new CornerRadius(6)
             };
+            confirmButton.Classes.Add(isDanger ? "danger" : "jade");
 
             Border shell = new()
             {
@@ -885,11 +941,9 @@ namespace Miao.UI.Views.Pages
                     Content = "Hủy",
                     Height = 32,
                     MinWidth = 80,
-                    Background = Brushes.White,
-                    BorderBrush = (IBrush)this.FindResource("BorderSoft")!,
-                    BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(6)
                 };
+                cancelButton.Classes.Add("jade");
                 cancelButton.Click += (_, _) => { onResult(false); Close(); };
                 buttonPanel.Children.Insert(0, cancelButton);
             }

@@ -49,6 +49,7 @@
         <Style Selector="Button.PagerButton">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#555555"/>
             <Setter Property="FontSize" Value="15"/>
@@ -62,22 +63,46 @@
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
+        <Style Selector="Button.CreateVolumeButton">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.CreateVolumeButton:pointerover">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+
+        <Style Selector="Expander /template/ ToggleButton#PART_toggle">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        </Style>
+        <Style Selector="Expander /template/ ToggleButton#PART_toggle:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+        </Style>
+
     </UserControl.Styles>
 
     <ScrollViewer>
     <StackPanel Margin="20" MaxWidth="1000">
 
         <StackPanel Orientation="Horizontal" Cursor="Hand" HorizontalAlignment="Left"
+                    Margin="0,32,0,18"
                     PointerPressed="OnBackToNovelClick">
-            <TextBlock Text="‹ " FontSize="20" Foreground="{StaticResource AccentJade}" VerticalAlignment="Center"/>
+            <TextBlock Text="‹ " FontSize="15" Foreground="{StaticResource AccentJade}" VerticalAlignment="Center"/>
             <TextBlock x:Name="TitleText" Classes="PageTitle" Foreground="{StaticResource AccentJade}"/>
         </StackPanel>
 
-        <TextBlock Text="Không gian làm việc — bấm vào chương để sửa trực tiếp"
-                   FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,0,0,14"/>
+        <TextBlock Text="Không gian sửa chương"
+                   FontSize="20" Foreground="{StaticResource TextMuted}" Margin="0,0,0,14"/>
 
         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-            <Button Content="✚ Tạo quyển" Classes="NovelActionButton novelAction" Click="OnCreateVolumeClick"/>
+            <Button Content="✚ Tạo quyển" Classes="CreateVolumeButton" Click="OnCreateVolumeClick"/>
             <Button x:Name="BulkDeleteButton" Classes="NovelActionButton NovelDangerButton"
                     Click="OnBulkDeleteChaptersClick" IsVisible="False"/>
         </StackPanel>
@@ -90,14 +115,18 @@
                         <Expander.Header>
                             <Grid Margin="0,2,8,2">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" Text="{Binding HeaderText}"
-                                           FontSize="15" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
+                                <CheckBox Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"
+                                        IsChecked="{Binding IsAllSelected}" Click="OnGroupSelectAllClick" Tag="{Binding}"/>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                <TextBlock Grid.Column="1" Text="{Binding HeaderText}"
+                                        FontSize="15" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal"
                                             IsVisible="{Binding CanManage}">
                                     <Button Content="✎" Classes="PagerButton" ToolTip.Tip="Sửa quyển"
                                             Click="OnEditVolumeClick" Tag="{Binding}"/>

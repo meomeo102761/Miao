@@ -7,7 +7,7 @@
     <UserControl.Styles>
         <Style Selector="Button.pillAction">
             <Setter Property="Background" Value="#EFF4F3"/>
-            <Setter Property="Foreground" Value="#01A4B9"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -24,10 +24,10 @@
             </Setter>
         </Style>
         <Style Selector="Button.pillAction:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="#01A4B9"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeLight}"/>
         </Style>
         <Style Selector="Button.pillAction:pointerover">
-            <Setter Property="Foreground" Value="#EFF4F3"/>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
 
         <Style Selector="Button.dialogPrimary">
@@ -35,22 +35,8 @@
             <Setter Property="Height" Value="36"/>
         </Style>
 
-        <Style Selector="Button.dialogDanger">
-            <Setter Property="Width" Value="90"/>
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="Background" Value="#E4574C"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}" CornerRadius="18">
-                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter>
+        <Style Selector="Button.dialogDanger:pointerover">
+            <Setter Property="Background" Value="#E9A7A5"/>
         </Style>
 
         <Style Selector="Button.dialogSecondary">

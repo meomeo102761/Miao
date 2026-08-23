@@ -3,12 +3,12 @@
       x:Class="Miao.UI.Views.Pages.SettingsPage"
       Background="{StaticResource BgMain}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Width="1140" HorizontalAlignment="Center" Margin="20">
+        <Grid MaxWidth="1140" Margin="20">
             <StackPanel HorizontalAlignment="Left">
                 <TextBlock Text="Cài đặt" Classes="pageTitle"/>
                 <TextBlock Text="Thư mục dữ liệu" Classes="bodyText"
                            Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
-                <DockPanel Width="500" Height="34" HorizontalAlignment="Left">
+                <DockPanel MaxWidth="500" Height="34" HorizontalAlignment="Stretch">
                     <Button x:Name="BrowseButton" Content="Chọn..." DockPanel.Dock="Right" Width="80" Height="34"
                             Classes="jade" Margin="8,0,0,0" Click="OnBrowse"/>
                     <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6">
@@ -18,20 +18,20 @@
                 </DockPanel>
                 <TextBlock Text="⚠ Đổi thư mục sẽ tự động chuyển toàn bộ dữ liệu sang chỗ mới và xoá thư mục cũ — không thể hoàn tác."
                            Classes="bodyText" FontSize="11.2" Foreground="#B94A48" TextWrapping="Wrap"
-                           Margin="0,8,0,20" Width="500" HorizontalAlignment="Left"/>
+                           Margin="0,8,0,20" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <TextBlock Text="Chế độ dịch" Classes="bodyText"
                            Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
-                <ComboBox x:Name="TranslationEngineBox" Width="500" Height="34" HorizontalAlignment="Left"
+                <ComboBox x:Name="TranslationEngineBox" MaxWidth="500" Height="34" HorizontalAlignment="Stretch"
                           SelectedValueBinding="{Binding Tag}" x:DataType="ComboBoxItem" Margin="0,0,0,20">
                     <ComboBoxItem Content="Dịch Ngay" Tag="DichNgay"/>
                     <ComboBoxItem Content="CTranslate2 (CT2)" Tag="CT2"/>
                 </ComboBox>
                 <TextBlock Text="Dịch Ngay: dùng dịch vụ trực tuyến, không cần chạy server Python."
                            Classes="bodyText" FontSize="11.2" Foreground="{StaticResource TextMuted}"
-                           TextWrapping="Wrap" Margin="0,0,0,4" Width="500"/>
+                           TextWrapping="Wrap" Margin="0,0,0,4" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <TextBlock Text="CT2: dùng model dịch cục bộ, app sẽ tự khởi động server khi cần."
                            Classes="bodyText" FontSize="11.2" Foreground="{StaticResource TextMuted}"
-                           TextWrapping="Wrap" Margin="0,0,0,20" Width="500"/>
+                           TextWrapping="Wrap" Margin="0,0,0,20" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <Button x:Name="SaveButton" Content="Lưu" Width="80" Classes="jade"
                         HorizontalAlignment="Left" Click="OnSave"/>
                 <TextBlock x:Name="SavedText" Text="" Classes="bodyText"

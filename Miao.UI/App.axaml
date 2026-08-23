@@ -5,32 +5,231 @@
     <SolidColorBrush x:Key="AccentJadePressed" Color="#25A88A"/>
     <SolidColorBrush x:Key="AccentJadeSoft" Color="#E7F8F3"/>
     <SolidColorBrush x:Key="AccentJadeSoftHover" Color="#D5F1E8"/>
+    <SolidColorBrush x:Key="AccentJadeLight" Color="#63D8BE"/>
     <SolidColorBrush x:Key="TextPrimary" Color="#333333"/>
     <SolidColorBrush x:Key="TextMuted" Color="#777777"/>
     <SolidColorBrush x:Key="BorderSoft" Color="#CFE9E1"/>
     <SolidColorBrush x:Key="BgMain" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="White"/>
+    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#CFE9E1"/> 
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#D5F1E8"/>
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#D5F1E8"/>
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPressed" Color="#63D8BE"/> 
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#2FBF9F"/>
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#63D8BE"/>
     <conv:CoverImageConverter x:Key="CoverImageConverter"/>
   </Application.Resources>
 
   <Application.Styles>
     <FluentTheme />
+    <!--
+      Quy ước style Button trong app:
+      1. Nếu Content là chuỗi text thường (không phải Border/StackPanel lồng bên trong)
+         → PHẢI thêm rule "Button.<class> TextBlock" cho từng state (mặc định/hover/active/disabled),
+         vì rule global "Style Selector=TextBlock" phía dưới sẽ đè Foreground của TextBlock ẩn do Button tự sinh.
+      2. Nếu hover/active cần đổi màu nền mà set thẳng Background không ăn (do template FluentTheme
+         tô ở lớp trong), dùng "/template/ ContentPresenter" để ghi đè — không cần viết ControlTemplate riêng
+         trừ khi cách này vẫn không đủ (trường hợp pageButton/jade).
+    -->
     <Style Selector="TextBlock"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
-    <Style Selector="TextBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/><Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/></Style>
+    <Style Selector="TextBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/><Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/><Setter Property="SelectionBrush" Value="{StaticResource AccentJadeSoftHover}"/><Setter Property="SelectionForegroundBrush" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="ComboBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/></Style>
     <Style Selector="ComboBoxItem"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/></Style>
     <Style Selector="CheckBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="RadioButton"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="ToggleSwitch"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
-    <Style Selector="Button"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="7"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Padding" Value="12,6"/></Style>
-    <Style Selector="Button:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/><Setter Property="BorderBrush" Value="{StaticResource AccentJadeHover}"/></Style>
-    <Style Selector="Button:pressed"><Setter Property="Background" Value="{StaticResource AccentJadePressed}"/></Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="Arial"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="7"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Bg" Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button:pointerover /template/ Border#Bg">
+      <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button:pressed /template/ Border#Bg">
+      <Setter Property="Background" Value="{StaticResource AccentJadePressed}"/>
+    </Style>
+
+    <!-- Nút đỏ dùng chung, hover -> đỏ nhạt chữ trắng -->
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="#B94A48"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="7"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ Border#Bg">
+      <Setter Property="Background" Value="#E9A7A5"/>
+    </Style>
+    <Style Selector="Button.danger TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
     <Style Selector="TextBlock.pageTitle"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="25"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/><Setter Property="Margin" Value="0,32,0,16"/></Style>
     <Style Selector="TextBlock.PageTitle"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="25"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/><Setter Property="Margin" Value="0,32,0,16"/></Style>
     <Style Selector="TextBlock.bodyText"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
-    <Style Selector="Button.jade"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
-    <Style Selector="Button.jade:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/></Style>
+    
+    <Style Selector="Button.jade">
+      <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="7"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.jade:pointerover /template/ Border#Bg">
+      <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+    </Style>
+    <Style Selector="Button.jade:pointerover">
+      <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button.jade TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.jade:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+    </Style>
+
+    <Style Selector="Button.pageButton">
+      <Setter Property="FontFamily" Value="Arial"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Padding" Value="10,5"/>
+      <Setter Property="Margin" Value="2,0"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="MinWidth" Value="32"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Bg" Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.pageButton:pointerover /template/ Border#Bg">
+      <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+    </Style>
+    <Style Selector="Button.pageButton:pointerover">
+      <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button.pageButton.active /template/ Border#Bg">
+      <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button.pageButton.active">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.pageButton.active:pointerover /template/ Border#Bg">
+      <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+    </Style>
+    <Style Selector="Button.pageButton.active:pointerover">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.pageButton TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+    <Style Selector="Button.pageButton:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button.pageButton.active TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.pageButton.active:pointerover TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.pageButton:disabled">
+      <Setter Property="Foreground" Value="#BBB"/>
+    </Style>
+    <Style Selector="Button.pageButton:disabled TextBlock">
+      <Setter Property="Foreground" Value="#BBB"/>
+    </Style>
+    <Style Selector="Button.pageButton.pageNavButton">
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="CornerRadius" Value="16"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="6,0"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+    </Style>
+    <Style Selector="Button.pageButton.pageNavButton:pointerover /template/ Border#Bg">
+      <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="Button.pageButton.pageNavButton:disabled /template/ Border#Bg">
+      <Setter Property="BorderBrush" Value="#E5E5E5"/>
+    </Style>
+
     <Style Selector="Button.navButton"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
-    <Style Selector="Button.navButton:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/></Style>
+    <Style Selector="Button.navButton:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/><Setter Property="Foreground" Value="White"/></Style>
     <Style Selector="Button.smallOutline"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/></Style>
     <Style Selector="Button.smallOutline:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/></Style>
     <Style Selector="Button.bigRound"><Setter Property="Width" Value="120"/><Setter Property="Height" Value="40"/><Setter Property="CornerRadius" Value="20"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/></Style>
@@ -41,5 +240,47 @@
     <Style Selector="Border.fieldChip"><Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/><Setter Property="CornerRadius" Value="16"/><Setter Property="Padding" Value="12,4"/><Setter Property="Margin" Value="0,0,8,8"/></Style>
     <Style Selector="TextBlock.fieldChipText"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="ComboBox.roundedComboBox"><Setter Property="Height" Value="30"/><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Padding" Value="8,0"/><Setter Property="CornerRadius" Value="6"/></Style>
+    <!-- Checkbox dùng màu xanh ngọc chung -->
+    <Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+      <Setter Property="Background" Value="{StaticResource AccentJade}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+      <Setter Property="Fill" Value="White"/>
+    </Style>
+
+        <!-- RadioButton dùng màu xanh ngọc chung (template tự vẽ bằng Border, ổn định hơn Ellipse) -->
+    <Style Selector="RadioButton">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid ColumnDefinitions="Auto,*">
+            <Border Name="OuterRing" Grid.Column="0" Width="20" Height="20"
+                    VerticalAlignment="Center" CornerRadius="10"
+                    Background="White" BorderBrush="#CCCCCC" BorderThickness="2">
+              <Border Name="InnerDot" Width="10" Height="10" CornerRadius="5"
+                      Background="{StaticResource AccentJade}" IsVisible="False"/>
+            </Border>
+            <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}"
+                               Margin="8,0,0,0" VerticalAlignment="Center"
+                               Foreground="{TemplateBinding Foreground}"
+                               FontFamily="{TemplateBinding FontFamily}"
+                               FontSize="{TemplateBinding FontSize}"/>
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton:checked /template/ Border#OuterRing">
+      <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+    </Style>
+    <Style Selector="RadioButton:checked /template/ Border#InnerDot">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+    <Style Selector="RadioButton:pointerover /template/ Border#OuterRing">
+      <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+    </Style>
+
+    <Style Selector="SelectableTextBlock">
+      <Setter Property="SelectionBrush" Value="{StaticResource AccentJadeSoftHover}"/>
+    </Style> 
   </Application.Styles>
 </Application>

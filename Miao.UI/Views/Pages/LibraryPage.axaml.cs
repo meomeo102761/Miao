@@ -121,7 +121,7 @@ namespace Miao.UI.Views.Pages
             int totalPages = Math.Max(1, (int)Math.Ceiling(_latestFull.Count / (double)PreviewPageSize));
             if (_latestPage > totalPages) _latestPage = totalPages;
             LatestPreviewList.ItemsSource = _latestFull.Skip((_latestPage - 1) * PreviewPageSize).Take(PreviewPageSize).ToList();
-            BuildPageButtons(LatestPageButtonsPanel, totalPages, _latestPage, p => { _latestPage = p; RenderLatestPage(); });
+            PaginationHelper.Build(LatestPageButtonsPanel, totalPages, _latestPage, p => { _latestPage = p; RenderLatestPage(); });
         }
 
         private void RenderCompletedPage()
@@ -129,7 +129,7 @@ namespace Miao.UI.Views.Pages
             int totalPages = Math.Max(1, (int)Math.Ceiling(_completedFull.Count / (double)PreviewPageSize));
             if (_completedPage > totalPages) _completedPage = totalPages;
             CompletedPreviewList.ItemsSource = _completedFull.Skip((_completedPage - 1) * PreviewPageSize).Take(PreviewPageSize).ToList();
-            BuildPageButtons(CompletedPageButtonsPanel, totalPages, _completedPage, p => { _completedPage = p; RenderCompletedPage(); });
+            PaginationHelper.Build(CompletedPageButtonsPanel, totalPages, _completedPage, p => { _completedPage = p; RenderCompletedPage(); });
         }
 
         private void OnShowAllLatestClick(object? sender, PointerPressedEventArgs e)
@@ -183,7 +183,7 @@ namespace Miao.UI.Views.Pages
                          || RemoveDiacritics(n.Author ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            ShowFilteredList($"Kết quả tìm kiếm: \"{rawKeyword.Trim()}\"", results);
+            AppNavigator.NavigateTo(new LibraryListPage($"Kết quả tìm kiếm: \"{rawKeyword.Trim()}\"", results));
         }
 
         private void RenderPage()
@@ -191,51 +191,7 @@ namespace Miao.UI.Views.Pages
             int totalPages = Math.Max(1, (int)Math.Ceiling(_filteredNovels.Count / (double)PageSize));
             if (_currentPage > totalPages) _currentPage = totalPages;
             NovelsList.ItemsSource = _filteredNovels.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
-            BuildPageButtons(PageButtonsPanel, totalPages, _currentPage, p => { _currentPage = p; RenderPage(); });
-        }
-
-        private void BuildPageButtons(Panel panel, int totalPages, int currentPage, Action<int> onPageSelected)
-        {
-            panel.Children.Clear();
-
-            var prevBtn = new Button { Content = "‹ ", IsEnabled = currentPage > 1 };
-            prevBtn.Classes.Add("pageButton");
-            prevBtn.Click += (s, e) => onPageSelected(currentPage - 1);
-            panel.Children.Add(prevBtn);
-
-            foreach (var p in GetPageNumbersToShow(totalPages, currentPage))
-            {
-                if (p == -1)
-                {
-                    panel.Children.Add(new TextBlock { Text = "...", Foreground = Brushes.Gray, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0) });
-                    continue;
-                }
-
-                var btn = new Button { Content = p.ToString() };
-                btn.Classes.Add("pageButton");
-                if (p == currentPage) btn.Classes.Add("active");
-                int page = p;
-                btn.Click += (s, e) => onPageSelected(page);
-                panel.Children.Add(btn);
-            }
-
-            var nextBtn = new Button { Content = " ›", IsEnabled = currentPage < totalPages };
-            nextBtn.Classes.Add("pageButton");
-            nextBtn.Click += (s, e) => onPageSelected(currentPage + 1);
-            panel.Children.Add(nextBtn);
-        }
-
-        private IEnumerable<int> GetPageNumbersToShow(int totalPages, int currentPage)
-        {
-            const int windowSize = 2;
-            var pages = new List<int> { 1 };
-            int start = Math.Max(2, currentPage - windowSize);
-            int end = Math.Min(totalPages - 1, currentPage + windowSize);
-            if (start > 2) pages.Add(-1);
-            for (int i = start; i <= end; i++) pages.Add(i);
-            if (end < totalPages - 1) pages.Add(-1);
-            if (totalPages > 1) pages.Add(totalPages);
-            return pages.Distinct();
+            PaginationHelper.Build(PageButtonsPanel, totalPages, _currentPage, p => { _currentPage = p; RenderPage(); });
         }
 
         private static string RemoveDiacritics(string text)

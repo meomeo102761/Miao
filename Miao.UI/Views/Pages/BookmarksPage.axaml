@@ -17,7 +17,12 @@
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Template"><ControlTemplate><Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4"><ContentPresenter Content="{TemplateBinding Content}" Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></ControlTemplate></Setter>
         </Style>
-        <Style Selector="Button.pageButton:pointerover /template/ Border#Bg"><Setter Property="Background" Value="#E6F7F3"/></Style>
+        <Style Selector="Button.pageButton:pointerover /template/ Border#Bg">
+            <Setter Property="Background" Value="{StaticResource AccentJadeLight}"/>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
         <Style Selector="Button.pageButton:disabled"><Setter Property="Foreground" Value="#BBB"/></Style>
         <Style Selector="Button.pageButton.active /template/ Border#Bg"><Setter Property="Background" Value="{StaticResource AccentJade}"/></Style>
         <Style Selector="Button.pageButton.active"><Setter Property="Foreground" Value="White"/></Style>
@@ -34,7 +39,8 @@
         <Border Background="#DEE8E6" CornerRadius="6" Padding="16,10" Margin="0,0,0,4">
             <DockPanel VerticalAlignment="Center">
                 <CheckBox x:Name="SelectAllCheckBox" DockPanel.Dock="Left" VerticalAlignment="Center" IsCheckedChanged="OnSelectAllChanged"/>
-                <Button Content="Xoá" DockPanel.Dock="Right" Width="80" Classes="navButton" Foreground="{StaticResource AccentJade}" Background="White" VerticalAlignment="Center" Click="OnDeleteSelectedClick"/>
+                <Button Content="Xoá" DockPanel.Dock="Right" Width="80" Classes="navButton"
+                        VerticalAlignment="Center" Click="OnDeleteSelectedClick"/>
                 <TextBlock x:Name="SelectedCountText" Text="" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource TextMuted}"/>
             </DockPanel>
         </Border>

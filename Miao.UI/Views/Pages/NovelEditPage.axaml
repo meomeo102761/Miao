@@ -50,13 +50,18 @@
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
             <Setter Property="CornerRadius" Value="6"/>
         </Style>
-        <Style Selector="Button.smallOutline:pointerover">
-            <Setter Property="Background" Value="#F0F0F0"/>
+        <Style Selector="Button.SmallOutlineButton:pointerover">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.SmallOutlineButton TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
 
         <Style Selector="Button.BigRoundButton">
@@ -69,8 +74,37 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="CornerRadius" Value="22"/>
         </Style>
-        <Style Selector="Button.bigRound:pointerover">
-            <Setter Property="Opacity" Value="0.88"/>
+        <Style Selector="Button.BigRoundButton:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        </Style>
+        <Style Selector="Button.BigRoundButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.BigRoundButton.CancelStyle">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.BigRoundButton.CancelStyle:pointerover">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.BigRoundButton.CancelStyle TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+
+        <Style Selector="Button.BigRoundButton.CancelStyle">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.BigRoundButton.CancelStyle:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJadeHover}"/>
         </Style>
 
     </UserControl.Styles>
@@ -97,7 +131,14 @@
     <ScrollViewer>
     <StackPanel Background="{StaticResource BgMain}" Margin="20" MaxWidth="1140">
 
-        <TextBlock Text="Chỉnh sửa thông tin truyện" Classes="pageTitle" Margin="0,0,0,18"/>
+        <StackPanel Orientation="Horizontal" Cursor="Hand" HorizontalAlignment="Left"
+                    Margin="0,32,0,18" PointerPressed="OnBackToNovelClick">
+            <TextBlock Text="‹ " FontSize="15" Foreground="{StaticResource AccentJade}" VerticalAlignment="Center"/>
+            <TextBlock x:Name="TitleText" Classes="PageTitle" Foreground="{StaticResource AccentJade}"/>
+        </StackPanel>
+
+        <TextBlock Text="Thông tin truyện"
+                   FontSize="20" Foreground="{StaticResource TextMuted}" Margin="0,0,0,14"/>
 
         <Border Background="#F0F7F6" BorderBrush="{StaticResource AccentJade}" BorderThickness="2" CornerRadius="8" Padding="24">
             <StackPanel>
@@ -115,7 +156,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Tên truyện:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
-                            <TextBox Grid.Column="1" x:Name="CustomTitleBox" Classes="editTextBox"
+                            <TextBox Grid.Column="1" x:Name="CustomTitleBox" Classes="EditTextBox"
                                      ToolTip.Tip="Tên tự đặt — ưu tiên hiển thị nếu có, để trống sẽ dùng tên dịch/gốc"/>
                         </Grid>
 
@@ -125,7 +166,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Tên gốc:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
-                            <TextBox Grid.Column="1" x:Name="OriginalTitleBox" Classes="editTextBox"/>
+                            <TextBox Grid.Column="1" x:Name="OriginalTitleBox" Classes="EditTextBox"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,18">
@@ -134,7 +175,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Tên dịch:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
-                            <TextBox Grid.Column="1" x:Name="TranslatedTitleBox" Classes="editTextBox"/>
+                            <TextBox Grid.Column="1" x:Name="TranslatedTitleBox" Classes="EditTextBox"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,18">
@@ -143,7 +184,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Tên tác giả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
-                            <TextBox Grid.Column="1" x:Name="AuthorBox" Classes="editTextBox"/>
+                            <TextBox Grid.Column="1" x:Name="AuthorBox" Classes="EditTextBox"/>
                         </Grid>
 
                         <TextBlock Text="Tác phẩm tóm tắt:" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
@@ -159,7 +200,7 @@
                                 BoxShadow="0 2 10 0 #26000000">
                             <Image x:Name="CoverImage" Stretch="UniformToFill"/>
                         </Border>
-                        <Button Content="📁 Chọn ảnh từ máy" Classes="smallOutline smallOutline" Click="OnPickCoverClick" Margin="0,0,0,10" Width="180"/>
+                        <Button Content="📁 Chọn ảnh từ máy" Classes="SmallOutlineButton" Click="OnPickCoverClick" Margin="0,0,0,10" Width="180"/>
                         <TextBlock x:Name="CoverStatusText" FontFamily="Arial" FontSize="10.5" Foreground="{StaticResource TextMuted}"
                                    Width="180" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
                     </StackPanel>
@@ -167,9 +208,7 @@
 
                 <Border Classes="sectionLine"/>
 
-                <Border Classes="fieldChip">
-                    <TextBlock Text="Thể loại / Tag" Classes="fieldChipText"/>
-                </Border>
+                <TextBlock Text="Thể loại / Tag" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                 <ItemsControl x:Name="TagCategoriesList" Margin="0,10,0,0" ItemTemplate="{StaticResource TagGroupItemTemplate}">
                     <ItemsControl.ItemsPanel>
@@ -182,7 +221,7 @@
                 <TextBlock Text="Tag" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,4,0,6"/>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <TextBox x:Name="TagSuggestBox" Width="260" Classes="editTextBox"
+                    <TextBox x:Name="TagSuggestBox" Width="260" Classes="EditTextBox"
                              TextChanged="OnTagSuggestChanged"/>
                     <Button x:Name="TagGroupsShowAllButton" Content="Hiện tất cả" Classes="jade"
                             Margin="8,0,0,0" Click="OnShowAllGroupsClick" IsVisible="False"/>
@@ -215,9 +254,7 @@
 
                 <Border Classes="sectionLine"/>
 
-                <Border Classes="fieldChip">
-                    <TextBlock Text="Liên kết chính (link gốc)" Classes="fieldChipText"/>
-                </Border>
+                <TextBlock Text="Liên kết chính (link gốc)" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                 <Grid Margin="0,8,0,18">
                     <Grid.ColumnDefinitions>
@@ -239,9 +276,7 @@
                     </Border>
                 </Grid>
 
-                <Border Classes="fieldChip">
-                    <TextBlock Text="Liên kết bổ sung" Classes="fieldChipText"/>
-                </Border>
+                <TextBlock Text="Liên kết bổ sung" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                 <ItemsControl x:Name="LinksList" Margin="0,8,0,8">
                     <ItemsControl.ItemTemplate>
@@ -265,38 +300,25 @@
                                             BorderThickness="0" FontFamily="Arial" FontSize="15" VerticalContentAlignment="Center" Watermark="https://..."/>
                                 </Border>
                                 <Button Grid.Column="4" Content="✕" Width="34" Height="34" Margin="8,0,0,0"
-                                        Classes="smallOutline smallOutline" Click="OnRemoveLinkClick"
+                                        Classes="SmallOutlineButton" Click="OnRemoveLinkClick"
                                         ToolTip.Tip="Xóa liên kết này" Tag="{Binding}"/>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <Button Content="+ Thêm liên kết" Classes="smallOutline smallOutline" HorizontalAlignment="Left" Click="OnAddLinkClick"/>
+                <Button Content="+ Thêm liên kết" Classes="SmallOutlineButton" HorizontalAlignment="Left" Click="OnAddLinkClick"/>
 
             </StackPanel>
         </Border>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
-            <Button Content="Cập nhật" Classes="bigRound bigRound" Background="{StaticResource AccentJade}"
+            <Button Content="Cập nhật" Classes="BigRoundButton" Background="{StaticResource AccentJade}"
                     Foreground="White" Margin="0,0,12,0" Click="OnSaveClick"/>
-            <Button Content="Xóa truyện" Classes="bigRound bigRound" Background="#E4574C"
-                    Foreground="White" Margin="0,0,12,0" Click="OnDeleteClick"/>
-            <Button Content="Quay lại" Classes="bigRound bigRound" Background="#EFEFEF" Foreground="#333" Click="OnCancelClick"/>
+            <Button Content="Hủy" Classes="BigRoundButton CancelStyle" Click="OnCancelClick"/>
         </StackPanel>
 
         <TextBlock x:Name="StatusText" FontFamily="Arial" FontSize="12" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-
-        <!-- Modal xác nhận xóa (thay cho MessageBox.Show của WPF) -->
-        <Border x:Name="DeleteConfirmCard" IsVisible="False" Background="White" CornerRadius="12" Width="380" Padding="24">
-            <StackPanel>
-                <TextBlock x:Name="DeleteConfirmMessageText" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,20"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Xóa" Width="90" Background="#E4574C" Foreground="White" Classes="bigRound bigRound" Click="OnDeleteConfirmYesClick"/>
-                    <Button Content="Hủy" Width="90" Background="#EFEFEF" Foreground="#333" Classes="bigRound bigRound" Margin="8,0,0,0" Click="OnDeleteConfirmNoClick"/>
-                </StackPanel>
-            </StackPanel>
-        </Border>
 
     </StackPanel>
     </ScrollViewer>

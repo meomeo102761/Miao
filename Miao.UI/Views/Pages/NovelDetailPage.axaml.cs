@@ -34,9 +34,9 @@ namespace Miao.UI.Views.Pages
         private readonly Guid _novelId;
         private readonly IPageFetcher _browser = PlatformServices.PageFetcher;
         private readonly List<IDownloadSource> _sources;
-        private readonly TranslationService _titleTranslator = new(new CTranslate2Provider());
+        private readonly TranslationService _titleTranslator = new();
         private readonly FileImportService _fileImportService = new();
-        private readonly TranslationService _fileContentTranslator = new(new CTranslate2Provider());
+        private readonly TranslationService _fileContentTranslator = new();
 
         private string _authorName = "";
         private string _sourceUrl = "";
@@ -57,7 +57,7 @@ namespace Miao.UI.Views.Pages
         private Action? _pendingConfirmAction;
 
         private Popup? _libraryPopup;
-        private Popup? _newLibraryPopup;
+        private Border? _newLibraryCard;
         private TextBox? _newLibraryNameBox;
         private Control? _libraryButtonTarget;
 
@@ -80,13 +80,21 @@ namespace Miao.UI.Views.Pages
             InitializeComponent();
             _novelId = novelId;
 
+            EditPopup.PlacementTarget = EditButton;
+            AttachHoverAutoClose(EditPopup, EditButton);
+            MainView.Current?.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) =>
+            {
+                EditPopup.IsOpen = false;
+                if (_libraryPopup != null) _libraryPopup.IsOpen = false;
+            });
+
             var tessdataPath = Path.Combine(AppContext.BaseDirectory, "tessdata");
             var ocr = new OcrService(tessdataPath);
 
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
-                new FanqieDownloadSource(_browser, PlatformServices.ScreenshotFetcher, ocr),
+                new FanqieDownloadSource(_browser),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
@@ -132,7 +140,7 @@ namespace Miao.UI.Views.Pages
             var border = new Border
             {
                 Background = Brushes.White,
-                BorderBrush = this.FindResource("BorderSoft") as IBrush ?? Brushes.LightGray,
+                BorderBrush = GetSafeBrush("BorderSoft", Brushes.LightGray),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(12),
@@ -205,7 +213,7 @@ namespace Miao.UI.Views.Pages
             MetaUpdateText.Text = $"Cập nhật: {updateTime:dd-MM-yyyy HH:mm}";
 
             var tagList = string.IsNullOrWhiteSpace(novel.Tags)
-                ? new List<string> { "(chưa có tag)" }
+                ? new List<string> { "chưa có tag" }
                 : novel.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             TagsList.ItemsSource = tagList;
 
@@ -308,7 +316,7 @@ namespace Miao.UI.Views.Pages
             ChapterPagination.IsVisible = totalPages > 1;
             ChapterPrevButton.IsEnabled = _chapterPage > 1;
             ChapterNextButton.IsEnabled = _chapterPage < totalPages;
-            BuildChapterPageNumbers(totalPages);
+            PaginationHelper.BuildNumbersOnly(ChapterPageNumbersPanel, totalPages, _chapterPage, ChangeChapterPage);
         }
 
         private void ChangeChapterPage(int newPage)
@@ -334,46 +342,6 @@ namespace Miao.UI.Views.Pages
                     }
                 }, DispatcherPriority.Loaded);
             }
-        }
-
-        private void BuildChapterPageNumbers(int totalPages)
-        {
-            ChapterPageNumbersPanel.Children.Clear();
-
-            foreach (var p in GetChapterPageNumbersToShow(totalPages))
-            {
-                if (p == -1)
-                {
-                    ChapterPageNumbersPanel.Children.Add(new TextBlock
-                    {
-                        Text = "...",
-                        Foreground = Brushes.Gray,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        Margin = new Thickness(4, 0, 4, 0)
-                    });
-                    continue;
-                }
-
-                var btn = new Button { Content = p.ToString() };
-                btn.Classes.Add("pageButton");
-                if (p == _chapterPage) btn.Classes.Add("active");
-                int page = p;
-                btn.Click += (s, e) => ChangeChapterPage(page);
-                ChapterPageNumbersPanel.Children.Add(btn);
-            }
-        }
-
-        private IEnumerable<int> GetChapterPageNumbersToShow(int totalPages)
-        {
-            const int windowSize = 2;
-            var pages = new List<int> { 1 };
-            int start = Math.Max(2, _chapterPage - windowSize);
-            int end = Math.Min(totalPages - 1, _chapterPage + windowSize);
-            if (start > 2) pages.Add(-1);
-            for (int i = start; i <= end; i++) pages.Add(i);
-            if (end < totalPages - 1) pages.Add(-1);
-            if (totalPages > 1) pages.Add(totalPages);
-            return pages.Distinct();
         }
 
         private List<ChapterSection> BuildChapterSections(List<ChapterListItem> chapters)
@@ -482,6 +450,13 @@ namespace Miao.UI.Views.Pages
 
             card.IsVisible = true;
             ModalService.Show(card);
+        }
+
+        private IBrush GetSafeBrush(string resourceKey, IBrush fallback)
+        {
+            if (this.TryFindResource(resourceKey, out var value) && value is IBrush brush)
+                return brush;
+            return fallback;
         }
 
         private void ShowConfirm(string message, Action onConfirm)
@@ -1337,12 +1312,8 @@ namespace Miao.UI.Views.Pages
             }
 
             EditPinYinBox.IsVisible = false;
-            EditOriginalText.Height = 32;
             EditOriginalText.Background = Brushes.White;
-            EditNameBox.Height = 32;
             EditNameBox.Background = Brushes.White;
-            EditNameBox.BorderBrush = (IBrush)this.FindResource("BorderSoft")!;
-            EditHanVietBox.Height = 32;
 
             var buttons = FindVisualChildren<Button>(NameEditCard).ToList();
             if (buttons.Count >= 3)
@@ -1382,6 +1353,7 @@ namespace Miao.UI.Views.Pages
             if (entry == null)
                 return;
 
+            entry.OriginalTerm = EditOriginalText.Text?.Trim() ?? "";
             entry.HanViet = EditHanVietBox.Text?.Trim() ?? "";
             entry.TranslatedTerm = EditNameBox.Text?.Trim() ?? "";
             db.SaveChanges();
@@ -1501,6 +1473,50 @@ namespace Miao.UI.Views.Pages
             };
         }
 
+        //di chuột khỏi dropdwn
+
+        private DispatcherTimer? _popupCloseTimer;
+
+        private void AttachHoverAutoClose(Popup popup, Control anchor)
+        {
+            if (popup.Child is not Control content)
+                return;
+
+            const int pollIntervalMs = 150;
+            const int closeAfterMs = 500;
+            const int graceMs = 300; // thời gian ân hạn ngay sau khi mở, tránh sự kiện giả
+
+            DispatcherTimer? pollTimer = null;
+            int awayTicks = -graceMs;
+
+            void Poll(object? s, EventArgs e)
+            {
+                if (anchor.IsPointerOver || content.IsPointerOver)
+                {
+                    awayTicks = 0;
+                    return;
+                }
+
+                awayTicks += pollIntervalMs;
+                if (awayTicks >= closeAfterMs)
+                {
+                    pollTimer!.Stop();
+                    popup.IsOpen = false;
+                }
+            }
+
+            popup.Opened += (_, _) =>
+            {
+                awayTicks = -graceMs;
+                pollTimer?.Stop();
+                pollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(pollIntervalMs) };
+                pollTimer.Tick += Poll;
+                pollTimer.Start();
+            };
+
+            popup.Closed += (_, _) => pollTimer?.Stop();
+        }
+
         // ===================== Thêm vào thư viện tuỳ chỉnh =====================
 
         private void OnAddToLibraryClick(object? sender, RoutedEventArgs e)
@@ -1524,12 +1540,13 @@ namespace Miao.UI.Views.Pages
                 Placement = PlacementMode.Bottom,
                 IsLightDismissEnabled = true
             };
+            ((ISetLogicalParent)popup).SetParent(this);
 
             var panel = new StackPanel();
             var card = new Border
             {
                 Background = Brushes.White,
-                BorderBrush = (IBrush)this.FindResource("BorderSoft")!,
+                BorderBrush = GetSafeBrush("BorderSoft", Brushes.LightGray),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(4),
@@ -1557,7 +1574,7 @@ namespace Miao.UI.Views.Pages
                         {
                             Text = "✓",
                             FontWeight = FontWeight.Bold,
-                            Foreground = (IBrush)this.FindResource("AccentJade")!,
+                            Foreground = GetSafeBrush("AccentJade", Brushes.SeaGreen),
                             Margin = new Thickness(8, 0, 0, 0),
                             VerticalAlignment = VerticalAlignment.Center
                         };
@@ -1585,6 +1602,7 @@ namespace Miao.UI.Views.Pages
             panel.Children.Add(createButton);
 
             popup.Child = card;
+            AttachHoverAutoClose(popup, placementTarget);
             return popup;
         }
 
@@ -1603,84 +1621,57 @@ namespace Miao.UI.Views.Pages
             if (_libraryPopup != null)
                 _libraryPopup.IsOpen = false;
 
-            if (_newLibraryPopup == null)
-                _newLibraryPopup = BuildNewLibraryPopup(_libraryButtonTarget);
-            else
-                _newLibraryPopup.PlacementTarget = _libraryButtonTarget;
+            if (_newLibraryCard == null)
+                _newLibraryCard = BuildNewLibraryCard();
 
             _newLibraryNameBox!.Text = "";
-            _newLibraryPopup.IsOpen = true;
+            ShowModal(_newLibraryCard);
             _newLibraryNameBox.Focus();
         }
 
-        private Popup BuildNewLibraryPopup(Control? placementTarget)
+        private Border BuildNewLibraryCard()
         {
-            var popup = new Popup
-            {
-                PlacementTarget = placementTarget,
-                Placement = PlacementMode.Bottom,
-                IsLightDismissEnabled = true
-            };
-
             var panel = new StackPanel();
             var card = new Border
             {
                 Background = Brushes.White,
-                BorderBrush = (IBrush)this.FindResource("BorderSoft")!,
-                BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(18),
-                Width = 320,
+                Padding = new Thickness(24),
+                Width = 340,
                 Child = panel
             };
 
-            var nameRow = new Grid { Margin = new Thickness(0, 0, 0, 16) };
-            nameRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-            nameRow.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star));
-            nameRow.Children.Add(new TextBlock
+            panel.Children.Add(new TextBlock
             {
-                Text = "Tên",
-                FontSize = 15,
-                Foreground = (IBrush)this.FindResource("TextPrimary")!,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 12, 0)
+                Text = "Thêm danh sách mới",
+                FontSize = 17,
+                FontWeight = FontWeight.Bold,
+                Margin = new Thickness(0, 0, 0, 16)
             });
 
             _newLibraryNameBox = new TextBox
             {
-                FontFamily = new FontFamily("Arial"),
                 FontSize = 15,
-                Padding = new Thickness(10, 7),
-                BorderBrush = (IBrush)this.FindResource("BorderSoft")!,
-                BorderThickness = new Thickness(1),
-                Background = Brushes.White,
-                VerticalContentAlignment = VerticalAlignment.Center
+                PlaceholderText = "Tên danh sách...",
+                Height = 36,
+                Margin = new Thickness(0, 0, 0, 20)
             };
-            Grid.SetColumn(_newLibraryNameBox, 1);
-            nameRow.Children.Add(_newLibraryNameBox);
-            panel.Children.Add(nameRow);
+            panel.Children.Add(_newLibraryNameBox);
 
-            var addButton = new Button { Content = "Thêm", Width = 80 };
+            var buttonRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+
+            var addButton = new Button { Content = "Thêm", Width = 90, Margin = new Thickness(0, 0, 8, 0) };
             addButton.Classes.Add("NovelActionButton");
-            addButton.Classes.Add("NovelPrimaryButton");
             addButton.Click += OnConfirmCreateLibraryClick;
+            buttonRow.Children.Add(addButton);
 
-            var cancelButton = new Button
-            {
-                Content = "Hủy",
-                Width = 80,
-                Margin = new Thickness(8, 0, 0, 0)
-            };
+            var cancelButton = new Button { Content = "Hủy", Width = 90 };
             cancelButton.Classes.Add("NovelActionButton");
             cancelButton.Click += OnCancelCreateLibraryClick;
-
-            var buttonRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            buttonRow.Children.Add(addButton);
             buttonRow.Children.Add(cancelButton);
-            panel.Children.Add(buttonRow);
 
-            popup.Child = card;
-            return popup;
+            panel.Children.Add(buttonRow);
+            return card;
         }
 
         private void OnConfirmCreateLibraryClick(object? sender, RoutedEventArgs e)
@@ -1706,16 +1697,14 @@ namespace Miao.UI.Views.Pages
                 db.SaveChanges();
             }
 
-            if (_newLibraryPopup != null)
-                _newLibraryPopup.IsOpen = false;
+            ModalService.Close();
 
             UpdateStatusText.Text = $"Đã thêm vào thư viện: {library.Name}";
         }
 
         private void OnCancelCreateLibraryClick(object? sender, RoutedEventArgs e)
         {
-            if (_newLibraryPopup != null)
-                _newLibraryPopup.IsOpen = false;
+            ModalService.Close();
         }
 
         private void AddNovelToLibrary(Guid libraryId)

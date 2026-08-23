@@ -21,11 +21,10 @@ namespace Miao.UI.Views.Pages
     public partial class DownloadPage : UserControl
     {
         private readonly IPageFetcher _browser = PlatformServices.PageFetcher;
-        private readonly IScreenshotFetcher _screenshotFetcher = PlatformServices.ScreenshotFetcher;
         private readonly List<IDownloadSource> _sources;
         private IDownloadSource? _activeSource;
-        private readonly TranslationService _titleTranslator = new(new CTranslate2Provider());
-        private readonly TranslationService _contentTranslator = new(new CTranslate2Provider());
+        private readonly TranslationService _titleTranslator = new();
+        private readonly TranslationService _contentTranslator = new();
 
         private readonly ObservableCollection<ChapterCheckItem> _chapterItems = new();
         private string _novelTitle = "";
@@ -39,28 +38,16 @@ namespace Miao.UI.Views.Pages
         {
             InitializeComponent();
 
-            OcrService? ocr = null;
-            try
-            {
-                var tessdataPath = Path.Combine(AppContext.BaseDirectory, "tessdata");
-                ocr = new OcrService(tessdataPath);
-            }
-            catch (Exception ex)
-            {
-                StatusText.Text = $"Cảnh báo: OCR không khả dụng ({ex.Message}). Nguồn Fanqie sẽ bị tắt.";
-            }
-
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
+                new FanqieDownloadSource(_browser),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
                 new WikidichDownloadSource(_browser),
+                new Novel543DownloadSource(_browser),
             };
-
-            if (ocr != null)
-                _sources.Insert(1, new FanqieDownloadSource(_browser, _screenshotFetcher, ocr));
 
             ChaptersList.ItemsSource = _chapterItems;
         }

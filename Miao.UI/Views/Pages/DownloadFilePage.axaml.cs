@@ -18,8 +18,8 @@ namespace Miao.UI.Views.Pages
     {
         private readonly FileImportService _importService = new();
         private readonly ObservableCollection<ImportFileRow> _files = new();
-        private readonly TranslationService _titleTranslator = new(new CTranslate2Provider());
-        private readonly TranslationService _contentTranslator = new(new CTranslate2Provider());
+        private readonly TranslationService _titleTranslator = new();
+        private readonly TranslationService _contentTranslator = new();
 
         public DownloadFilePage()
         {

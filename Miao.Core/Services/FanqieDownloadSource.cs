@@ -21,10 +21,7 @@ namespace Miao.Core.Services
         private const string BookApi =
             "https://api5-normal-sinfonlineb.fqnovel.com/reading/bookapi/multi-detail/v/";
 
-        public FanqieDownloadSource(
-            IPageFetcher fetcher,
-            IScreenshotFetcher screenshotFetcher,
-            OcrService ocr)
+        public FanqieDownloadSource(IPageFetcher fetcher)
         {
             _fetcher = fetcher;
 

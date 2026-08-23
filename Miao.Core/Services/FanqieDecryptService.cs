@@ -40,7 +40,6 @@ namespace Miao.Core.Services
 
         public async Task<string> GetChapterContentAsync(
             string itemId,
-            string? installId = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(itemId))
@@ -49,7 +48,6 @@ namespace Miao.Core.Services
             var response =
                 await GetBatchFullAsync(
                     itemId,
-                    installId,
                     cancellationToken);
 
             var encryptedContent =
@@ -62,13 +60,11 @@ namespace Miao.Core.Services
 
             return await DecryptContentAsync(
                 encryptedContent,
-                installId,
                 cancellationToken);
         }
 
         private async Task<JsonElement> GetBatchFullAsync(
             string itemId,
-            string? installId,
             CancellationToken cancellationToken)
         {
             var url =
@@ -83,9 +79,7 @@ namespace Miao.Core.Services
                     HttpMethod.Get,
                     url);
 
-            AddHeaders(
-                request,
-                installId);
+            AddHeaders(request);
 
             using var response =
                 await _http.SendAsync(
@@ -105,7 +99,6 @@ namespace Miao.Core.Services
         }
 
         private async Task<string> GetDynamicKeyAsync(
-            string? installId,
             CancellationToken cancellationToken)
         {
             if (!string.IsNullOrWhiteSpace(_dynamicKey) &&
@@ -120,13 +113,22 @@ namespace Miao.Core.Services
                     "Fanqie REG_KEY chưa được cấu hình.");
             }
 
-            var deviceId =
-                GetDeviceId();
+            if (string.IsNullOrWhiteSpace(_config.ServerDeviceId) ||
+                !ulong.TryParse(
+                    _config.ServerDeviceId,
+                    out var deviceId))
+            {
+                throw new InvalidOperationException(
+                    "Fanqie SERVER_DEVICE_ID chưa được cấu hình hoặc không hợp lệ.");
+            }
+
+            var regKeyBytes =
+                HexToBytes(_config.RegKey);
 
             var content =
                 GenerateRegisterContent(
                     deviceId,
-                    _config.RegKey);
+                    regKeyBytes);
 
             var payload =
                 JsonSerializer.Serialize(
@@ -145,9 +147,7 @@ namespace Miao.Core.Services
                     HttpMethod.Post,
                     url);
 
-            AddHeaders(
-                request,
-                installId);
+            AddHeaders(request);
 
             request.Content =
                 new StringContent(
@@ -212,7 +212,7 @@ namespace Miao.Core.Services
             var decryptedKey =
                 AesCbcDecrypt(
                     encryptedKey,
-                    HexToBytes(_config.RegKey));
+                    regKeyBytes);
 
             _dynamicKey =
                 Convert.ToHexString(
@@ -227,12 +227,10 @@ namespace Miao.Core.Services
 
         private async Task<string> DecryptContentAsync(
             string encryptedContent,
-            string? installId,
             CancellationToken cancellationToken)
         {
             var key =
                 await GetDynamicKeyAsync(
-                    installId,
                     cancellationToken);
 
             byte[] encrypted;
@@ -384,17 +382,10 @@ namespace Miao.Core.Services
             using var aes =
                 Aes.Create();
 
-            aes.Key =
-                key;
-
-            aes.IV =
-                iv;
-
-            aes.Mode =
-                CipherMode.CBC;
-
-            aes.Padding =
-                PaddingMode.PKCS7;
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
 
             using var decryptor =
                 aes.CreateDecryptor();
@@ -403,6 +394,96 @@ namespace Miao.Core.Services
                 ciphertext,
                 0,
                 ciphertext.Length);
+        }
+
+        private static string GenerateRegisterContent(
+            ulong deviceId,
+            byte[] regKey)
+        {
+            var deviceBytes =
+                ToUInt64LittleEndian(
+                    deviceId);
+
+            var zeroBytes =
+                ToUInt64LittleEndian(0);
+
+            var combined =
+                new byte[16];
+
+            Buffer.BlockCopy(
+                deviceBytes,
+                0,
+                combined,
+                0,
+                8);
+
+            Buffer.BlockCopy(
+                zeroBytes,
+                0,
+                combined,
+                8,
+                8);
+
+            var iv =
+                new byte[16];
+
+            RandomNumberGenerator.Fill(iv);
+
+            var encrypted =
+                AesCbcEncrypt(
+                    combined,
+                    regKey,
+                    iv);
+
+            var result =
+                new byte[16 + encrypted.Length];
+
+            Buffer.BlockCopy(
+                iv,
+                0,
+                result,
+                0,
+                16);
+
+            Buffer.BlockCopy(
+                encrypted,
+                0,
+                result,
+                16,
+                encrypted.Length);
+
+            return Convert.ToBase64String(
+                result);
+        }
+
+        private static byte[] AesCbcEncrypt(
+            byte[] data,
+            byte[] key,
+            byte[] iv)
+        {
+            if (key.Length != 16 &&
+                key.Length != 24 &&
+                key.Length != 32)
+            {
+                throw new InvalidOperationException(
+                    $"Fanqie AES key không hợp lệ: {key.Length} bytes.");
+            }
+
+            using var aes =
+                Aes.Create();
+
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            using var encryptor =
+                aes.CreateEncryptor();
+
+            return encryptor.TransformFinalBlock(
+                data,
+                0,
+                data.Length);
         }
 
         private static byte[] Gunzip(
@@ -452,103 +533,6 @@ namespace Miao.Core.Services
             return result;
         }
 
-        private static string GenerateRegisterContent(
-            ulong deviceId,
-            string regKey)
-        {
-            var deviceBytes =
-                ToUInt64LittleEndian(
-                    deviceId);
-
-            var zeroBytes =
-                ToUInt64LittleEndian(0);
-
-            var combined =
-                new byte[16];
-
-            Buffer.BlockCopy(
-                deviceBytes,
-                0,
-                combined,
-                0,
-                8);
-
-            Buffer.BlockCopy(
-                zeroBytes,
-                0,
-                combined,
-                8,
-                8);
-
-            var iv =
-                new byte[16];
-
-            RandomNumberGenerator.Fill(iv);
-
-            var encrypted =
-                AesCbcEncrypt(
-                    combined,
-                    HexToBytes(regKey),
-                    iv);
-
-            var result =
-                new byte[16 + encrypted.Length];
-
-            Buffer.BlockCopy(
-                iv,
-                0,
-                result,
-                0,
-                16);
-
-            Buffer.BlockCopy(
-                encrypted,
-                0,
-                result,
-                16,
-                encrypted.Length);
-
-            return Convert.ToBase64String(
-                result);
-        }
-
-        private static byte[] AesCbcEncrypt(
-            byte[] data,
-            byte[] key,
-            byte[] iv)
-        {
-            if (key.Length != 16 &&
-                key.Length != 24 &&
-                key.Length != 32)
-            {
-                throw new InvalidOperationException(
-                    $"Fanqie AES key không hợp lệ: {key.Length} bytes.");
-            }
-
-            using var aes =
-                Aes.Create();
-
-            aes.Key =
-                key;
-
-            aes.IV =
-                iv;
-
-            aes.Mode =
-                CipherMode.CBC;
-
-            aes.Padding =
-                PaddingMode.PKCS7;
-
-            using var encryptor =
-                aes.CreateEncryptor();
-
-            return encryptor.TransformFinalBlock(
-                data,
-                0,
-                data.Length);
-        }
-
         private static byte[] ToUInt64LittleEndian(
             ulong value)
         {
@@ -566,49 +550,19 @@ namespace Miao.Core.Services
             return bytes;
         }
 
-        private ulong GetDeviceId()
-        {
-            if (!string.IsNullOrWhiteSpace(
-                    _config.ServerDeviceId) &&
-                ulong.TryParse(
-                    _config.ServerDeviceId,
-                    out var numericDeviceId))
-            {
-                return numericDeviceId;
-            }
-
-            var value =
-                Environment.MachineName;
-
-            var hash =
-                SHA256.HashData(
-                    Encoding.UTF8.GetBytes(
-                        value));
-
-            return BitConverter.ToUInt64(
-                hash,
-                0);
-        }
-
         private void AddHeaders(
-            HttpRequestMessage request,
-            string? installId)
+            HttpRequestMessage request)
         {
             request.Headers.TryAddWithoutValidation(
                 "User-Agent",
                 "okhttp/4.9.3");
 
-            var effectiveInstallId =
-                !string.IsNullOrWhiteSpace(installId)
-                    ? installId
-                    : _config.InstallId;
-
             if (!string.IsNullOrWhiteSpace(
-                    effectiveInstallId))
+                    _config.InstallId))
             {
                 request.Headers.TryAddWithoutValidation(
                     "Cookie",
-                    $"install_id={effectiveInstallId}");
+                    $"install_id={_config.InstallId}");
             }
         }
     }

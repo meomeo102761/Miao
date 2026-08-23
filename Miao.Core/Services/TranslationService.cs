@@ -1,157 +1,63 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Miao.Core.Services
 {
-    public class TranslationService
+    public enum TranslationEngine
     {
-        private readonly ITranslationProvider _provider;
-        private readonly ConvertStyleService _convertStyle = new();
+        DichNgay,
+        Dictionary
+    }
 
-        // Dịch theo khối lớn để giảm số request tới Dịch Ngay.
-        private const int PreferredChunkCharacters = 900;
-        private const int HardChunkCharacters = 1400;
+    /// <summary>
+    /// Đầu mối điều phối engine dịch.
+    ///
+    /// TranslationService không trực tiếp thực hiện việc dịch.
+    /// Nó chọn một ITranslationProvider:
+    ///
+    /// - DichNgayProvider
+    /// - DictionaryTranslationProvider
+    /// </summary>
+    public sealed class TranslationService
+    {
+        private ITranslationProvider _provider;
 
-        public TranslationService(ITranslationProvider provider)
+        public TranslationEngine Engine { get; private set; }
+
+        public TranslationService(
+            TranslationEngine engine = TranslationEngine.DichNgay,
+            TranslationOptions? options = null)
         {
-            _provider = provider;
+            SetEngine(engine, options);
         }
 
-        public async Task<string> TranslateTextAsync(string text)
+        public void SetEngine(
+            TranslationEngine engine,
+            TranslationOptions? options = null)
         {
-            if (string.IsNullOrWhiteSpace(text))
-                return string.Empty;
+            Engine = engine;
 
-            if (!Regex.IsMatch(text, @"\p{IsCJKUnifiedIdeographs}"))
-                return text.Trim();
-
-            var translated = await TranslateWithRetryAsync(text.Trim());
-            return _convertStyle.Apply(translated).Trim();
-        }
-
-        public async Task<string> TranslateChapterAsync(string originalContent)
-            => await TranslateChapterAsync(originalContent, null);
-
-        /// <summary>
-        /// Dịch theo các khối lớn thay vì gọi API cho từng dòng.
-        /// Việc này giảm mạnh số request tới Dịch Ngay và hạn chế 503 do
-        /// gửi quá nhiều request liên tiếp.
-        /// </summary>
-        public async Task<string> TranslateChapterAsync(
-            string originalContent,
-            Func<int, int, string, Task>? onChunkTranslated)
-        {
-            if (string.IsNullOrWhiteSpace(originalContent))
-                return string.Empty;
-
-            var normalized = originalContent
-                .Replace("\r\n", "\n")
-                .Replace('\r', '\n')
-                .Trim();
-
-            if (!Regex.IsMatch(normalized, @"\p{IsCJKUnifiedIdeographs}"))
-                return normalized;
-
-            var chunks = SplitChapterIntoChunks(normalized);
-            var translatedChunks = new List<string>();
-
-            for (var i = 0; i < chunks.Count; i++)
+            _provider = engine switch
             {
-                var chunk = chunks[i];
-                if (string.IsNullOrWhiteSpace(chunk))
-                    continue;
+                TranslationEngine.DichNgay =>
+                    new DichNgayProvider(),
 
-                var translated = await TranslateWithRetryAsync(chunk);
-                translated = _convertStyle.Apply(translated).Trim();
+                TranslationEngine.Dictionary =>
+                    new DictionaryTranslationProvider(options),
 
-                if (string.IsNullOrWhiteSpace(translated))
-                    throw new InvalidOperationException("Engine trả về nội dung dịch rỗng.");
-
-                translatedChunks.Add(translated);
-
-                if (onChunkTranslated != null)
-                    await onChunkTranslated(i + 1, chunks.Count, translated);
-
-                // Cho Dịch Ngay một khoảng nghỉ nhỏ giữa các request.
-                if (i < chunks.Count - 1 &&
-                    AppSettingsService.Instance.Settings.TranslationEngine.Equals(
-                        "DichNgay",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    await Task.Delay(350);
-                }
-            }
-
-            return string.Join("\n\n", translatedChunks).Trim();
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(engine),
+                    engine,
+                    "Engine dịch không được hỗ trợ.")
+            };
         }
 
-        private static List<string> SplitChapterIntoChunks(string text)
+        public Task<string> TranslateAsync(string text)
         {
-            var result = new List<string>();
-            var current = new StringBuilder();
+            if (string.IsNullOrEmpty(text))
+                return Task.FromResult(text ?? string.Empty);
 
-            foreach (var line in text.Split('\n'))
-            {
-                var cleanLine = line.Trim();
-
-                if (cleanLine.Length == 0)
-                {
-                    if (current.Length > 0)
-                        current.Append("\n");
-                    continue;
-                }
-
-                if (current.Length > 0 &&
-                    current.Length + cleanLine.Length + 1 > HardChunkCharacters)
-                {
-                    AddChunk(result, current);
-                }
-
-                if (current.Length > 0)
-                    current.Append('\n');
-
-                current.Append(cleanLine);
-
-                if (current.Length >= PreferredChunkCharacters)
-                    AddChunk(result, current);
-            }
-
-            if (current.Length > 0)
-                AddChunk(result, current);
-
-            return result;
-        }
-
-        private static void AddChunk(List<string> result, StringBuilder current)
-        {
-            var chunk = current.ToString().Trim();
-            if (chunk.Length > 0)
-                result.Add(chunk);
-            current.Clear();
-        }
-
-        private async Task<string> TranslateWithRetryAsync(string text)
-        {
-            const int maxAttempts = 4;
-            Exception? lastError = null;
-
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                try
-                {
-                    return await _provider.TranslateAsync(text);
-                }
-                catch (Exception ex) when (attempt < maxAttempts)
-                {
-                    lastError = ex;
-                    await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
-                }
-            }
-
-            throw lastError ?? new InvalidOperationException("Dịch thất bại.");
+            return _provider.TranslateAsync(text);
         }
     }
 }

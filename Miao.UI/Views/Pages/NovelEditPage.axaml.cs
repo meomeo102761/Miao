@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using Avalonia.Input;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -359,127 +360,73 @@ namespace Miao.UI.Views.Pages
 
         private void OnSaveClick(object? sender, RoutedEventArgs e)
         {
-            using var db = new MiaoDbContext(AppPaths.DbFilePath);
-            var novel = db.Novels.Find(_novelId);
-            if (novel == null)
-                return;
-
-            novel.CustomTitle = CustomTitleBox.Text?.Trim() ?? "";
-            novel.Title = OriginalTitleBox.Text?.Trim() ?? "";
-            novel.TranslatedTitle = TranslatedTitleBox.Text?.Trim() ?? "";
-            novel.Author = AuthorBox.Text?.Trim() ?? "";
-            novel.Description = DescriptionBox.Text?.Trim() ?? "";
-            novel.SourceUrl = SourceUrlBox.Text?.Trim() ?? "";
-            novel.SourceDescription = SourceDescriptionBox.Text?.Trim() ?? "";
-
-            var selectedTags = _tagGroups
-                .SelectMany(g => g.Tags)
-                .Where(t => t.IsSelected)
-                .ToList();
-
-            novel.Tags = string.Join(",", selectedTags.Select(t => t.Name));
-
-            var statusTagName = _tagGroups
-                .FirstOrDefault(g => g.Category == StatusCategoryName)?
-                .Tags.FirstOrDefault(t => t.IsSelected)?.Name;
-
-            novel.Status = string.IsNullOrWhiteSpace(statusTagName) ? DefaultStatus : statusTagName;
-
-            var oldNovelTags = db.NovelTags.Where(nt => nt.NovelId == _novelId).ToList();
-            db.NovelTags.RemoveRange(oldNovelTags);
-            foreach (var tag in selectedTags)
-                db.NovelTags.Add(new NovelTag { NovelId = _novelId, TagId = tag.TagId });
-
-            var oldLinks = db.NovelLinks.Where(l => l.NovelId == _novelId).ToList();
-            db.NovelLinks.RemoveRange(oldLinks);
-            foreach (var link in _links)
+            try
             {
-                if (string.IsNullOrWhiteSpace(link.Description) && string.IsNullOrWhiteSpace(link.Url))
-                    continue;
+                using var db = new MiaoDbContext(AppPaths.DbFilePath);
+                var novel = db.Novels.Find(_novelId);
+                if (novel == null)
+                    return;
 
-                db.NovelLinks.Add(new NovelLink
+                novel.CustomTitle = CustomTitleBox.Text?.Trim() ?? "";
+                novel.Title = OriginalTitleBox.Text?.Trim() ?? "";
+                novel.TranslatedTitle = TranslatedTitleBox.Text?.Trim() ?? "";
+                novel.Author = AuthorBox.Text?.Trim() ?? "";
+                novel.Description = DescriptionBox.Text?.Trim() ?? "";
+                novel.SourceUrl = SourceUrlBox.Text?.Trim() ?? "";
+                novel.SourceDescription = SourceDescriptionBox.Text?.Trim() ?? "";
+
+                var selectedTags = _tagGroups
+                    .SelectMany(g => g.Tags)
+                    .Where(t => t.IsSelected)
+                    .GroupBy(t => t.TagId)
+                    .Select(g => g.First())
+                    .ToList();
+
+                novel.Tags = string.Join(",", selectedTags.Select(t => t.Name));
+
+                var statusTagName = _tagGroups
+                    .FirstOrDefault(g => g.Category == StatusCategoryName)?
+                    .Tags.FirstOrDefault(t => t.IsSelected)?.Name;
+
+                novel.Status = string.IsNullOrWhiteSpace(statusTagName) ? DefaultStatus : statusTagName;
+
+                var oldNovelTags = db.NovelTags.Where(nt => nt.NovelId == _novelId).ToList();
+                db.NovelTags.RemoveRange(oldNovelTags);
+                db.SaveChanges();
+
+                foreach (var tag in selectedTags)
+                    db.NovelTags.Add(new NovelTag { NovelId = _novelId, TagId = tag.TagId });
+
+                var oldLinks = db.NovelLinks.Where(l => l.NovelId == _novelId).ToList();
+                db.NovelLinks.RemoveRange(oldLinks);
+                foreach (var link in _links)
                 {
-                    NovelId = _novelId,
-                    Description = link.Description.Trim(),
-                    Url = link.Url.Trim()
-                });
-            }
+                    if (string.IsNullOrWhiteSpace(link.Description) && string.IsNullOrWhiteSpace(link.Url))
+                        continue;
 
-            db.SaveChanges();
-
-            StatusText.Text = "Đã lưu thay đổi.";
-            AppNavigator.NavigateTo(new NovelDetailPage(_novelId));
-        }
-
-        private void OnDeleteClick(object? sender, RoutedEventArgs e)
-        {
-            using var db = new MiaoDbContext(AppPaths.DbFilePath);
-            var novel = db.Novels.Find(_novelId);
-            if (novel == null)
-            {
-                AppNavigator.GoBack();
-                return;
-            }
-
-            var title = string.IsNullOrWhiteSpace(novel.DisplayTitle) ? novel.Title : novel.DisplayTitle;
-
-            DeleteConfirmMessageText.Text =
-                $"Xóa truyện \"{title}\"?\n\nTất cả chương, ghi chú, liên kết và dữ liệu liên quan của truyện sẽ bị xóa khỏi cơ sở dữ liệu. Hành động này không thể hoàn tác.";
-
-            if (DeleteConfirmCard.Parent is Panel panel)
-                panel.Children.Remove(DeleteConfirmCard);
-
-            DeleteConfirmCard.IsVisible = true;
-            ModalService.Show(DeleteConfirmCard);
-        }
-
-        private void OnDeleteConfirmYesClick(object? sender, RoutedEventArgs e)
-        {
-            ModalService.Close();
-            PerformDeleteNovel();
-        }
-
-        private void OnDeleteConfirmNoClick(object? sender, RoutedEventArgs e) => ModalService.Close();
-
-        private void PerformDeleteNovel()
-        {
-            using var db = new MiaoDbContext(AppPaths.DbFilePath);
-            var novel = db.Novels.Find(_novelId);
-            if (novel == null)
-            {
-                AppNavigator.GoBack();
-                return;
-            }
-
-            var coverPath = novel.CoverImagePath;
-
-            if (!string.IsNullOrWhiteSpace(coverPath) && !Path.IsPathRooted(coverPath))
-            {
-                coverPath = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, coverPath);
-            }
-
-            var volumes = db.Volumes.Where(v => v.NovelId == _novelId).ToList();
-            db.Volumes.RemoveRange(volumes);
-            db.Novels.Remove(novel);
-            db.SaveChanges();
-
-            if (!string.IsNullOrWhiteSpace(coverPath))
-            {
-                try
-                {
-                    if (File.Exists(coverPath))
-                        File.Delete(coverPath);
+                    db.NovelLinks.Add(new NovelLink
+                    {
+                        NovelId = _novelId,
+                        Description = (link.Description ?? "").Trim(),
+                        Url = (link.Url ?? "").Trim()
+                    });
                 }
-                catch
-                {
-                    // Không để lỗi xóa file ảnh làm thất bại việc xóa dữ liệu SQLite.
-                }
-            }
 
-            AppNavigator.GoBack();
+                db.SaveChanges();
+
+                StatusText.Text = "Đã lưu thay đổi.";
+                AppNavigator.NavigateTo(new NovelDetailPage(_novelId));
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Lỗi khi lưu: {ex.GetType().Name} — {ex.Message}";
+            }
         }
 
         private void OnCancelClick(object? sender, RoutedEventArgs e)
+            => AppNavigator.NavigateTo(new NovelDetailPage(_novelId));
+
+        private void OnBackToNovelClick(object? sender, PointerPressedEventArgs e)
             => AppNavigator.NavigateTo(new NovelDetailPage(_novelId));
     }
 }

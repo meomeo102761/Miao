@@ -3,53 +3,6 @@
              x:Class="Miao.UI.Views.Pages.LibraryListPage"
              Background="{StaticResource BgMain}">
 
-    <UserControl.Styles>
-
-        <Style Selector="Button.pageButton">
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Margin" Value="2,0"/>
-            <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="MinWidth" Value="32"/>
-        </Style>
-
-        <!-- FluentTheme tô nền lên ContentPresenter bên trong template, không phải lên
-            Background của Button — đây là lý do dù đã set Background="Transparent"
-            vẫn thấy nền xám khi hover/pressed. Ép luôn 3 trạng thái này. -->
-        <Style Selector="Button.pageButton /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-        <Style Selector="Button.pageButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-        <Style Selector="Button.pageButton:pressed /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-
-        <!-- Hover: đổi màu chữ thay vì tô nền, để vẫn có phản hồi khi rê chuột -->
-        <Style Selector="Button.pageButton:pointerover">
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-        </Style>
-
-        <Style Selector="Button.pageButton.active">
-            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.pageButton.active /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
-        </Style>
-
-        <Style Selector="Button.pageButton:disabled">
-            <Setter Property="Foreground" Value="#BBB"/>
-        </Style>
-
-    </UserControl.Styles>
-
     <UserControl.Resources>
         <DataTemplate x:Key="NovelCardTemplate">
             <Border Width="200" Margin="15,0,15,16" Background="White"

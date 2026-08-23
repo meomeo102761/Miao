@@ -120,6 +120,23 @@ namespace Miao.UI.Views.Pages
             UpdateBulkDeleteButton();
         }
 
+        private void OnGroupSelectAllClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox cb || cb.Tag is not VolumeGroup group) return;
+
+            bool selectAll = cb.IsChecked == true;
+
+            foreach (var row in group.AllChapters)
+            {
+                row.IsSelected = selectAll;
+                if (selectAll) _selectedChapterIds.Add(row.Id);
+                else _selectedChapterIds.Remove(row.Id);
+            }
+
+            UpdateBulkDeleteButton();
+            LoadWorkspace();
+        }
+
         private void UpdateBulkDeleteButton()
         {
             var count = _selectedChapterIds.Count;
@@ -191,6 +208,7 @@ namespace Miao.UI.Views.Pages
             public List<ChapterRow> AllChapters { get; set; } = new();
 
             public bool CanManage => VolumeId.HasValue;
+            public bool IsAllSelected => AllChapters.Count > 0 && AllChapters.All(c => c.IsSelected);
             public string HeaderText => $"{Name} ({AllChapters.Count} chương)";
 
             public int CurrentPage => _currentPage;
