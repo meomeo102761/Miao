@@ -176,11 +176,28 @@
                             <TextBox Grid.Column="1" x:Name="AuthorBox" Classes="EditTextBox"/>
                         </Grid>
 
-                        <TextBlock Text="Tác phẩm tóm tắt:" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
-                        <TextBox x:Name="DescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="110" Height="NaN"
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Tác giả (dịch):" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBox Grid.Column="1" x:Name="TranslatedAuthorBox" Classes="EditTextBox"
+                                     ToolTip.Tip="Tên tác giả sau khi dịch — sửa tay nếu tự động dịch bị sai. Trang Thư viện ưu tiên hiển thị ô này, để trống sẽ dùng tên gốc."/>
+                        </Grid>
+
+                        <TextBlock Text="Tác phẩm tóm tắt (gốc):" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBox x:Name="DescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" Height="NaN"
                                  Padding="10,8" FontFamily="Arial" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
                                  CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
-                                 BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top"/>
+                                 BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top" Margin="0,0,0,14"/>
+
+                        <TextBlock Text="Tác phẩm tóm tắt (dịch):" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBox x:Name="TranslatedDescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" Height="NaN"
+                                 Padding="10,8" FontFamily="Arial" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
+                                 CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
+                                 BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top"
+                                 ToolTip.Tip="Mô tả sau khi dịch — trang Chi tiết truyện ưu tiên hiển thị ô này, để trống sẽ dùng mô tả gốc."/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center">

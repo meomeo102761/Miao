@@ -56,6 +56,9 @@ namespace Miao.Core.Models
 
         public string Tags { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string TranslatedDescription { get; set; } = string.Empty;
+        public string DisplayDescription =>
+            !string.IsNullOrWhiteSpace(TranslatedDescription) ? TranslatedDescription : Description;
         public string Status { get; set; } = "Chưa xác minh";
 
         public bool IsFavorite { get; set; } = false;

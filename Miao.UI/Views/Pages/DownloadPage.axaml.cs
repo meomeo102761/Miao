@@ -46,6 +46,7 @@ namespace Miao.UI.Views.Pages
             {
                 new Sixty9ShubaDownloadSource(_browser),
                 new FanqieDownloadSource(_browser, _screenshotFetcher, ocr),
+                new FanqieWebDownloadSource(_browser),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
@@ -58,6 +59,38 @@ namespace Miao.UI.Views.Pages
 
         // ================== Fetch danh sách chương ==================
 
+        private void OnUrlTextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)
+        {
+            var url = UrlTextBox.Text?.Trim() ?? "";
+
+            var isLofter = url.Contains(
+                "lofter.com",
+                StringComparison.OrdinalIgnoreCase);
+
+            var isFanqie = url.Contains(
+                "fanqienovel.com",
+                StringComparison.OrdinalIgnoreCase);
+
+            LofterOptionsPanel.IsVisible = isLofter;
+            FanqieOptionsPanel.IsVisible = isFanqie;
+
+            if (!isFanqie)
+            {
+                FanqieApiRadio.IsChecked = true;
+            }
+
+            if (!isLofter)
+            {
+                LofterNewTitleBox.Text = "";
+            }
+        }
+
+        private void OnFanqieSourceChanged(object? sender, RoutedEventArgs e)
+        {
+            // Chỉ thay đổi lựa chọn source.
+            // Source thực tế sẽ được gán trong OnFetchClick.
+        }
+
         private async void OnFetchClick(object? sender, RoutedEventArgs e)
         {
             var url = UrlTextBox.Text?.Trim() ?? "";
@@ -67,17 +100,43 @@ namespace Miao.UI.Views.Pages
                 return;
             }
 
-            _activeSource = _sources.FirstOrDefault(s => s.CanHandle(url));
+            // Fanqie có 2 source: API và Web.
+            // Không để FirstOrDefault tự chọn vì cả hai đều CanHandle cùng URL.
+            var isFanqie = url.Contains(
+                "fanqienovel.com",
+                StringComparison.OrdinalIgnoreCase);
+
+            if (isFanqie)
+            {
+                _activeSource = FanqieWebRadio.IsChecked == true
+                    ? _sources.OfType<FanqieWebDownloadSource>().FirstOrDefault()
+                    : _sources.OfType<FanqieDownloadSource>().FirstOrDefault();
+            }
+            else
+            {
+                _activeSource = _sources
+                    .Where(s => s is not FanqieWebDownloadSource)
+                    .FirstOrDefault(s => s.CanHandle(url));
+            }
+
             if (_activeSource == null)
             {
-                var supported = string.Join(", ", _sources.Select(s => s.SourceName));
-                StatusText.Text = $"Link này chưa được hỗ trợ (hiện hỗ trợ: {supported}).";
+                var supported = string.Join(", ", _sources
+                    .Where(s => s is not FanqieWebDownloadSource)
+                    .Select(s => s.SourceName));
+
+                StatusText.Text =
+                    $"Link này chưa được hỗ trợ (hiện hỗ trợ: {supported}).";
+
                 return;
             }
 
             StatusText.Text = "Đang tải danh sách chương...";
             _chapterItems.Clear();
+
             LofterOptionsPanel.IsVisible = false;
+            FanqieOptionsPanel.IsVisible = false;
+
             LofterNewTitleBox.Text = "";
             FetchButton.IsEnabled = false;
 

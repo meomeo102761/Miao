@@ -23,7 +23,8 @@
                     Classes="jade" Margin="8,0,0,0" Click="OnFetchClick"/>
             <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6">
                 <TextBox x:Name="UrlTextBox" Padding="8,0" VerticalContentAlignment="Center"
-                         BorderThickness="0" FontFamily="Arial" FontSize="13"/>
+                        BorderThickness="0" FontFamily="Arial" FontSize="13"
+                        TextChanged="OnUrlTextChanged"/>
             </Border>
         </DockPanel>
 
@@ -70,6 +71,30 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="4" x:Name="FanqieOptionsPanel" IsVisible="False"
+                BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6"
+                Background="#F8FAFA" Padding="12" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Fanqie có thể lấy dữ liệu theo hai cách — chọn nguồn sử dụng:"
+                           Classes="bodyText"
+                           Foreground="{StaticResource TextMuted}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,10"/>
+
+                <RadioButton x:Name="FanqieApiRadio"
+                             Content="API - Chưa hoàn thiện (tải thiếu nội dung)"
+                             GroupName="FanqieSource"
+                             IsChecked="True"
+                             IsCheckedChanged="OnFanqieSourceChanged"
+                             Margin="0,0,0,6"/>
+
+                <RadioButton x:Name="FanqieWebRadio"
+                             Content="Web"
+                             GroupName="FanqieSource"
+                             IsCheckedChanged="OnFanqieSourceChanged"/>
             </StackPanel>
         </Border>
 
