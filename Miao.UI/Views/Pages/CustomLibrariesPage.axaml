@@ -17,7 +17,7 @@
             <Setter Property="Template">
                 <ControlTemplate>
                     <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="5">
-                        <ContentPresenter Content="{TemplateBinding Content}" Margin="{TemplateBinding Padding}"
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" Margin="{TemplateBinding Padding}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
@@ -29,6 +29,12 @@
         <Style Selector="Button.pillAction:pointerover">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
+        <Style Selector="Button.pillAction TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.pillAction:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
 
         <Style Selector="Button.dialogPrimary">
             <Setter Property="Width" Value="90"/>
@@ -37,7 +43,7 @@
 
         <Style Selector="Button.dialogDanger">
             <Setter Property="Width" Value="90"/>
-            <Setter Property="Height" Value="36"/>            
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Background" Value="#E4574C"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontFamily" Value="Arial"/>
@@ -57,6 +63,12 @@
             <Setter Property="Background" Value="#E9A7A5"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
+        <Style Selector="Button.dialogDanger TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.dialogDanger:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
 
         <Style Selector="Button.dialogSecondary">
             <Setter Property="Width" Value="90"/>
@@ -73,10 +85,17 @@
                 <ControlTemplate>
                     <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="18">
-                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
+        </Style>
+
+        <Style Selector="Button.dialogSecondary TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+        <Style Selector="Button.dialogSecondary:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
         </Style>
     </UserControl.Styles>
 

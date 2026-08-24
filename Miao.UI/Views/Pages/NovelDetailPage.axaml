@@ -58,9 +58,27 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
-        <Style Selector="Button.NovelActionButton TextBlock">
+        <Style Selector="Button.NovelActionButton:not(.PagerButton) TextBlock">
             <Setter Property="Foreground" Value="White"/>
         </Style>
+        <Style Selector="Button.NovelActionButton.PagerButton TextBlock">
+            <Setter Property="Foreground" Value="#555555"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.PagerButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#555555"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.IconSquareButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.DangerButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton:not(.NovelPrimaryButton):not(.IconSquareButton):not(.DangerButton):not(.PagerButton):pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>       
         <Style Selector="Button.MenuItemButton TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>

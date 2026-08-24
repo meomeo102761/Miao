@@ -38,6 +38,32 @@
     <Style Selector="CheckBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="RadioButton"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
     <Style Selector="ToggleSwitch"><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Foreground" Value="{StaticResource TextPrimary}"/></Style>
+    <Style Selector="ScrollBar /template/ RepeatButton">
+      <Setter Property="IsVisible" Value="False"/>
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="MinWidth" Value="0"/>
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb">
+      <Setter Property="Background" Value="{StaticResource BorderSoft}"/>
+      <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb:pointerover">
+      <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+    </Style>
+    <Style Selector="ScrollBar:vertical">
+      <Setter Property="Width" Value="10"/>
+    </Style>
+    <Style Selector="ScrollBar:vertical /template/ Thumb">
+      <Setter Property="Width" Value="6"/>
+      <Setter Property="MinHeight" Value="30"/>
+    </Style>
+    <Style Selector="ScrollBar:horizontal">
+      <Setter Property="Height" Value="10"/>
+    </Style>
+    <Style Selector="ScrollBar:horizontal /template/ Thumb">
+      <Setter Property="Height" Value="6"/>
+      <Setter Property="MinWidth" Value="30"/>
+    </Style>
     <Style Selector="Button">
       <Setter Property="FontFamily" Value="Arial"/>
       <Setter Property="FontSize" Value="15"/>
@@ -230,7 +256,7 @@
 
     <Style Selector="Button.navButton"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>    
     <Style Selector="Button.navButton:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/></Style>
-    <Style Selector="Button.navButton:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeHover}"/><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.navButton:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/></Style>
     <Style Selector="Button.smallOutline"><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/></Style>
     <Style Selector="Button.smallOutline:pointerover"><Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/><Setter Property="Foreground" Value="{StaticResource AccentJade}"/></Style>    
     <Style Selector="Button.bigRound"><Setter Property="Width" Value="120"/><Setter Property="Height" Value="40"/><Setter Property="CornerRadius" Value="20"/><Setter Property="FontFamily" Value="Arial"/><Setter Property="FontSize" Value="15"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="{StaticResource AccentJade}"/><Setter Property="Foreground" Value="White"/></Style>

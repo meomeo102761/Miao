@@ -225,8 +225,7 @@ namespace Miao.Core.Services
 
                     var title =
                         NormalizeChapterTitle(
-                            rawTitle,
-                            number);
+                            rawTitle);
 
                     result.Add(
                     (
@@ -533,28 +532,9 @@ namespace Miao.Core.Services
         }
 
         private static string NormalizeChapterTitle(
-            string title,
-            int number)
+            string title)
         {
-            if (Regex.IsMatch(
-                    title,
-                    @"^(番外|特别篇|if线)\s*",
-                    RegexOptions.IgnoreCase))
-            {
-                return title;
-            }
-
-            var cleanTitle =
-                Regex.Replace(
-                    title,
-                    @"^第[一二三四五六七八九十百千万\d]+章\s*",
-                    "")
-                .Trim();
-
-            if (string.IsNullOrWhiteSpace(cleanTitle))
-                return $"第{number}章";
-
-            return $"第{number}章 {cleanTitle}";
+            return title?.Trim() ?? "";
         }
 
         private static string CleanContent(

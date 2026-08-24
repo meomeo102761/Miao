@@ -16,18 +16,23 @@
             <Setter Property="Template">
                 <ControlTemplate>
                     <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4">
-                        <ContentPresenter Content="{TemplateBinding Content}"
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
                                           Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
         </Style>
+        <Style Selector="Button.pageButton TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
         <Style Selector="Button.pageButton:pointerover /template/ Border#Bg">
             <Setter Property="Background" Value="{StaticResource AccentJadeLight}"/>
         </Style>
-
         <Style Selector="Button.pageButton:pointerover">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.pageButton:pointerover TextBlock">
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style Selector="Button.pageButton:disabled">

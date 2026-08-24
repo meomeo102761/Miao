@@ -159,7 +159,13 @@
             </Setter>
         </Style>
         <Style Selector="Button.DangerButton:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="#C94A40"/>
+            <Setter Property="Background" Value="#E9A7A5"/>
+        </Style>
+        <Style Selector="Button.DangerButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.DangerButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
         </Style>
 
         <Style Selector="Button.EditModeToggleButton">

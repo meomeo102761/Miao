@@ -74,23 +74,18 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="CornerRadius" Value="22"/>
         </Style>
-        <Style Selector="Button.BigRoundButton:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJadeHover}"/>
+        <Style Selector="Button.BigRoundButton:not(.CancelStyle):pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
-        <Style Selector="Button.BigRoundButton TextBlock">
+         <Style Selector="Button.BigRoundButton:not(.CancelStyle) TextBlock">
             <Setter Property="Foreground" Value="White"/>
         </Style>
-
-        <Style Selector="Button.BigRoundButton.CancelStyle">
-            <Setter Property="Background" Value="White"/>
+        <Style Selector="Button.BigRoundButton:not(.CancelStyle):pointerover TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderThickness" Value="1"/>
         </Style>
-        <Style Selector="Button.BigRoundButton.CancelStyle:pointerover">
-            <Setter Property="Background" Value="White"/>
+
+         <Style Selector="Button.BigRoundButton.CancelStyle:pointerover TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.BigRoundButton.CancelStyle TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
@@ -321,7 +316,8 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
             <Button Content="Cập nhật" Classes="BigRoundButton" Background="{StaticResource AccentJade}"
                     Foreground="White" Margin="0,0,12,0" Click="OnSaveClick"/>
-            <Button Content="Hủy" Classes="BigRoundButton CancelStyle" Click="OnCancelClick"/>
+            <Button Content="Hủy" Classes="BigRoundButton CancelStyle" Background="{StaticResource AccentJade}"
+                    Foreground="White" Margin="0,0,12,0" Click="OnCancelClick"/>
         </StackPanel>
 
         <TextBlock x:Name="StatusText" FontFamily="Arial" FontSize="12" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,10,0,0"/>

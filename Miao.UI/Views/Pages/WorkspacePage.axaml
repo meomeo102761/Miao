@@ -27,8 +27,15 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="CornerRadius" Value="18"/>
         </Style>
-        <Style Selector="Button.novelAction:pointerover">
+        <Style Selector="Button.NovelActionButton:not(.NovelPrimaryButton):not(.NovelDangerButton):pointerover">
             <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+
+        <Style Selector="Button.NovelActionButton:not(.NovelPrimaryButton):not(.NovelDangerButton) TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton:not(.NovelPrimaryButton):not(.NovelDangerButton):pointerover TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
         </Style>
 
         <!-- Trước: x:Key="NovelPrimaryButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
@@ -37,7 +44,7 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="BorderThickness" Value="0"/>
-        </Style>
+        </Style>       
 
         <!-- Trước: x:Key="NovelDangerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
         <Style Selector="Button.NovelActionButton.NovelDangerButton">
@@ -51,6 +58,18 @@
         </Style>
         <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover">
             <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.NovelDangerButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.NovelPrimaryButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
 
         <Style Selector="Button.PagerButton">

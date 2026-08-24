@@ -22,13 +22,20 @@
                 <ControlTemplate>
                     <Border Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
-                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
         </Style>
         <Style Selector="Button.overlayButton:pointerover /template/ Border#Bg">
             <Setter Property="Background" Value="#33FFFFFF"/>
+        </Style>
+
+        <Style Selector="Button.overlayButton TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.overlayButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
         </Style>
 
         <Style Selector="Button.dialogPrimary">
@@ -57,6 +64,12 @@
             <Setter Property="Background" Value="#E9A7A5"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
+        <Style Selector="Button.dialogDanger TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.dialogDanger:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
         
         <Style Selector="Button.dialogSecondary">
             <Setter Property="Width" Value="90"/>
@@ -73,10 +86,17 @@
                 <ControlTemplate>
                     <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="18">
-                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
+        </Style>
+
+        <Style Selector="Button.dialogSecondary TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+        <Style Selector="Button.dialogSecondary:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
         </Style>
 
         <Style Selector="Button.pagerNav">
@@ -94,13 +114,19 @@
                 <ControlTemplate>
                     <Border Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
-                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
         </Style>
         <Style Selector="Button.pagerNav:pointerover /template/ Border#Bg">
             <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+        <Style Selector="Button.pagerNav TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+        </Style>
+        <Style Selector="Button.pagerNav:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
         </Style>
         <Style Selector="Button.pagerNav:disabled">
             <Setter Property="Opacity" Value="0.4"/>
@@ -109,6 +135,12 @@
             <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.pagerCurrent TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.pagerCurrent:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
         </Style>
     </UserControl.Styles>
 
