@@ -173,30 +173,45 @@ namespace Miao.Core.Services
 
                 doc.LoadHtml(html);
 
-                var title =
-                    GetMetaContent(doc, "og:title", "twitter:title");
+                // Nguồn chính: khối <script type="application/ld+json"> chứa
+                // structured data (schema.org NewsArticle) mà trang luôn nhúng
+                // cho SEO — có title/author/cover đầy đủ, đáng tin cậy hơn hẳn
+                // og:title/og:image (Fanqie không dùng OpenGraph tag trên trang
+                // /page/{bookId} nên 2 tag đó không hề tồn tại).
+                var (ldTitle, ldAuthor, ldCover) = GetNovelInfoFromJsonLd(doc);
 
-                var cover =
-                    GetMetaContent(doc, "og:image", "twitter:image");
+                var title = ldTitle;
+                var author = ldAuthor;
+                var cover = ldCover;
 
                 var description =
                     GetMetaContent(doc, "og:description", "description", "twitter:description");
 
-                // Trang không có meta chuẩn cho tác giả, dò bằng mẫu chữ
-                // "作者:" / "作者：" thường xuất hiện gần tên truyện.
-                var author = "";
+                // Dự phòng: nếu vì lý do gì đó trang không có JSON-LD, thử
+                // meta tag chuẩn rồi mới tới regex mò chữ "作者:".
+                if (string.IsNullOrWhiteSpace(title))
+                    title = GetMetaContent(doc, "og:title", "twitter:title");
 
-                var authorMatch =
-                    Regex.Match(
-                        html,
-                        "作者[:：]\\s*([^\\s<\"']{1,30})");
+                if (string.IsNullOrWhiteSpace(cover))
+                    cover = GetMetaContent(doc, "og:image", "twitter:image");
 
-                if (authorMatch.Success)
+                if (string.IsNullOrWhiteSpace(author))
+                    author = GetMetaContent(doc, "author", "og:novel:author", "twitter:creator");
+
+                if (string.IsNullOrWhiteSpace(author))
                 {
-                    author =
-                        HtmlEntity.DeEntitize(
-                            authorMatch.Groups[1].Value)
-                        .Trim();
+                    var authorMatch =
+                        Regex.Match(
+                            html,
+                            "作者[:：]\\s*([^\\s<\"'，,|｜]{1,30})");
+
+                    if (authorMatch.Success)
+                    {
+                        author =
+                            HtmlEntity.DeEntitize(
+                                authorMatch.Groups[1].Value)
+                            .Trim();
+                    }
                 }
 
                 if (string.IsNullOrWhiteSpace(title))
@@ -205,21 +220,17 @@ namespace Miao.Core.Services
                         doc.DocumentNode.SelectSingleNode("//title");
 
                     if (titleNode != null)
-                    {
-                        title =
-                            HtmlEntity.DeEntitize(titleNode.InnerText)
-                                .Trim();
-
-                        // Trang thường có dạng "Tên truyện - 番茄小说" hoặc tương tự,
-                        // cắt bớt phần hậu tố sau dấu gạch ngang/gạch dọc nếu có.
-                        title =
-                            Regex.Replace(
-                                title,
-                                @"\s*[-|_｜–—]\s*(番茄小说|fanqienovel).*$",
-                                "",
-                                RegexOptions.IgnoreCase);
-                    }
+                        title = HtmlEntity.DeEntitize(titleNode.InnerText).Trim();
                 }
+
+                // headline/og:title/<title> đều có thể dính hậu tố quảng cáo SEO
+                // (VD "《Tên》完整版在线免费阅读_《Tên》小说_番茄小说官网") — dọn chung.
+                title = CleanNovelTitle(title);
+
+                // description có tiền tố quảng cáo cố định kiểu
+                // "番茄小说提供{tên truyện}完整版在线免费阅读，精彩小说尽在番茄小说网。"
+                // trước phần tóm tắt thật — cắt bỏ tiền tố này nếu có.
+                description = CleanNovelDescription(description);
 
                 return (
                     title.Trim(),
@@ -235,6 +246,103 @@ namespace Miao.Core.Services
 
                 return ("", "", "", "");
             }
+        }
+
+                private static readonly string[] TitleJunkKeywords =
+        {
+            "免费阅读", "在线阅读", "最新章节", "全文阅读", "完整版",
+            "小说网", "TXT下载", "全本", "无弹窗", "番茄小说", "fanqienovel"
+        };
+
+        // Fanqie hay đặt <title>/og:title theo kiểu SEO nhồi từ khoá, ví dụ
+        // "《Tên truyện》最新章节_《Tên truyện》全文阅读_番茄小说" — tên thật luôn
+        // nằm ở đoạn đầu tiên trước dấu phân cách hoặc từ khoá rác đầu tiên.
+        private static string CleanNovelTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return title ?? "";
+
+            var parts =
+                Regex.Split(title, @"[-_|｜–—丨_]")
+                    .Select(p => p.Trim())
+                    .Where(p => !string.IsNullOrWhiteSpace(p));
+
+            var candidate = parts.FirstOrDefault() ?? title.Trim();
+
+            foreach (var keyword in TitleJunkKeywords)
+            {
+                var index = candidate.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+                if (index > 0)
+                    candidate = candidate.Substring(0, index).Trim();
+            }
+
+            return candidate.Trim();
+        }
+
+        private static (string Title, string Author, string Cover) GetNovelInfoFromJsonLd(HtmlDocument doc)
+        {
+            var scripts = doc.DocumentNode.SelectNodes("//script[@type='application/ld+json']");
+            if (scripts == null)
+                return ("", "", "");
+
+            foreach (var script in scripts)
+            {
+                var json = script.InnerText;
+                if (string.IsNullOrWhiteSpace(json))
+                    continue;
+
+                try
+                {
+                    using var doc2 = JsonDocument.Parse(json);
+                    var root = doc2.RootElement;
+
+                    var type = root.TryGetProperty("@type", out var typeEl) ? typeEl.GetString() : null;
+                    if (!string.Equals(type, "NewsArticle", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var title = root.TryGetProperty("headline", out var h) ? h.GetString() ?? "" : "";
+
+                    var author = "";
+                    if (root.TryGetProperty("author", out var authorEl))
+                    {
+                        if (authorEl.ValueKind == JsonValueKind.Array && authorEl.GetArrayLength() > 0)
+                            author = authorEl[0].TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                        else if (authorEl.ValueKind == JsonValueKind.Object)
+                            author = authorEl.TryGetProperty("name", out var n2) ? n2.GetString() ?? "" : "";
+                    }
+
+                    var cover = "";
+                    if (root.TryGetProperty("image", out var imageEl))
+                    {
+                        if (imageEl.ValueKind == JsonValueKind.Array && imageEl.GetArrayLength() > 0)
+                            cover = imageEl[0].GetString() ?? "";
+                        else if (imageEl.ValueKind == JsonValueKind.String)
+                            cover = imageEl.GetString() ?? "";
+                    }
+
+                    return (title.Trim(), author.Trim(), cover.Trim());
+                }
+                catch (JsonException)
+                {
+                    // Khối ld+json này không parse được (hoặc không đúng dạng
+                    // mong đợi) -> thử khối tiếp theo nếu có.
+                }
+            }
+
+            return ("", "", "");
+        }
+
+        private static string CleanNovelDescription(string description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                return description ?? "";
+
+            // "番茄小说提供{tên truyện}完整版在线免费阅读，精彩小说尽在番茄小说网。{tóm tắt thật}"
+            var match = Regex.Match(description, @"^番茄小说提供.*?小说网[。.]\s*");
+            if (match.Success)
+                return description.Substring(match.Length).Trim();
+
+            return description.Trim();
         }
 
         private static string GetMetaContent(

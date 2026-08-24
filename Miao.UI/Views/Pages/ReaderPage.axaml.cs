@@ -60,7 +60,8 @@ namespace Miao.UI.Views.Pages
             _chapterNumber = chapterNumber;
 
             var handataPath = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "handata");
-            _sinoVietnamese = new SinoVietnameseConverter(handataPath);
+            var hanVietDictionaryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "translate", "zh_to_vi", "HanViet.json");
+            _sinoVietnamese = new SinoVietnameseConverter(handataPath, hanVietDictionaryPath);
 
             BlocksList.ItemsSource = _blocks;
 

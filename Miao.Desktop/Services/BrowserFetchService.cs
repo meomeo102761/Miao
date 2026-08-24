@@ -49,6 +49,17 @@ namespace Miao.Desktop.Services
         {
             await EnsureInitializedAsync();
 
+            // QUAN TRỌNG: cửa sổ ẩn mặc định chỉ 1x1 pixel. Trang đọc Fanqie
+            // lazy-load đoạn văn/ảnh phía sau bằng IntersectionObserver dựa
+            // theo vị trí cuộn trong viewport — với viewport 1x1 thì gần như
+            // không có gì được coi là "đang hiển thị" nên nội dung sau đoạn
+            // đầu và ảnh không bao giờ được kích hoạt load. Phóng to tạm thời
+            // (giống CaptureScreenshotAsync) trước khi điều hướng.
+            _hiddenWindow!.Width = 1200;
+            _hiddenWindow.Height = 3000;
+            _webView!.Width = 1200;
+            _webView.Height = 3000;
+
             var tcs = new TaskCompletionSource<bool>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -111,14 +122,70 @@ namespace Miao.Desktop.Services
                 waitedMs += pollIntervalMs;
             }
 
-            // Đợi thêm một chút để nội dung render nốt, tránh chụp đúng lúc DOM
-            // đang cập nhật dở dang (cắt cụt giữa chừng).
-            await Task.Delay(400);
+            try
+            {
+                // Cuộn xuống đáy nhiều lần để kích hoạt lazy-load hết đoạn văn/ảnh
+                // còn lại, dừng khi chiều cao trang không tăng thêm nữa (đã tải hết).
+                // Nếu bước này lỗi (VD script tạm thời fail) thì bỏ qua, vẫn chụp
+                // HTML hiện có thay vì làm hỏng luôn cả chương.
+                await ScrollToLoadAllContentAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[FANQIE] Scroll-to-load lỗi (bỏ qua, vẫn chụp HTML hiện có): {ex}");
+            }
 
             var json = await _webView.CoreWebView2.ExecuteScriptAsync(
                 "document.documentElement.outerHTML");
 
+            // Trả cửa sổ về kích thước ẩn nhỏ như cũ (luôn chạy dù có lỗi ở trên).
+            _hiddenWindow.Width = 1;
+            _hiddenWindow.Height = 1;
+            _webView.Width = 1;
+            _webView.Height = 1;
+
             return System.Text.Json.JsonSerializer.Deserialize<string>(json) ?? "";
+        }
+
+        private async Task ScrollToLoadAllContentAsync()
+        {
+            const int maxRounds = 15;
+            const int settleDelayMs = 500;
+            var stableRounds = 0;
+            var lastHeight = -1;
+
+            for (var i = 0; i < maxRounds; i++)
+            {
+                await _webView!.CoreWebView2.ExecuteScriptAsync(
+                    "window.scrollTo(0, document.body.scrollHeight)");
+
+                await Task.Delay(settleDelayMs);
+
+                var heightJson = await _webView.CoreWebView2.ExecuteScriptAsync(
+                    "document.body.scrollHeight");
+
+                if (!int.TryParse(heightJson, out var height))
+                    break;
+
+                if (height == lastHeight)
+                {
+                    stableRounds++;
+                    // Chiều cao không đổi 2 lần liên tiếp -> coi như đã load hết.
+                    if (stableRounds >= 2)
+                        break;
+                }
+                else
+                {
+                    stableRounds = 0;
+                }
+
+                lastHeight = height;
+            }
+
+            // Đợi thêm một chút để nội dung render nốt, tránh chụp đúng lúc DOM
+            // đang cập nhật dở dang (cắt cụt giữa chừng).
+            await Task.Delay(400);
         }
 
         public async Task<string> FetchHtmlAsync(string url)

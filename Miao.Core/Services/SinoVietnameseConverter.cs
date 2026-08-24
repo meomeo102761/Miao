@@ -10,10 +10,60 @@ namespace Miao.Core.Services
         private readonly Dictionary<string, string[]> _hanViet;
         private readonly Dictionary<string, string[]> _pinyin;
 
-        public SinoVietnameseConverter(string handataPath)
+        public SinoVietnameseConverter(string handataPath, string? hanVietDictionaryPath = null)
         {
-            _hanViet = LoadMap(Path.Combine(handataPath, "kVietnamese.json"));
+            _hanViet = LoadCombinedHanViet(handataPath, hanVietDictionaryPath);
             _pinyin = LoadMap(Path.Combine(handataPath, "kMandarin.json"));
+        }
+
+        private static Dictionary<string, string[]> LoadCombinedHanViet(
+            string handataPath, string? hanVietDictionaryPath)
+        {
+            var result = new Dictionary<string, string[]>();
+
+            // Nguồn 1 (ưu tiên): HanViet.json của bộ dịch dictionary — phủ nhiều ký tự hơn.
+            if (!string.IsNullOrWhiteSpace(hanVietDictionaryPath) && File.Exists(hanVietDictionaryPath))
+            {
+                try
+                {
+                    var json = File.ReadAllText(hanVietDictionaryPath);
+                    using var doc = JsonDocument.Parse(json);
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        var val = prop.Value.TryGetProperty("val", out var v) ? v.GetString() : null;
+                        if (string.IsNullOrWhiteSpace(val)) continue;
+
+                        var readings = new List<string> { val };
+                        if (prop.Value.TryGetProperty("alts", out var altsEl) && altsEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var a in altsEl.EnumerateArray())
+                            {
+                                var s = a.GetString();
+                                if (!string.IsNullOrWhiteSpace(s) && !readings.Contains(s))
+                                    readings.Add(s);
+                            }
+                        }
+                        result[prop.Name] = readings.ToArray();
+                    }
+                }
+                catch (JsonException)
+                {
+                    // File hỏng/không đúng format thì bỏ qua, dùng kVietnamese.json bên dưới.
+                }
+            }
+
+            // Nguồn 2 (bù thêm): kVietnamese.json — chỉ bù ký tự HanViet.json chưa có.
+            var kvPath = Path.Combine(handataPath, "kVietnamese.json");
+            if (File.Exists(kvPath))
+            {
+                foreach (var pair in LoadMap(kvPath))
+                {
+                    if (!result.ContainsKey(pair.Key))
+                        result[pair.Key] = pair.Value;
+                }
+            }
+
+            return result;
         }
 
         private static Dictionary<string, string[]> LoadMap(string path)
