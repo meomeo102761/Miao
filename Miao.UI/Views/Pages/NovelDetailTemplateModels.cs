@@ -15,6 +15,7 @@ public class ChapterListItem
     public int Number { get; set; }
     public string DisplayTitle { get; set; } = "";
     public System.Guid? VolumeId { get; set; }
+    public bool IsRead { get; set; }
 }
 
 public class ChapterSection

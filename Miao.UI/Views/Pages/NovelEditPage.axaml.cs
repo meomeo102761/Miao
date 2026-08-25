@@ -62,9 +62,12 @@ namespace Miao.UI.Views.Pages
 
             CustomTitleBox.Text = novel.CustomTitle;
             OriginalTitleBox.Text = novel.Title;
+            TitleText.Text = novel.DisplayTitle;
             TranslatedTitleBox.Text = novel.TranslatedTitle;
             AuthorBox.Text = novel.Author;
+            TranslatedAuthorBox.Text = novel.TranslatedAuthor;
             DescriptionBox.Text = novel.Description;
+            TranslatedDescriptionBox.Text = novel.TranslatedDescription;
             SourceUrlBox.Text = novel.SourceUrl;
             SourceDescriptionBox.Text = novel.SourceDescription;
 
@@ -371,7 +374,9 @@ namespace Miao.UI.Views.Pages
                 novel.Title = OriginalTitleBox.Text?.Trim() ?? "";
                 novel.TranslatedTitle = TranslatedTitleBox.Text?.Trim() ?? "";
                 novel.Author = AuthorBox.Text?.Trim() ?? "";
+                novel.TranslatedAuthor = TranslatedAuthorBox.Text?.Trim() ?? "";
                 novel.Description = DescriptionBox.Text?.Trim() ?? "";
+                novel.TranslatedDescription = TranslatedDescriptionBox.Text?.Trim() ?? "";
                 novel.SourceUrl = SourceUrlBox.Text?.Trim() ?? "";
                 novel.SourceDescription = SourceDescriptionBox.Text?.Trim() ?? "";
 
@@ -419,7 +424,8 @@ namespace Miao.UI.Views.Pages
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Lỗi khi lưu: {ex.GetType().Name} — {ex.Message}";
+                var detail = ex.InnerException?.Message ?? ex.Message;
+                StatusText.Text = $"Lỗi khi lưu: {ex.GetType().Name} — {detail}";
             }
         }
 

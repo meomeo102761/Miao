@@ -34,22 +34,28 @@ namespace Miao.UI.Views.Pages
         private GlossarySetRowViewModel? _draggedSet;
         private PointerPressedEventArgs? _dragPressedEvent;
 
-        private ObservableCollection<string> BuildPageItems(int currentPage, int totalPages)
+        private ObservableCollection<PagerItemVm> BuildPageItems(int currentPage, int totalPages)
         {
-            var items = new ObservableCollection<string>();
+            var items = new ObservableCollection<PagerItemVm>();
+
+            void AddPage(int page) =>
+                items.Add(new PagerItemVm { Label = page.ToString(), IsCurrent = page == currentPage, Clickable = true });
+
+            void AddEllipsis() =>
+                items.Add(new PagerItemVm { Label = "...", IsCurrent = false, Clickable = false });
 
             if (totalPages <= 7)
             {
                 for (int i = 1; i <= totalPages; i++)
-                    items.Add(i.ToString());
+                    AddPage(i);
 
                 return items;
             }
 
-            items.Add("1");
+            AddPage(1);
 
             if (currentPage > 4)
-                items.Add("...");
+                AddEllipsis();
 
             int start = Math.Max(2, currentPage - 1);
             int end = Math.Min(totalPages - 1, currentPage + 1);
@@ -66,12 +72,12 @@ namespace Miao.UI.Views.Pages
             }
 
             for (int i = start; i <= end; i++)
-                items.Add(i.ToString());
+                AddPage(i);
 
             if (currentPage < totalPages - 3)
-                items.Add("...");
+                AddEllipsis();
 
-            items.Add(totalPages.ToString());
+            AddPage(totalPages);
 
             return items;
         }
@@ -239,6 +245,8 @@ namespace Miao.UI.Views.Pages
 
             vm.PageLabel = $"(tổng {vm.AllEntries.Count} tên)";
             vm.PageItems = BuildPageItems(vm.CurrentPage, totalPages);
+            vm.CanGoPrev = vm.CurrentPage > 1;
+            vm.CanGoNext = vm.CurrentPage < totalPages;
 
             vm.RaiseEmptyChanged();
         }
@@ -272,7 +280,8 @@ namespace Miao.UI.Views.Pages
         {
             if (sender is not Button btn ||
                 btn.Tag is not GlossarySetRowViewModel vm ||
-                !int.TryParse(btn.Content?.ToString(), out var page))
+                btn.DataContext is not PagerItemVm item ||
+                !int.TryParse(item.Label, out var page))
                 return;
 
             if (page < 1) return;
@@ -286,14 +295,26 @@ namespace Miao.UI.Views.Pages
 
         // ================= THÊM TÊN MỚI (Gốc / Hán Việt / Dịch) =================
 
-        private void OnNewOriginalTextChanged(object? sender, TextChangedEventArgs e)
+        private async void OnNewOriginalTextChanged(object? sender, TextChangedEventArgs e)
         {
             if (sender is not TextBox originalBox || originalBox.Parent is not Grid grid) return;
-            if (grid.Children.Count < 2 || grid.Children[1] is not TextBox hanVietBox) return;
+            if (grid.Children.Count < 3 || grid.Children[1] is not TextBox hanVietBox || grid.Children[2] is not TextBox pinYinBox) return;
 
             var original = originalBox.Text ?? "";
-            var converted = _sinoVietnamese.ToHanViet(original);
-            hanVietBox.Text = string.IsNullOrWhiteSpace(converted) ? original : converted;
+
+            // Điền tạm ngay bằng cách ghép từng chữ (nhanh, luôn sẵn có) để ô
+            // không bị trống trong lúc chờ, rồi nâng cấp lên bản khớp cụm tên
+            // riêng chính xác hơn (Name.json) ngay khi có kết quả.
+            var quickGuess = _sinoVietnamese.ToHanViet(original);
+            hanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? original : quickGuess;
+            pinYinBox.Text = _sinoVietnamese.ToPinYin(original);
+
+            var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            // Original có thể đã đổi trong lúc chờ (người dùng gõ tiếp) — chỉ
+            // áp kết quả nếu vẫn đang khớp với nội dung hiện tại của ô Gốc.
+            if (!string.IsNullOrWhiteSpace(accurate) && originalBox.Text == original)
+                hanVietBox.Text = accurate;
         }
 
         private void OnNewNameTextChanged(object? sender, TextChangedEventArgs e)
@@ -315,19 +336,30 @@ namespace Miao.UI.Views.Pages
                 : "";
         }
 
-        private void OnAddEntryClick(object? sender, RoutedEventArgs e)
+        private async void OnAddEntryClick(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
             if (btn.Parent is not Grid grid) return;
 
             var originalBox = (TextBox)grid.Children[0];
             var hanVietBox = (TextBox)grid.Children[1];
-            var nameBox = (TextBox)grid.Children[2];
+            var pinYinBox = (TextBox)grid.Children[2];
+            var nameBox = (TextBox)grid.Children[3];
 
             var original = originalBox.Text?.Trim() ?? "";
             var hanViet = hanVietBox.Text?.Trim() ?? "";
+            var pinYin = pinYinBox.Text?.Trim() ?? "";
             var name = nameBox.Text?.Trim() ?? "";
             if (string.IsNullOrWhiteSpace(original) || string.IsNullOrWhiteSpace(name)) return;
+
+            if (string.IsNullOrWhiteSpace(hanViet))
+            {
+                var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+                hanViet = string.IsNullOrWhiteSpace(accurate) ? _sinoVietnamese.ToHanViet(original) : accurate;
+            }
+
+            if (string.IsNullOrWhiteSpace(pinYin))
+                pinYin = _sinoVietnamese.ToPinYin(original);
 
             using var db = OpenDb();
             if (db.GlossarySetEntries.Any(x => x.GlossarySetId == vm.Id && x.OriginalTerm == original)) return;
@@ -336,8 +368,8 @@ namespace Miao.UI.Views.Pages
             {
                 GlossarySetId = vm.Id,
                 OriginalTerm = original,
-                HanViet = string.IsNullOrWhiteSpace(hanViet) ? _sinoVietnamese.ToHanViet(original) : hanViet,
-                PinYin = _sinoVietnamese.ToPinYin(original),
+                HanViet = hanViet,
+                PinYin = pinYin,
                 TranslatedTerm = name
             });
             db.SaveChanges();
@@ -402,11 +434,30 @@ namespace Miao.UI.Views.Pages
             _editingEntry = entry;
             EditOriginalText.Text = entry.OriginalTerm;
             EditHanVietBox.Text = entry.HanViet ?? "";
+            EditPinYinBox.Text = entry.PinYin ?? "";
             EditNameBox.Text = entry.TranslatedTerm;
 
             EditCard.IsVisible = true;
             if (EditCard.Parent is Panel panel) panel.Children.Remove(EditCard);
             ModalService.Show(EditCard);
+        }
+
+        private async void OnEditOriginalTextChanged(object? sender, TextChangedEventArgs e)
+        {
+            // Chỉ auto-fill khi popup đang thật sự mở để sửa 1 entry (tránh
+            // chạy nhầm lúc control mới khởi tạo / chưa gán _editingEntry).
+            if (_editingEntry == null) return;
+
+            var original = EditOriginalText.Text ?? "";
+
+            var quickGuess = _sinoVietnamese.ToHanViet(original);
+            EditHanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? original : quickGuess;
+            EditPinYinBox.Text = _sinoVietnamese.ToPinYin(original);
+
+            var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            if (!string.IsNullOrWhiteSpace(accurate) && EditOriginalText.Text == original)
+                EditHanVietBox.Text = accurate;
         }
 
         private void OnDeleteEntryClick(object? sender, RoutedEventArgs e)
@@ -474,6 +525,9 @@ namespace Miao.UI.Views.Pages
 
             entry.OriginalTerm = original;
             entry.HanViet = EditHanVietBox.Text?.Trim() ?? "";
+            entry.PinYin = string.IsNullOrWhiteSpace(EditPinYinBox.Text?.Trim())
+                ? _sinoVietnamese.ToPinYin(original)
+                : EditPinYinBox.Text!.Trim();
             entry.TranslatedTerm = EditNameBox.Text ?? "";
             db.SaveChanges();
 
@@ -664,6 +718,13 @@ namespace Miao.UI.Views.Pages
         }
     }
 
+    public class PagerItemVm
+    {
+        public string Label { get; set; } = "";
+        public bool IsCurrent { get; set; }
+        public bool Clickable { get; set; } = true;
+    }
+
     public class GlossarySetRowViewModel : INotifyPropertyChanged
     {
         public Guid Id { get; set; }
@@ -693,12 +754,18 @@ namespace Miao.UI.Views.Pages
         private string _pageLabel = "";
         public string PageLabel { get => _pageLabel; set { _pageLabel = value; OnChanged(nameof(PageLabel)); } }
 
-        private ObservableCollection<string> _pageItems = new();
-        public ObservableCollection<string> PageItems
+        private ObservableCollection<PagerItemVm> _pageItems = new();
+        public ObservableCollection<PagerItemVm> PageItems
         {
             get => _pageItems;
             set { _pageItems = value; OnChanged(nameof(PageItems)); }
         }
+
+        private bool _canGoPrev;
+        public bool CanGoPrev { get => _canGoPrev; set { _canGoPrev = value; OnChanged(nameof(CanGoPrev)); } }
+
+        private bool _canGoNext;
+        public bool CanGoNext { get => _canGoNext; set { _canGoNext = value; OnChanged(nameof(CanGoNext)); } }
 
         public HashSet<Guid> SelectedEntryIds { get; } = new();
 

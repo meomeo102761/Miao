@@ -21,7 +21,11 @@
   </Application.Resources>
 
   <Application.Styles>
-    <FluentTheme />
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light" Accent="#2FBF9F"/>
+      </FluentTheme.Palettes>
+    </FluentTheme>
     <!--
       Quy ước style Button trong app:
       1. Nếu Content là chuỗi text thường (không phải Border/StackPanel lồng bên trong)

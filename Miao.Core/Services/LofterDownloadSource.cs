@@ -12,6 +12,7 @@ namespace Miao.Core.Services
     public class LofterDownloadSource : IDownloadSource
     {
         public string SourceName => "lofter";
+        public bool UsesSourceChapterNumbers => false;
 
         private readonly HttpClient _http = new();
         private readonly Dictionary<string, string> _contentCache = new();

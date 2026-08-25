@@ -281,6 +281,151 @@ namespace Miao.Core.Services
             };
         }
 
+        // Tra Hán Việt "bám theo từ gốc": ưu tiên khớp NGUYÊN CỤM trong từ điển
+        // Name.json (tên riêng đã được biên soạn sẵn, vd "萧炎" -> "Tiêu Viêm"
+        // thay vì ghép rời "Tiêu" + "Diễm"/"Viêm" theo từng chữ), phần còn lại
+        // không khớp cụm nào thì fallback đọc Hán Việt từng chữ qua HanViet.json.
+        // Dùng cho các màn hình nhập/sửa tên (Glossary, chi tiết truyện, Reader)
+        // để gợi ý Hán Việt chính xác hơn SinoVietnameseConverter thuần ký tự.
+        public async Task<string> ToHanVietPhraseAsync(string text)
+        {
+            await EnsureInitializedAsync();
+
+            return ToHanVietPhrase(text);
+        }
+
+        public string ToHanVietPhrase(string text)
+        {
+            EnsureReady();
+
+            if (string.IsNullOrEmpty(text))
+                return text ?? "";
+
+            var output =
+                new List<string>();
+
+            foreach (var run in SplitRuns(text))
+            {
+                if (!run.IsCjk)
+                {
+                    output.Add(run.Text);
+                    continue;
+                }
+
+                output.AddRange(
+                    NameLongestMatchToHanViet(
+                        run.Text));
+            }
+
+            return string.Join(
+                " ",
+                output.Where(
+                    s => !string.IsNullOrWhiteSpace(s)));
+        }
+
+        private List<string> NameLongestMatchToHanViet(
+            string text)
+        {
+            var length =
+                text.Length;
+
+            var maxLength =
+                _nameIndex.MaxLength;
+
+            var replaced =
+                new bool[length];
+
+            var slots =
+                new (string Value, int Length)?[length];
+
+            for (var currentLength = maxLength;
+                 currentLength >= 1;
+                 currentLength--)
+            {
+                if (!_nameIndex.Buckets.TryGetValue(
+                        currentLength,
+                        out var bucket))
+                {
+                    continue;
+                }
+
+                for (var start = 0;
+                     start + currentLength <= length;
+                     start++)
+                {
+                    var overlaps = false;
+
+                    for (var k = 0; k < currentLength; k++)
+                    {
+                        if (replaced[start + k])
+                        {
+                            overlaps = true;
+                            break;
+                        }
+                    }
+
+                    if (overlaps)
+                        continue;
+
+                    var part =
+                        text.Substring(start, currentLength);
+
+                    if (!bucket.TryGetValue(part, out var hit) ||
+                        hit.Skip ||
+                        string.IsNullOrWhiteSpace(hit.Value))
+                    {
+                        continue;
+                    }
+
+                    slots[start] = (hit.Value, currentLength);
+
+                    for (var k = 0; k < currentLength; k++)
+                        replaced[start + k] = true;
+                }
+            }
+
+            var result =
+                new List<string>();
+
+            for (var i = 0; i < length;)
+            {
+                if (slots[i].HasValue)
+                {
+                    result.Add(slots[i]!.Value.Value);
+                    i += slots[i]!.Value.Length;
+                    continue;
+                }
+
+                var character =
+                    text[i].ToString();
+
+                if (_hanVietDictionary.TryGetValue(
+                        character,
+                        out var hanViet) &&
+                    !string.IsNullOrWhiteSpace(hanViet.Value))
+                {
+                    var reading =
+                        hanViet.Value;
+
+                    // Viết hoa chữ cái đầu mỗi âm tiết, đúng quy ước tên riêng
+                    // tiếng Việt (giống cách SinoVietnameseConverter đang làm).
+                    reading =
+                        char.ToUpperInvariant(reading[0]) +
+                        reading[1..];
+
+                    result.Add(reading);
+                }
+                else
+                {
+                    result.Add(character);
+                }
+
+                i++;
+            }
+
+            return result;
+        }
+
         public void AddEntry(
             string dictionaryName,
             string zh,

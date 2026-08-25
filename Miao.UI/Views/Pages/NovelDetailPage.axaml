@@ -26,7 +26,9 @@
             <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
         <Style Selector="Button.ChapterButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJadeSoftHover}"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
         <Style Selector="Button.NovelActionButton.NovelPrimaryButton:pointerover /template/ ContentPresenter">
@@ -142,10 +144,17 @@
         <Style Selector="Button.ChapterButton">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Padding" Value="4"/>
             <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style Selector="Button.ChapterButton TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+        <Style Selector="Button.ChapterButton TextBlock.ChapterRead">
+            <Setter Property="Foreground" Value="#999999"/>
         </Style>
 
         <Style Selector="Button.NovelActionButton.DangerButton">
@@ -234,20 +243,22 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Width="200" Height="280" CornerRadius="6" Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1">
+                        <Border Grid.Column="0" Width="200" Height="280" CornerRadius="6" Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" HorizontalAlignment="Left" VerticalAlignment="Top">
                             <Image x:Name="CoverImage" Stretch="UniformToFill"/>
                         </Border>
 
-                        <StackPanel Grid.Column="1" Margin="20,0">
+                        <StackPanel Grid.Column="1" Margin="20,0" HorizontalAlignment="Stretch">
                             <SelectableTextBlock x:Name="TitleText" Classes="PageTitle" FontSize="24" FontWeight="Bold"
-                                        Foreground="#333333" TextWrapping="Wrap" MaxWidth="480" LineHeight="32" Padding="0"/>
+                                        Foreground="#333333" TextWrapping="Wrap" MaxWidth="480" LineHeight="32" Padding="0" Margin="0,0,0,6" HorizontalAlignment="Left"/>
                             <SelectableTextBlock x:Name="OriginalTitleText" Foreground="{StaticResource TextMuted}" FontSize="15"
-                                        LineHeight="22" Padding="0" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="False"/>
+                                        LineHeight="22" Padding="0" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="False" HorizontalAlignment="Left"/>
 
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,4">
                                 <SelectableTextBlock Text="Tác giả: " Foreground="{StaticResource TextMuted}" FontSize="15"/>
-                                <SelectableTextBlock x:Name="AuthorText" Foreground="{StaticResource AccentJade}" FontSize="15" LineHeight="22"
-                                        Padding="0" Cursor="Hand" PointerPressed="OnAuthorClick"/>
+                                <Border Cursor="Hand" PointerPressed="OnAuthorClick" Background="Transparent">
+                                    <SelectableTextBlock x:Name="AuthorText" Foreground="{StaticResource AccentJade}" FontSize="15" LineHeight="22"
+                                            Padding="0"/>
+                                </Border>
                                 <Border x:Name="StatusBadge" Classes="StatusBadgeBorder" Margin="12,0,0,0">
                                     <SelectableTextBlock x:Name="StatusBadgeText" FontSize="15" FontWeight="SemiBold" Foreground="#777777"/>
                                 </Border>
@@ -255,7 +266,7 @@
 
                             <StackPanel Margin="0,0,0,10">
                                 <SelectableTextBlock x:Name="MetaLatestText" Foreground="{StaticResource TextMuted}" FontSize="15" LineHeight="22"
-                                                    Padding="0" TextWrapping="Wrap"/>
+                                                    Padding="0" TextWrapping="Wrap" Cursor="Hand" PointerPressed="OnLatestChapterClick"/>
                                 <SelectableTextBlock x:Name="MetaUpdateText" Foreground="{StaticResource TextMuted}" FontSize="15" LineHeight="22"
                                                     Padding="0" TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
@@ -287,18 +298,18 @@
                                 <Popup x:Name="EditPopup" Placement="Bottom" IsLightDismissEnabled="True">
                                     <Border Background="White" Width="220" Padding="4" CornerRadius="8" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1">
                                         <StackPanel x:Name="EditMenuPanel">
-                                            <Button Content="✎ Sửa truyện" Classes="MenuItemButton" Click="OnEditInfoClick"/>
-                                            <Button Content="📝 Không gian sửa chương" Classes="MenuItemButton" Click="OnWorkspaceClick"/>
-                                            <Button Content="📚 Bộ tên" Classes="MenuItemButton" Click="OnNameClick"/>
+                                            <Button Content="✎ Sửa truyện" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnEditInfoClick"/>
+                                            <Button Content="📝 Không gian sửa chương" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnWorkspaceClick"/>
+                                            <Button Content="📚 Bộ tên" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnNameClick"/>
                                             <Separator/>
                                             <TextBlock Text="CẬP NHẬT" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="12,6,0,2"/>
-                                            <Button x:Name="UpdateButton" Content="↻ Cập nhật link" Classes="MenuItemButton" Click="OnUpdateClick"/>
-                                            <Button Content="📝 Cập nhật file" Classes="MenuItemButton" Click="OnUpdateFileClick"/>
+                                            <Button x:Name="UpdateButton" Content="↻ Cập nhật link" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnUpdateClick"/>
+                                            <Button Content="📝 Cập nhật file" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnUpdateFileClick"/>
                                             <Separator/>
                                             <TextBlock Text="TẢI TRUYỆN" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="12,6,0,2"/>
-                                            <Button Content="⬇ Xuất EPUB" Classes="MenuItemButton" Click="OnExportEpubClick"/>
-                                            <Button Content="⬇ Xuất DOCX" Classes="MenuItemButton" Click="OnExportDocxClick"/>
-                                            <Button Content="⬇ Xuất PDF" Classes="MenuItemButton" Click="OnExportPdfClick"/>
+                                            <Button Content="⬇ Xuất EPUB" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnExportEpubClick"/>
+                                            <Button Content="⬇ Xuất DOCX" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnExportDocxClick"/>
+                                            <Button Content="⬇ Xuất PDF" Classes="MenuItemButton" HorizontalContentAlignment="Left" Click="OnExportPdfClick"/>
                                         </StackPanel>
                                     </Border>
                                 </Popup>
@@ -337,7 +348,8 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="local:ChapterListItem">
                                                 <Button Classes="ChapterButton" Click="OnChapterButtonClick" Tag="{Binding Number}">
-                                                    <TextBlock Text="{Binding DisplayTitle}" FontSize="15" Foreground="#333" TextWrapping="Wrap" Margin="6,8"/>
+                                                    <TextBlock Text="{Binding DisplayTitle}" FontSize="15" TextWrapping="Wrap" Margin="6,8"
+                                                               Classes.ChapterRead="{Binding IsRead}"/>
                                                 </Button>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -390,9 +402,9 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <Border Grid.ColumnSpan="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0"/>
-                    <Button Grid.Column="0" Content="Lọc lại tên" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalContentAlignment="Center" Click="OnRefilterNamesClick"/>
-                    <Button Grid.Column="1" Content="Xóa tất cả" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalContentAlignment="Center" Click="OnClearAllNamesClick"/>
-                    <Button Grid.Column="2" Content="Đóng" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalContentAlignment="Center" Click="OnCloseNamePopupClickFixed"/>
+                    <Button Grid.Column="0" Content="Lọc lại tên" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnRefilterNamesClick"/>
+                    <Button Grid.Column="1" Content="Xóa tất cả" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnClearAllNamesClick"/>
+                    <Button Grid.Column="2" Content="Đóng" Classes="NovelActionButton" FontSize="15" Margin="6,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnCloseNamePopupClickFixed"/>
                 </Grid>
             </Grid>
         </Border>
@@ -402,17 +414,17 @@
                 <TextBlock Text="Gốc:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditOriginalText" FontSize="14" Height="32" Padding="8,0"
                         Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
-                        VerticalContentAlignment="Center" Margin="0,0,0,10"/>
+                        VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="OnEditOriginalTextChanged"/>
 
                 <TextBlock Text="Hán Việt::" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditHanVietBox" FontSize="14" Height="32" Padding="8,0"
                         Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
                         VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
-                <TextBlock Text="Bính Âm:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4" IsVisible="False"/>
+                <TextBlock Text="Bính Âm:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditPinYinBox" FontSize="14" Height="32" Padding="8,0"
                         Background="White" BorderBrush="{StaticResource AccentJadeSoftHover}" BorderThickness="1" CornerRadius="6"
-                        VerticalContentAlignment="Center" Margin="0,0,0,10" IsVisible="False"/>
+                        VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                 <TextBlock Text="Dịch:" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditNameBox" FontSize="14" Height="32" Padding="8,0"

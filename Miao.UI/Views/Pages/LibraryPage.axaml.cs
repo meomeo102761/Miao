@@ -180,7 +180,7 @@ namespace Miao.UI.Views.Pages
 
             var results = _allNovels
                 .Where(n => RemoveDiacritics(n.DisplayTitle ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                         || RemoveDiacritics(n.Author ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                         || RemoveDiacritics(n.DisplayAuthor ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             AppNavigator.NavigateTo(new LibraryListPage($"Kết quả tìm kiếm: \"{rawKeyword.Trim()}\"", results));

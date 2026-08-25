@@ -10,6 +10,9 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="LineHeight" Value="20"/>
         </Style>
+        <Style Selector="TextBlock.PageTitle">
+            <Setter Property="LineHeight" Value="NaN"/>
+        </Style>
 
         <Style Selector="Button.JadeButton">
             <Setter Property="Height" Value="36"/>
@@ -70,37 +73,6 @@
 
         <Style Selector="Button.RowEntryButton:pointerover">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-        </Style>
-
-        <!-- Nút ‹ › chuyển trang -->
-        <Style Selector="Button.PagerButton">
-            <Setter Property="Width" Value="34"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#555555"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="16">
-                        <ContentPresenter Content="{TemplateBinding Content}"
-                                        Foreground="{TemplateBinding Foreground}"
-                                        FontSize="{TemplateBinding FontSize}"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="Button.PagerButton:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
-        </Style>
-        <Style Selector="Button.PagerButton:pointerover">
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-        </Style>
-        <Style Selector="Button.PagerButton:disabled">
-            <Setter Property="Foreground" Value="#CCCCCC"/>
         </Style>
 
         <Style Selector="Button.SecondaryButton">
@@ -205,6 +177,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
 
@@ -213,9 +186,10 @@
 
                 <TextBlock Grid.Column="1" Text="{Binding OriginalTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
                 <TextBlock Grid.Column="2" Text="{Binding HanViet}" FontFamily="Arial" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
-                <TextBlock Grid.Column="3" Text="{Binding TranslatedTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="3" Text="{Binding PinYin}" FontFamily="Arial" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="4" Text="{Binding TranslatedTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
 
-                <StackPanel x:Name="EntryActionsPanel" Grid.Column="4" Orientation="Horizontal" IsVisible="False">
+                <StackPanel x:Name="EntryActionsPanel" Grid.Column="5" Orientation="Horizontal" IsVisible="False">
                     <Button Content="✎" Classes="RowEntryButton" Click="OnEditEntryClick" Tag="{Binding}"/>
                     <Button Content="✕" Classes="RowEntryButton" Foreground="#B94A48" Click="OnDeleteEntryClick" Tag="{Binding}"/>
                 </StackPanel>
@@ -272,15 +246,18 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="94"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
                                             VerticalContentAlignment="Center" TextChanged="OnNewOriginalTextChanged"/>
                                     <TextBox Grid.Column="1" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
                                             VerticalContentAlignment="Center"/>
-                                    <TextBox Grid.Column="2" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15" VerticalContentAlignment="Center"
+                                    <TextBox Grid.Column="2" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15"
+                                            VerticalContentAlignment="Center"/>
+                                    <TextBox Grid.Column="3" Height="36" Margin="0,0,6,0" Padding="8,0" FontSize="15" VerticalContentAlignment="Center"
                                             TextChanged="OnNewNameTextChanged" Tag="{Binding}"/>
-                                    <Button Grid.Column="3" Content="+ Thêm" Classes="JadeButton"
+                                    <Button Grid.Column="4" Content="+ Thêm" Classes="JadeButton"
                                             FontSize="15" Padding="14,0" Click="OnAddEntryClick" Tag="{Binding}"/>
                                 </Grid>
                                 <TextBlock x:Name="AddDupWarning" Text="" FontSize="13" FontStyle="Italic"
@@ -299,10 +276,12 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="1" Text="Tên gốc" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
                                 <TextBlock Grid.Column="2" Text="Hán Việt" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
-                                <TextBlock Grid.Column="3" Text="Tên dịch" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Grid.Column="3" Text="Bính âm" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Grid.Column="4" Text="Tên dịch" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextMuted}"/>
                             </Grid>
 
                             <ItemsControl ItemsSource="{Binding PageEntries}" ItemTemplate="{StaticResource EntryRowTemplate}"/>
@@ -319,7 +298,9 @@
                                 </ComboBox>
 
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Content="‹" Classes="PagerButton" Click="OnPrevPageClick" Tag="{Binding}"/>
+                                    <Button Content="‹" Classes="pageButton pageNavButton"
+                                            IsEnabled="{Binding CanGoPrev}"
+                                            Click="OnPrevPageClick" Tag="{Binding}"/>
 
                                     <ItemsControl ItemsSource="{Binding PageItems}">
                                         <ItemsControl.ItemsPanel>
@@ -329,14 +310,18 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Button Content="{Binding}" Classes="PagerButton"
+                                                <Button Content="{Binding Label}" Classes="pageButton"
+                                                        Classes.active="{Binding IsCurrent}"
+                                                        IsEnabled="{Binding Clickable}"
                                                         Click="OnPageNumberClick"
                                                         Tag="{Binding $parent[ItemsControl].DataContext}"/>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                    <Button Content="›" Classes="PagerButton" Click="OnNextPageClick" Tag="{Binding}"/>
+                                    <Button Content="›" Classes="pageButton pageNavButton"
+                                            IsEnabled="{Binding CanGoNext}"
+                                            Click="OnNextPageClick" Tag="{Binding}"/>
                                     <TextBlock Text="{Binding PageLabel}" FontSize="15" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                 </StackPanel>
                             </DockPanel>
@@ -427,10 +412,14 @@
             <StackPanel>
                 <TextBlock Text="Gốc:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditOriginalText" FontSize="15" Padding="10,8" Margin="0,0,0,14"
-                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
+                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" TextChanged="OnEditOriginalTextChanged"/>
 
                 <TextBlock Text="Hán Việt:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditHanVietBox" FontSize="15" Padding="10,8" Margin="0,0,0,14"
+                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
+
+                <TextBlock Text="Bính âm:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
+                <TextBox x:Name="EditPinYinBox" FontSize="15" Padding="10,8" Margin="0,0,0,14"
                          BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <TextBlock Text="Name:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>

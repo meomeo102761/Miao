@@ -49,18 +49,65 @@ namespace Miao.Core.Services
 
             var pageTitle = doc.DocumentNode.SelectSingleNode("//title")?.InnerText ?? "";
             var titleMatch = Regex.Match(pageTitle, "《(.+?)》");
-            var title = titleMatch.Success ? titleMatch.Groups[1].Value.Trim() : "";
+            var title = titleMatch.Success
+                ? HtmlEntity.DeEntitize(titleMatch.Groups[1].Value).Trim()
+                : "";
 
             if (string.IsNullOrWhiteSpace(title))
-                title = doc.DocumentNode.SelectSingleNode("//h1")?.InnerText.Trim() ?? "";
+            {
+                title = HtmlEntity.DeEntitize(
+                    doc.DocumentNode.SelectSingleNode("//h1")?.InnerText ?? ""
+                ).Trim();
+            }
 
-            var authorNode = doc.DocumentNode.SelectSingleNode("//a[contains(@href,'oneauthor.php')]");
-            var author = authorNode?.InnerText.Trim() ?? "";
+            // ================== Tác giả ==================
 
-            var coverNode = doc.DocumentNode.SelectSingleNode("//img[contains(@src,'/coversmall/') or contains(@src,'/covers/')]");
-            var cover = coverNode?.GetAttributeValue("src", "") ?? "";
+            var authorNode = doc.DocumentNode.SelectSingleNode(
+                "//a[contains(@href,'oneauthor.php')]");
 
-            return (title, author, cover, "");
+            var author = HtmlEntity.DeEntitize(
+                authorNode?.InnerText ?? ""
+            ).Trim();
+
+            // ================== Bìa ==================
+
+            var coverNode = doc.DocumentNode.SelectSingleNode(
+                "//img[contains(@class,'noveldefaultimage')]"
+            );
+
+            var cover = "";
+
+            if (coverNode != null)
+            {
+                // src là ảnh bìa thực tế đang được trang hiển thị
+                cover = coverNode.GetAttributeValue("src", "");
+
+                // Chỉ fallback sang _src nếu src không có
+                if (string.IsNullOrWhiteSpace(cover))
+                    cover = coverNode.GetAttributeValue("_src", "");
+
+                if (!string.IsNullOrWhiteSpace(cover))
+                    cover = MakeAbsolute(
+                        url,
+                        HtmlEntity.DeEntitize(cover).Trim()
+                    );
+            }
+
+            // ================== Mô tả ==================
+
+            var descriptionNode = doc.DocumentNode.SelectSingleNode(
+                "//div[@id='novelintro']");
+
+            var description = "";
+
+            if (descriptionNode != null)
+            {
+                description = HtmlContentExtractor.ExtractTextWithImages(
+                    descriptionNode,
+                    Array.Empty<string>());
+            }
+
+            return (title, author, cover, description);
         }
 
         public async Task<List<(int Number, string Title, string ChapterUrl)>> GetChapterListAsync(string url)
@@ -124,6 +171,17 @@ namespace Miao.Core.Services
             foreach (var c in text)
                 if (c >= 0x4E00 && c <= 0x9FFF) count++;
             return count;
+        }
+
+        private static string MakeAbsolute(string baseUrl, string href)
+        {
+            if (Uri.TryCreate(href, UriKind.Absolute, out var abs))
+                return abs.ToString();
+
+            if (Uri.TryCreate(new Uri(baseUrl), href, out var combined))
+                return combined.ToString();
+
+            return href;
         }
     }
 }

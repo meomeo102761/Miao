@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -14,6 +16,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using Microsoft.EntityFrameworkCore;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -28,6 +31,21 @@ namespace Miao.UI.Views.Pages
     public static class ReaderHost
     {
         public static Action<bool>? SetOuterScrollEnabled;
+    }
+
+    // Một "khối hiển thị" ở chế độ đọc: hoặc là 1 đoạn văn bản đã GỘP nhiều dòng
+    // (block) liên tiếp lại để có thể bôi đen/chọn liền mạch như Word, hoặc là 1 ảnh.
+    // Đây thuần là dữ liệu hiển thị — dữ liệu gốc theo từng dòng vẫn nằm ở _blocks
+    // để phục vụ Sửa bản gốc / gán glossary theo đúng dòng.
+    public sealed class ReaderDisplayGroup
+    {
+        public bool IsImage { get; set; }
+        public string Text { get; set; } = "";
+        public string? ImagePath { get; set; }
+
+        // Chỉ áp dụng khi IsImage == false: khoảng chỉ số dòng trong _blocks mà group này gộp lại
+        public int StartBlockIndex { get; set; }
+        public int EndBlockIndex { get; set; }
     }
 
     public partial class ReaderPage : UserControl
@@ -47,11 +65,17 @@ namespace Miao.UI.Views.Pages
 
         private readonly SinoVietnameseConverter _sinoVietnamese;
         private ObservableCollection<ReaderBlockViewModel> _blocks = new();
+        private ObservableCollection<ReaderDisplayGroup> _readGroups = new();
 
-        // Khối text đang được thao tác chuột phải (Copy/Thêm) — thay cho việc
-        // ContentContextMenuOpening của WPF gắn liền 1 RichTextBox duy nhất.
-        private ReaderBlockViewModel? _activeContextBlock;
+        // Khối text đang được thao tác chuột phải (Copy/Thêm/Thêm nhân vật) — mỗi
+        // SelectableTextBlock ở chế độ đọc có ContextMenu RIÊNG (không dùng chung 1
+        // StaticResource nữa) nên sự kiện Click luôn khớp đúng đoạn đang thao tác.
+        private ReaderDisplayGroup? _activeContextGroup;
         private SelectableTextBlock? _activeContextTextBlock;
+
+        // Tra cứu nhanh: tên/biệt danh nhân vật (không phân biệt hoa thường) -> Character,
+        // dùng khi double-click vào 1 từ trong đoạn văn để hiện ảnh + tên nhân vật.
+        private Dictionary<string, Character> _characterLookup = new(StringComparer.OrdinalIgnoreCase);
 
         public ReaderPage(Guid novelId, int chapterNumber, bool startInEditMode = false)
         {
@@ -63,7 +87,8 @@ namespace Miao.UI.Views.Pages
             var hanVietDictionaryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "translate", "zh_to_vi", "HanViet.json");
             _sinoVietnamese = new SinoVietnameseConverter(handataPath, hanVietDictionaryPath);
 
-            BlocksList.ItemsSource = _blocks;
+            EditBlocksList.ItemsSource = _blocks;
+            ReadBlocksList.ItemsSource = _readGroups;
 
             ApplyFontSettings();
             LoadChapter();
@@ -113,7 +138,8 @@ namespace Miao.UI.Views.Pages
             var newWidth = Math.Clamp(available, MinReadingWidth, MaxReadingWidth);
             if (newWidth <= 0) return;
 
-            BlocksList.Width = newWidth;
+            ReadBlocksList.Width = newWidth;
+            EditBlocksList.Width = newWidth;
         }
 
         private void OnReaderRootPointerDown(object? sender, PointerPressedEventArgs e)
@@ -154,6 +180,8 @@ namespace Miao.UI.Views.Pages
 
             PinButton.Content = _currentChapter.IsPinned ? "📌✓" : "📌";
             FavoriteButton.Content = (novel?.IsFavorite ?? false) ? "★" : "☆";
+
+            LoadCharacterLookup();
 
             var hasTranslation = !string.IsNullOrWhiteSpace(_currentChapter.DisplayContent);
             SetReaderBlocks(hasTranslation
@@ -224,18 +252,61 @@ namespace Miao.UI.Views.Pages
             foreach (var block in parsed)
                 _blocks.Add(ReaderBlockViewModel.FromBlock(block, isEditing: _isEditing));
 
+            RebuildReadGroups();
+            UpdateEditModeVisibility();
             ApplyReaderBackground(AppSettingsService.Instance.Settings.ReaderBackground);
         }
 
-        private string GetBlocksAsText() => ReaderBlock.Serialize(_blocks.Select(vm => vm.ToBlock()));
-
-        private IBrush GetReaderForeground()
+        // Gộp các dòng văn bản liên tiếp (không phải ảnh) thành 1 khối hiển thị duy nhất
+        // để người đọc bôi đen/chọn văn bản liền mạch qua nhiều dòng, giống trình soạn
+        // thảo văn bản thông thường, thay vì bị chặn cứng trong từng dòng riêng lẻ.
+        private void RebuildReadGroups()
         {
-            var background = AppSettingsService.Instance.Settings.ReaderBackground;
-            return string.Equals(background, "#171717", StringComparison.OrdinalIgnoreCase)
-                ? Brushes.White
-                : new SolidColorBrush(Color.FromRgb(51, 51, 51));
+            _readGroups.Clear();
+
+            var i = 0;
+            while (i < _blocks.Count)
+            {
+                var block = _blocks[i];
+
+                if (block.IsImage)
+                {
+                    _readGroups.Add(new ReaderDisplayGroup
+                    {
+                        IsImage = true,
+                        ImagePath = block.ImagePath,
+                        StartBlockIndex = i,
+                        EndBlockIndex = i
+                    });
+                    i++;
+                    continue;
+                }
+
+                var start = i;
+                var lines = new List<string>();
+                while (i < _blocks.Count && !_blocks[i].IsImage)
+                {
+                    lines.Add(_blocks[i].Text ?? "");
+                    i++;
+                }
+
+                _readGroups.Add(new ReaderDisplayGroup
+                {
+                    IsImage = false,
+                    Text = string.Join("\n", lines),
+                    StartBlockIndex = start,
+                    EndBlockIndex = i - 1
+                });
+            }
         }
+
+        private void UpdateEditModeVisibility()
+        {
+            ReadBlocksList.IsVisible = !_isEditing;
+            EditBlocksList.IsVisible = _isEditing;
+        }
+
+        private string GetBlocksAsText() => ReaderBlock.Serialize(_blocks.Select(vm => vm.ToBlock()));
 
         private void ApplyReaderBackground(string color)
         {
@@ -243,13 +314,11 @@ namespace Miao.UI.Views.Pages
 
             var isDark = string.Equals(color, "#171717", StringComparison.OrdinalIgnoreCase);
             var isWhite = string.Equals(color, "#FFFFFF", StringComparison.OrdinalIgnoreCase);
-            IBrush headingForeground = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(51, 51, 51));
+            IBrush textForeground = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(51, 51, 51));
             IBrush borderSoft = Application.Current?.FindResource("BorderSoft") as IBrush ?? Brushes.LightGray;
 
             ReaderTopBar.Background = Brushes.White;
-            ReaderBottomBar.Background = Brushes.White;
             ReaderTopBar.BorderBrush = borderSoft;
-            ReaderBottomBar.BorderBrush = borderSoft;
 
             if (isDark)
             {
@@ -270,7 +339,9 @@ namespace Miao.UI.Views.Pages
                 ReadingCard.BorderBrush = new SolidColorBrush(Color.FromRgb(232, 227, 217));
             }
 
-            ChapterHeadingText.Foreground = headingForeground;
+            // Cập nhật màu chữ qua DynamicResource -> mọi SelectableTextBlock/TextBox trong
+            // vùng đọc (kể cả ở chế độ Sửa) tự đổi màu theo nền, không bị "chìm" khi chọn nền tối.
+            ReaderRoot.Resources["ReaderForegroundBrush"] = textForeground;
         }
 
         // ================= CHÈN / XOÁ ẢNH TRONG CHẾ ĐỘ SỬA =================
@@ -300,7 +371,6 @@ namespace Miao.UI.Views.Pages
             try
             {
                 var imageDirectory = GetNovelImageDirectory();
-                Directory.CreateDirectory(imageDirectory);
 
                 var extension = Path.GetExtension(result[0].Name);
                 var fileName = $"{_novelId}_{_chapterNumber}_{Guid.NewGuid():N}{extension}";
@@ -322,6 +392,7 @@ namespace Miao.UI.Views.Pages
                     : _blocks.Count;
 
                 _blocks.Insert(Math.Clamp(insertIndex, 0, _blocks.Count), newBlock);
+                RebuildReadGroups();
             }
             catch (Exception ex)
             {
@@ -333,12 +404,100 @@ namespace Miao.UI.Views.Pages
         {
             if (sender is not Button btn || btn.Tag is not ReaderBlockViewModel vm) return;
             _blocks.Remove(vm);
+            RebuildReadGroups();
         }
 
+        // Thư mục ảnh dùng chung cho MỌI cách thêm ảnh (chọn file, dán clipboard...) —
+        // tự tạo nếu chưa có, mỗi truyện 1 thư mục riêng "Images/Novel_{novelId}".
         private string GetNovelImageDirectory()
         {
             var dbDirectory = AppSettingsService.Instance.Settings.DataFolder;
-            return Path.Combine(dbDirectory, "Images", $"Novel_{_novelId}");
+            var dir = Path.Combine(dbDirectory, "Images", $"Novel_{_novelId}");
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        // Dán ảnh (Ctrl+V) trực tiếp vào ô đang sửa: nếu clipboard đang chứa ảnh (copy từ
+        // trình duyệt/ứng dụng khác) thì lưu vào cùng thư mục ảnh của truyện và chèn thành
+        // 1 block ảnh ngay sau dòng đang focus, thay vì dán chữ rác hoặc không làm gì.
+        // Lưu ý: định dạng clipboard ảnh phụ thuộc hệ điều hành/phiên bản Avalonia — nếu
+        // ở máy bạn danh sách format khác "image/png"/"PNG"/"Bitmap", báo mình để chỉnh lại.
+        // Dán ảnh (Ctrl+V) trực tiếp vào ô đang sửa: nếu clipboard đang chứa ảnh (copy từ
+        // trình duyệt/ứng dụng khác) thì lưu vào cùng thư mục ảnh của truyện và chèn thành
+        // 1 block ảnh ngay sau dòng đang focus, thay vì dán chữ rác hoặc không làm gì.
+        //
+        // GetFormatsAsync/GetDataAsync chỉ có trên IClipboard từ Avalonia 11.1 trở lên, nên
+        // gọi qua reflection để build được ở MỌI phiên bản Avalonia — nếu bản bạn đang dùng
+        // không hỗ trợ, TryGetClipboardImageBytesAsync trả về null và hành vi dán chữ mặc
+        // định vẫn hoạt động bình thường (không crash, chỉ là tính năng dán ảnh không chạy).
+        private async void OnEditTextBoxPasteCheck(object? sender, KeyEventArgs e)
+        {
+            var isPaste = e.Key == Key.V &&
+                (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta));
+            if (!isPaste) return;
+            if (sender is not TextBox tb || tb.DataContext is not ReaderBlockViewModel vm) return;
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            var clipboard = topLevel?.Clipboard;
+            if (clipboard == null) return;
+
+            var bytes = await TryGetClipboardImageBytesAsync(clipboard);
+            if (bytes == null || bytes.Length == 0) return; // không có ảnh -> để dán chữ mặc định
+
+            e.Handled = true; // có ảnh: chặn hành vi dán chữ mặc định của TextBox
+
+            try
+            {
+                var imageDirectory = GetNovelImageDirectory();
+                var destPath = Path.Combine(imageDirectory, $"{_novelId}_{_chapterNumber}_{Guid.NewGuid():N}.png");
+                await File.WriteAllBytesAsync(destPath, bytes);
+
+                var newBlock = new ReaderBlockViewModel
+                {
+                    Type = ReaderBlockType.Image,
+                    ImagePath = destPath,
+                    IsEditing = true
+                };
+
+                var insertIndex = Math.Clamp(_blocks.IndexOf(vm) + 1, 0, _blocks.Count);
+                _blocks.Insert(insertIndex, newBlock);
+                RebuildReadGroups();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OnEditTextBoxPasteCheck] Lỗi dán ảnh: {ex}");
+            }
+        }
+
+        private static async Task<byte[]?> TryGetClipboardImageBytesAsync(IClipboard clipboard)
+        {
+            try
+            {
+                var clipboardType = clipboard.GetType();
+                var getFormatsMethod = clipboardType.GetMethod("GetFormatsAsync");
+                var getDataMethod = clipboardType.GetMethod("GetDataAsync");
+                if (getFormatsMethod == null || getDataMethod == null) return null;
+
+                if (getFormatsMethod.Invoke(clipboard, null) is not Task formatsTask) return null;
+                await formatsTask.ConfigureAwait(true);
+
+                var formats = formatsTask.GetType().GetProperty("Result")?.GetValue(formatsTask) as string[];
+                var imageFormat = formats?.FirstOrDefault(f =>
+                    f.Contains("image", StringComparison.OrdinalIgnoreCase) ||
+                    f.Contains("png", StringComparison.OrdinalIgnoreCase) ||
+                    f.Contains("bitmap", StringComparison.OrdinalIgnoreCase) ||
+                    f.Contains("dib", StringComparison.OrdinalIgnoreCase));
+                if (imageFormat == null) return null;
+
+                if (getDataMethod.Invoke(clipboard, new object[] { imageFormat }) is not Task dataTask) return null;
+                await dataTask.ConfigureAwait(true);
+
+                return dataTask.GetType().GetProperty("Result")?.GetValue(dataTask) as byte[];
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         // ================= SỬA BẢN GỐC (dịch lại khi lưu) =================
@@ -453,7 +612,7 @@ namespace Miao.UI.Views.Pages
         private static string[] SplitLines(string? text)
             => (text ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
 
-        private static System.Collections.Generic.List<(int? OldIndex, int? NewIndex)> DiffLines(string[] oldLines, string[] newLines)
+        private static List<(int? OldIndex, int? NewIndex)> DiffLines(string[] oldLines, string[] newLines)
         {
             int n = oldLines.Length, m = newLines.Length;
             var dp = new int[n + 1, m + 1];
@@ -462,7 +621,7 @@ namespace Miao.UI.Views.Pages
                 for (int j = m - 1; j >= 0; j--)
                     dp[i, j] = oldLines[i] == newLines[j] ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
 
-            var result = new System.Collections.Generic.List<(int?, int?)>();
+            var result = new List<(int?, int?)>();
             int a = 0, b = 0;
             while (a < n && b < m)
             {
@@ -519,7 +678,30 @@ namespace Miao.UI.Views.Pages
 
             FontSizeValueText.Text = $"{s.ReaderFontSize:0} px";
             LineHeightValueText.Text = $"{s.ReaderLineHeight:0.0}×";
+
+            // Áp trực tiếp font/cỡ chữ lên vùng đọc (thuộc tính TextElement được kế thừa
+            // xuống mọi TextBlock/SelectableTextBlock/TextBox con bên trong ReadingCard).
+            ReadingCard.SetValue(TextElement.FontFamilyProperty, new FontFamily(s.ReaderFontFamily));
+            ReadingCard.SetValue(TextElement.FontSizeProperty, s.ReaderFontSize);
+
+            _lineHeightMultiplier = s.ReaderLineHeight;
+            UpdateComputedLineHeight();
+
             ApplyReaderBackground(s.ReaderBackground);
+        }
+
+        // LineHeight của Avalonia là giá trị PIXEL TUYỆT ĐỐI, không phải hệ số nhân — trước
+        // đây gán thẳng "1.5" (hệ số) vào LineHeight khiến mỗi dòng cao đúng 1.5px và các
+        // dòng chữ chồng khít lên nhau (chữ bị "rối"/đè nhau). Giờ tính LineHeight thực tế
+        // = cỡ chữ hiện tại × hệ số giãn dòng, và tính lại mỗi khi 1 trong 2 giá trị đổi.
+        private double _lineHeightMultiplier = 1.5;
+
+        private void UpdateComputedLineHeight()
+        {
+            var fontSize = AppSettingsService.Instance.Settings.ReaderFontSize;
+            if (fontSize <= 0) fontSize = 15;
+
+            ReaderRoot.Resources["ReaderLineHeightValue"] = fontSize * _lineHeightMultiplier;
         }
 
         private void OnToggleFontPanel(object? sender, RoutedEventArgs e)
@@ -531,8 +713,11 @@ namespace Miao.UI.Views.Pages
         {
             if (_updatingReaderSettings || FontFamilyBox.SelectedItem is not ComboBoxItem item) return;
 
-            AppSettingsService.Instance.Settings.ReaderFontFamily = (string)item.Content!;
+            var family = (string)item.Content!;
+            AppSettingsService.Instance.Settings.ReaderFontFamily = family;
             AppSettingsService.Instance.Save();
+
+            ReadingCard.SetValue(TextElement.FontFamilyProperty, new FontFamily(family));
         }
 
         private void OnFontSizeChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -544,6 +729,9 @@ namespace Miao.UI.Views.Pages
 
             AppSettingsService.Instance.Settings.ReaderFontSize = e.NewValue;
             AppSettingsService.Instance.Save();
+
+            ReadingCard.SetValue(TextElement.FontSizeProperty, e.NewValue);
+            UpdateComputedLineHeight(); // cỡ chữ đổi -> line height (px) cũng phải tính lại
         }
 
         private void OnLineHeightChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -555,6 +743,9 @@ namespace Miao.UI.Views.Pages
 
             AppSettingsService.Instance.Settings.ReaderLineHeight = e.NewValue;
             AppSettingsService.Instance.Save();
+
+            _lineHeightMultiplier = e.NewValue;
+            UpdateComputedLineHeight();
         }
 
         private void OnReaderBackgroundChanged(object? sender, SelectionChangedEventArgs e)
@@ -634,6 +825,8 @@ namespace Miao.UI.Views.Pages
                     Grid.SetColumn(nameText, 0);
                     row.Children.Add(nameText);
 
+                    // Nhấn lại vào 1 thư viện đã thêm sẽ BỎ CHỌN (xoá khỏi thư viện đó),
+                    // thay vì trước đây bấm hoài không có phản ứng gì nếu đã tồn tại.
                     if (addedLibraryIds.Contains(library.Id))
                     {
                         var check = new TextBlock
@@ -683,11 +876,15 @@ namespace Miao.UI.Views.Pages
             if (sender is not Button button || button.Tag is not Guid libraryId) return;
 
             using var db = OpenDb();
-            if (!db.CustomLibraryNovels.Any(x => x.CustomLibraryId == libraryId && x.NovelId == _novelId))
-            {
+            var existing = db.CustomLibraryNovels
+                .FirstOrDefault(x => x.CustomLibraryId == libraryId && x.NovelId == _novelId);
+
+            if (existing != null)
+                db.CustomLibraryNovels.Remove(existing); // bấm lại -> bỏ khỏi thư viện
+            else
                 db.CustomLibraryNovels.Add(new CustomLibraryNovel { CustomLibraryId = libraryId, NovelId = _novelId });
-                db.SaveChanges();
-            }
+
+            db.SaveChanges();
 
             if (_readerLibraryPopup != null) _readerLibraryPopup.IsOpen = false;
         }
@@ -744,14 +941,14 @@ namespace Miao.UI.Views.Pages
             ModalService.Show(card);
         }
 
-        // ================= VÙNG ĐỌC: MENU CHUỘT PHẢI (Copy / Thêm tên) =================
+        // ================= VÙNG ĐỌC: MENU CHUỘT PHẢI (Thêm / Thêm nhân vật / Copy) =================
 
         private void OnTextBlockContextRequested(object? sender, ContextRequestedEventArgs e)
         {
             if (sender is not SelectableTextBlock stb) return;
 
             _activeContextTextBlock = stb;
-            _activeContextBlock = stb.Tag as ReaderBlockViewModel;
+            _activeContextGroup = stb.Tag as ReaderDisplayGroup;
         }
 
         private async void OnContextCopyClick(object? sender, RoutedEventArgs e)
@@ -767,7 +964,10 @@ namespace Miao.UI.Views.Pages
         private void OnContextAddStyledClick(object? sender, RoutedEventArgs e)
         {
             var selectedText = _activeContextTextBlock?.SelectedText?.Trim();
-            if (string.IsNullOrWhiteSpace(selectedText) || _activeContextBlock == null) return;
+            if (string.IsNullOrWhiteSpace(selectedText) || _activeContextGroup == null || _activeContextGroup.IsImage) return;
+
+            var blockIndex = GetSelectionBlockIndex();
+            if (blockIndex == null) return;
 
             using var db = OpenDb();
             var set = db.NovelGlossarySets
@@ -784,17 +984,24 @@ namespace Miao.UI.Views.Pages
                 return;
             }
 
-            var originalGuess = _isEditing ? selectedText : GetOriginalLineForSelection();
+            var originalGuess = GetOriginalLineForSelection(blockIndex.Value, _activeContextGroup.Text, selectedText);
             if (string.IsNullOrWhiteSpace(originalGuess))
                 originalGuess = selectedText;
 
-            var translatedGuess = _isEditing ? "" : selectedText;
-            var blockIndex = _blocks.IndexOf(_activeContextBlock);
-
             var existing = db.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == set.Id && x.OriginalTerm == originalGuess);
             ShowGlossaryEntryDialog(
-                set.Id, originalGuess, existing?.TranslatedTerm ?? translatedGuess, existing?.HanViet ?? "",
-                applyToCurrentChapter: !_isEditing, oldTranslatedText: selectedText, blockIndex: blockIndex);
+                set.Id, originalGuess, existing?.TranslatedTerm ?? selectedText, existing?.HanViet ?? "",
+                oldTranslatedText: selectedText, blockIndex: blockIndex.Value);
+        }
+
+        // Nhấn "Thêm nhân vật" trong menu chuột phải: mở hộp thoại tạo/gán nhân vật
+        // cho đúng từ/cụm từ vừa bôi đen.
+        private void OnContextAddCharacterClick(object? sender, RoutedEventArgs e)
+        {
+            var selectedText = _activeContextTextBlock?.SelectedText?.Trim();
+            if (string.IsNullOrWhiteSpace(selectedText)) return;
+
+            ShowAddCharacterDialog(selectedText);
         }
 
         private void ReplaceInDisplayContent(string oldText, string newText, bool wholeChapter, int? blockIndex)
@@ -840,25 +1047,51 @@ namespace Miao.UI.Views.Pages
             return true;
         }
 
-        private string GetOriginalLineForSelection()
+        // Với chế độ đọc gộp nhiều dòng vào 1 khối, cần tính lại đúng "dòng" (block index
+        // trong _blocks) mà đoạn đang được chọn thuộc về, dựa vào số ký tự xuống dòng '\n'
+        // đứng trước vị trí bắt đầu của phần được bôi đen trong văn bản đã gộp.
+        private int? GetSelectionBlockIndex()
         {
-            if (_currentChapter == null || _activeContextBlock == null) return "";
+            if (_activeContextGroup == null || _activeContextGroup.IsImage) return null;
 
-            var index = _blocks.IndexOf(_activeContextBlock);
-            if (index < 0) return "";
+            var selected = _activeContextTextBlock?.SelectedText ?? "";
+            var fullText = _activeContextGroup.Text;
+
+            if (string.IsNullOrEmpty(selected))
+                return _activeContextGroup.StartBlockIndex;
+
+            var offset = fullText.IndexOf(selected, StringComparison.Ordinal);
+            if (offset < 0)
+                return _activeContextGroup.StartBlockIndex;
+
+            var lineOffset = fullText[..offset].Count(c => c == '\n');
+            return Math.Clamp(
+                _activeContextGroup.StartBlockIndex + lineOffset,
+                _activeContextGroup.StartBlockIndex,
+                _activeContextGroup.EndBlockIndex);
+        }
+
+        private string GetOriginalLineForSelection(int blockIndex, string groupText, string selectedText)
+        {
+            if (_currentChapter == null) return "";
 
             var originalLines = SplitLines(_currentChapter.OriginalContent);
-            if (index >= originalLines.Length) return "";
+            if (blockIndex < 0 || blockIndex >= originalLines.Length) return "";
 
-            var originalLine = originalLines[index].Trim();
+            var originalLine = originalLines[blockIndex].Trim();
             if (originalLine.Length == 0) return "";
 
-            var paragraphText = _activeContextBlock.Text ?? "";
-            var selectedText = _activeContextTextBlock?.SelectedText ?? "";
-            if (paragraphText.Length == 0 || string.IsNullOrEmpty(selectedText)) return originalLine;
+            // Lấy đúng dòng con (trong nhóm đã gộp) tương ứng với blockIndex
+            var groupLines = groupText.Split('\n');
+            var lineIndexInGroup = blockIndex - (_activeContextGroup?.StartBlockIndex ?? blockIndex);
+            var lineText = lineIndexInGroup >= 0 && lineIndexInGroup < groupLines.Length
+                ? groupLines[lineIndexInGroup]
+                : groupText;
 
-            var selectionStartOffset = Math.Max(0, paragraphText.IndexOf(selectedText, StringComparison.Ordinal));
-            var ratio = Math.Clamp((double)selectionStartOffset / paragraphText.Length, 0, 1);
+            if (lineText.Length == 0 || string.IsNullOrEmpty(selectedText)) return originalLine;
+
+            var selectionStartOffset = Math.Max(0, lineText.IndexOf(selectedText, StringComparison.Ordinal));
+            var ratio = Math.Clamp((double)selectionStartOffset / lineText.Length, 0, 1);
             var centerIndex = Math.Clamp((int)(ratio * originalLine.Length), 0, originalLine.Length - 1);
 
             if (IsBoundaryChar(originalLine[centerIndex]))
@@ -885,18 +1118,46 @@ namespace Miao.UI.Views.Pages
             return originalLine.Substring(start, end - start + 1).Trim();
         }
 
+        // Tra Hán Việt chính xác hơn (khớp cụm tên riêng qua Name.json) trong nền
+        // rồi mới cập nhật ô Hán Việt — chỉ áp kết quả nếu người dùng chưa gõ
+        // tiếp sang nội dung khác trong lúc chờ (tránh ghi đè nhầm).
+        private static async Task RefineHanVietAsync(TextBox originalBox, TextBox hanVietBox)
+        {
+            var original = originalBox.Text ?? "";
+            if (string.IsNullOrWhiteSpace(original)) return;
+
+            var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            if (!string.IsNullOrWhiteSpace(accurate) && originalBox.Text == original)
+                hanVietBox.Text = accurate;
+        }
+
         // Dialog thêm/sửa tên qua ModalService thay cho Window riêng của WPF
         private void ShowGlossaryEntryDialog(Guid glossarySetId, string selectedOriginal, string currentTranslation,
-            string currentHanViet, bool applyToCurrentChapter, string oldTranslatedText, int? blockIndex)
+            string currentHanViet, string oldTranslatedText, int blockIndex)
         {
             var originalBox = new TextBox { Text = selectedOriginal, Margin = new Thickness(0, 0, 0, 14) };
             var hanVietText = string.IsNullOrWhiteSpace(currentHanViet) ? _sinoVietnamese.ToHanViet(selectedOriginal) : currentHanViet;
             var hanVietBox = new TextBox { Text = hanVietText, Margin = new Thickness(0, 0, 0, 14) };
-            originalBox.GetObservable(TextBox.TextProperty).Subscribe(new Avalonia.Reactive.AnonymousObserver<string?>(text =>
+            var pinYinBox = new TextBox { Text = _sinoVietnamese.ToPinYin(selectedOriginal), Margin = new Thickness(0, 0, 0, 14) };
+
+            if (string.IsNullOrWhiteSpace(currentHanViet))
             {
-                var converted = _sinoVietnamese.ToHanViet(text ?? "");
-                hanVietBox.Text = string.IsNullOrWhiteSpace(converted) ? text : converted;
-            }));
+                _ = RefineHanVietAsync(originalBox, hanVietBox);
+            }
+
+            async void OnOriginalTextChanged(string? text)
+            {
+                var current = text ?? "";
+                var quickGuess = _sinoVietnamese.ToHanViet(current);
+                hanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? current : quickGuess;
+                pinYinBox.Text = _sinoVietnamese.ToPinYin(current);
+
+                await RefineHanVietAsync(originalBox, hanVietBox);
+            }
+
+            originalBox.GetObservable(TextBox.TextProperty).Subscribe(
+                new Avalonia.Reactive.AnonymousObserver<string?>(OnOriginalTextChanged));
             var translatedBox = new TextBox { Text = currentTranslation, Margin = new Thickness(0, 0, 0, 18) };
 
             var root = new StackPanel { Margin = new Thickness(24), Width = 360 };
@@ -904,6 +1165,8 @@ namespace Miao.UI.Views.Pages
             root.Children.Add(originalBox);
             root.Children.Add(new TextBlock { Text = "Hán Việt:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
             root.Children.Add(hanVietBox);
+            root.Children.Add(new TextBlock { Text = "Bính âm:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
+            root.Children.Add(pinYinBox);
             root.Children.Add(new TextBlock { Text = "Dịch:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
             root.Children.Add(translatedBox);
 
@@ -924,9 +1187,6 @@ namespace Miao.UI.Views.Pages
             scopeRow.Children.Add(chapterButton);
             scopeRow.Children.Add(onceButton);
 
-            chapterButton.IsVisible = applyToCurrentChapter;
-            onceButton.IsVisible = applyToCurrentChapter;
-
             var deleteButton = MakeButton("Xóa", "DangerButton");
             var cancelButton = MakeButton("Hủy", "SecondaryButton");
             var bottomRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
@@ -942,6 +1202,10 @@ namespace Miao.UI.Views.Pages
 
             void SaveGlossaryEntry(string newOriginal, string translated)
             {
+                var pinYin = string.IsNullOrWhiteSpace(pinYinBox.Text?.Trim())
+                    ? _sinoVietnamese.ToPinYin(newOriginal)
+                    : pinYinBox.Text!.Trim();
+
                 using var saveDb = OpenDb();
                 var entry = saveDb.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == glossarySetId && x.OriginalTerm == selectedOriginal);
                 if (entry == null)
@@ -951,7 +1215,7 @@ namespace Miao.UI.Views.Pages
                         GlossarySetId = glossarySetId,
                         OriginalTerm = newOriginal,
                         HanViet = hanVietBox.Text?.Trim() ?? "",
-                        PinYin = _sinoVietnamese.ToPinYin(newOriginal),
+                        PinYin = pinYin,
                         TranslatedTerm = translated
                     });
                 }
@@ -960,7 +1224,7 @@ namespace Miao.UI.Views.Pages
                     entry.OriginalTerm = newOriginal;
                     entry.TranslatedTerm = translated;
                     entry.HanViet = hanVietBox.Text?.Trim() ?? "";
-                    entry.PinYin = _sinoVietnamese.ToPinYin(newOriginal);
+                    entry.PinYin = pinYin;
                 }
                 saveDb.SaveChanges();
             }
@@ -972,10 +1236,7 @@ namespace Miao.UI.Views.Pages
                 if (string.IsNullOrWhiteSpace(newOriginal) || string.IsNullOrWhiteSpace(translated)) return;
 
                 SaveGlossaryEntry(newOriginal, translated);
-
-                if (applyToCurrentChapter)
-                    ReplaceInDisplayContent(oldTranslatedText, translated, wholeChapter: true, blockIndex: null);
-
+                ReplaceInDisplayContent(oldTranslatedText, translated, wholeChapter: true, blockIndex: null);
                 ModalService.Close();
             };
 
@@ -1006,6 +1267,224 @@ namespace Miao.UI.Views.Pages
                     deleteDb.GlossarySetEntries.Remove(entry);
                     deleteDb.SaveChanges();
                 }
+                ModalService.Close();
+            };
+
+            ModalService.Show(card);
+        }
+
+        // ================= NHÂN VẬT: NHẬN DIỆN TÊN + BẤM VÀO ĐỂ XEM ẢNH =================
+        //
+        // GIẢ ĐỊNH schema (dựa trên 3 model Character / CharacterAlias / CharacterGroup bạn gửi):
+        //   - MiaoDbContext có DbSet<CharacterGroup> CharacterGroups, DbSet<Character> Characters,
+        //     DbSet<CharacterAlias> CharacterAliases. Nếu tên DbSet trong project khác, đổi lại
+        //     3 chỗ dùng "db.CharacterGroups / db.Characters / db.CharacterAliases" bên dưới.
+        //   - Nhân vật thuộc về truyện hiện tại nếu: CharacterGroup.OwnerNovelId == _novelId
+        //     (bộ riêng của truyện) HOẶC CharacterGroup.IsShared == true (bộ dùng chung, tương
+        //     tự cách GlossarySet dùng NovelGlossarySets). Nếu thực tế có bảng nối kiểu
+        //     "NovelCharacterGroups" riêng, thay điều kiện Where bên dưới cho khớp.
+
+        private void LoadCharacterLookup()
+        {
+            _characterLookup = new Dictionary<string, Character>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                using var db = OpenDb();
+                var characters = db.Characters
+                    .Include(c => c.Aliases)
+                    .Include(c => c.CharacterGroup)
+                    .Where(c => c.CharacterGroup != null &&
+                                (c.CharacterGroup.OwnerNovelId == _novelId || c.CharacterGroup.IsShared))
+                    .ToList();
+
+                foreach (var c in characters)
+                {
+                    if (!string.IsNullOrWhiteSpace(c.Name) && !_characterLookup.ContainsKey(c.Name))
+                        _characterLookup[c.Name] = c;
+
+                    foreach (var alias in c.Aliases)
+                    {
+                        if (!string.IsNullOrWhiteSpace(alias.AliasText) && !_characterLookup.ContainsKey(alias.AliasText))
+                            _characterLookup[alias.AliasText] = c;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Nếu DbSet Characters/CharacterAliases/CharacterGroups chưa tồn tại trong
+                // MiaoDbContext, tính năng nhận diện nhân vật sẽ tự tắt thay vì làm crash trang đọc.
+                System.Diagnostics.Debug.WriteLine($"[LoadCharacterLookup] {ex}");
+            }
+        }
+
+        // Double-click vào 1 từ trong đoạn văn: SelectableTextBlock tự chọn từ dưới con trỏ,
+        // nếu từ đó khớp tên/biệt danh nhân vật đã biết -> hiện ảnh + tên trong 1 flyout nhỏ.
+        private void OnParagraphDoubleTapped(object? sender, TappedEventArgs e)
+        {
+            if (sender is not SelectableTextBlock stb) return;
+
+            var word = stb.SelectedText?.Trim();
+            if (string.IsNullOrWhiteSpace(word)) return;
+
+            if (_characterLookup.TryGetValue(word, out var character))
+                ShowCharacterFlyout(character, stb);
+        }
+
+        private void ShowCharacterFlyout(Character character, Control anchor)
+        {
+            var panel = new StackPanel { Margin = new Thickness(14), Width = 200 };
+
+            if (!string.IsNullOrWhiteSpace(character.ImagePath) && File.Exists(character.ImagePath))
+            {
+                try
+                {
+                    panel.Children.Add(new Image
+                    {
+                        Source = new Avalonia.Media.Imaging.Bitmap(character.ImagePath),
+                        Height = 160,
+                        Stretch = Stretch.Uniform,
+                        Margin = new Thickness(0, 0, 0, 10)
+                    });
+                }
+                catch { /* ảnh lỗi/không đọc được -> bỏ qua, vẫn hiện tên */ }
+            }
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = character.Name,
+                FontWeight = FontWeight.Bold,
+                FontSize = 16,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextAlignment = TextAlignment.Center
+            });
+
+            if (!string.IsNullOrWhiteSpace(character.Description))
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = character.Description,
+                    Margin = new Thickness(0, 6, 0, 0),
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 13,
+                    Foreground = (IBrush)(Application.Current?.FindResource("TextMuted") ?? Brushes.Gray)
+                });
+            }
+
+            var card = new Border
+            {
+                Background = Brushes.White,
+                BorderBrush = (IBrush)(Application.Current?.FindResource("BorderSoft") ?? Brushes.LightGray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Child = panel
+            };
+
+            var flyout = new Flyout { Content = card, Placement = PlacementMode.Pointer };
+            flyout.ShowAt(anchor);
+        }
+
+        // Hộp thoại "Thêm nhân vật" — tạo nhân vật mới (hoặc gán alias cho nhân vật đã có)
+        // gắn với đúng cụm từ vừa bôi đen trong văn bản.
+        private void ShowAddCharacterDialog(string suggestedName)
+        {
+            var nameBox = new TextBox { Text = suggestedName, Margin = new Thickness(0, 0, 0, 14) };
+            var descBox = new TextBox { AcceptsReturn = true, Height = 70, Margin = new Thickness(0, 0, 0, 14) };
+
+            string? pickedImagePath = null;
+            var previewImage = new Image { Height = 120, Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 0, 10), IsVisible = false };
+            var pickImageButton = new Button { Content = "Chọn ảnh nhân vật", Classes = { "SecondaryButton" }, Margin = new Thickness(0, 0, 0, 14) };
+
+            pickImageButton.Click += async (_, _) =>
+            {
+                var topLevel = TopLevel.GetTopLevel(this);
+                if (topLevel is null) return;
+
+                var result = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Chọn ảnh nhân vật",
+                    AllowMultiple = false,
+                    FileTypeFilter = new[] { FilePickerFileTypes.ImageAll }
+                });
+                if (result is null || result.Count == 0) return;
+
+                var imageDirectory = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "Images", "Characters");
+                Directory.CreateDirectory(imageDirectory);
+                var destPath = Path.Combine(imageDirectory, $"{Guid.NewGuid():N}{Path.GetExtension(result[0].Name)}");
+
+                await using var sourceStream = await result[0].OpenReadAsync();
+                await using var destStream = File.Create(destPath);
+                await sourceStream.CopyToAsync(destStream);
+
+                pickedImagePath = destPath;
+                previewImage.Source = new Avalonia.Media.Imaging.Bitmap(destPath);
+                previewImage.IsVisible = true;
+            };
+
+            var saveButton = new Button { Content = "Lưu", Width = 100, Classes = { "JadeButton" }, Margin = new Thickness(5, 0, 5, 0) };
+            var cancelButton = new Button { Content = "Hủy", Width = 100, Classes = { "SecondaryButton" }, Margin = new Thickness(5, 0, 5, 0) };
+            var buttonRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
+            buttonRow.Children.Add(saveButton);
+            buttonRow.Children.Add(cancelButton);
+
+            var root = new StackPanel { Margin = new Thickness(24), Width = 320 };
+            root.Children.Add(new TextBlock { Text = "Tên nhân vật:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
+            root.Children.Add(nameBox);
+            root.Children.Add(new TextBlock { Text = "Mô tả (không bắt buộc):", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
+            root.Children.Add(descBox);
+            root.Children.Add(previewImage);
+            root.Children.Add(pickImageButton);
+            root.Children.Add(buttonRow);
+
+            var card = new Border { Background = Brushes.White, CornerRadius = new CornerRadius(12), Child = root };
+
+            cancelButton.Click += (_, _) => ModalService.Close();
+            saveButton.Click += (_, _) =>
+            {
+                var name = nameBox.Text?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(name)) return;
+
+                try
+                {
+                    using var db = OpenDb();
+
+                    // Dùng (hoặc tạo) 1 CharacterGroup riêng của truyện này để lưu nhân vật mới
+                    var group = db.CharacterGroups.FirstOrDefault(g => g.OwnerNovelId == _novelId);
+                    if (group == null)
+                    {
+                        group = new CharacterGroup { OwnerNovelId = _novelId, Name = "Nhân vật truyện" };
+                        db.CharacterGroups.Add(group);
+                        db.SaveChanges();
+                    }
+
+                    var character = db.Characters.FirstOrDefault(c => c.CharacterGroupId == group.Id && c.Name == name);
+                    var isNewCharacter = character == null;
+                    character ??= new Character { CharacterGroupId = group.Id, Name = name };
+
+                    character.Description = descBox.Text?.Trim() ?? "";
+                    if (!string.IsNullOrWhiteSpace(pickedImagePath))
+                        character.ImagePath = pickedImagePath;
+
+                    if (isNewCharacter)
+                        db.Characters.Add(character);
+
+                    db.SaveChanges();
+
+                    // Nếu cụm từ bôi đen khác tên chính -> lưu thành 1 cách gọi khác (alias)
+                    if (!string.Equals(character.Name, suggestedName, StringComparison.OrdinalIgnoreCase) &&
+                        !db.CharacterAliases.Any(a => a.CharacterId == character.Id && a.AliasText == suggestedName))
+                    {
+                        db.CharacterAliases.Add(new CharacterAlias { CharacterId = character.Id, AliasText = suggestedName });
+                        db.SaveChanges();
+                    }
+
+                    LoadCharacterLookup();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ShowAddCharacterDialog] {ex}");
+                }
+
                 ModalService.Close();
             };
 

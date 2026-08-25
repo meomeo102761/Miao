@@ -58,7 +58,7 @@
                 </ItemsControl>
 
                 <Button x:Name="ImportButton" Content="Nhập tất cả vào Thư viện" Classes="jade"
-                        Width="180" HorizontalAlignment="Left" Margin="0,8,0,0"
+                        Padding="16,8" HorizontalAlignment="Left" Margin="0,8,0,0"
                         IsVisible="False" Click="OnImportClick"/>
             </StackPanel>
         </Grid>

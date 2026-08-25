@@ -47,9 +47,12 @@ namespace Miao.UI.Views.Pages
         private Dictionary<Guid, string> _volumeNames = new();
         private Dictionary<Guid, int> _volumeChapterCounts = new();
         private int _chapterPage = 1;
+        private int? _latestChapterNumber;
+        private int _lastReadChapterNumber;
 
         private List<GlossarySetEntry> _nameEntries = new();
         private GlossarySetEntry? _editingEntry;
+        private readonly SinoVietnameseConverter _sinoVietnamese;
         private bool _showDuplicateNamesOnly;
         private Guid? _viewingSetId;
         private string _viewingSetName = "";
@@ -91,14 +94,20 @@ namespace Miao.UI.Views.Pages
             var tessdataPath = Path.Combine(AppContext.BaseDirectory, "tessdata");
             var ocr = new OcrService(tessdataPath);
 
+            var handataPath = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "handata");
+            var hanVietDictionaryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "translate", "zh_to_vi", "HanViet.json");
+            _sinoVietnamese = new SinoVietnameseConverter(handataPath, hanVietDictionaryPath);
+
             _sources = new List<IDownloadSource>
             {
                 new Sixty9ShubaDownloadSource(_browser),
                 new FanqieDownloadSource(_browser, PlatformServices.ScreenshotFetcher, ocr),
+                new FanqieTcDownloadSource(),
                 new BiqugeDownloadSource(_browser),
                 new JinjiangDownloadSource(_browser),
                 new LofterDownloadSource(),
-                new WikidichDownloadSource(_browser)
+                new WikidichDownloadSource(_browser),
+                new NvrenshuDownloadSource(_browser),
             };
 
             _relatedContent = BuildRelatedPanel();
@@ -174,6 +183,7 @@ namespace Miao.UI.Views.Pages
             _authorName = novel.Author;
             _sourceUrl = novel.SourceUrl;
             AuthorText.Text = novel.DisplayAuthor;
+            _lastReadChapterNumber = novel.LastReadChapterNumber;
 
             if (!string.IsNullOrWhiteSpace(novel.TranslatedTitle) && novel.TranslatedTitle != novel.Title)
             {
@@ -202,11 +212,13 @@ namespace Miao.UI.Views.Pages
                 MetaLatestText.Text = $"Mới nhất: {latestChapter.DisplayTitle}";
                 MetaLatestText.IsVisible = true;
                 MetaUpdateText.Margin = new Thickness(0, 8, 0, 0);
+                _latestChapterNumber = latestChapter.Number;
             }
             else
             {
                 MetaLatestText.IsVisible = false;
                 MetaUpdateText.Margin = new Thickness(0);
+                _latestChapterNumber = null;
             }
 
             var updateTime = novel.LastUpdatedAt ?? novel.AddedAt;
@@ -217,7 +229,7 @@ namespace Miao.UI.Views.Pages
                 : novel.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             TagsList.ItemsSource = tagList;
 
-            DescriptionText.Text = string.IsNullOrWhiteSpace(novel.Description) ? "Chưa có giới thiệu." : novel.Description;
+            DescriptionText.Text = string.IsNullOrWhiteSpace(novel.DisplayDescription) ? "Chưa có giới thiệu." : novel.DisplayDescription;
             TryLoadCoverPreview(novel.CoverImagePath);
 
             _volumeNames = db.Volumes
@@ -232,7 +244,13 @@ namespace Miao.UI.Views.Pages
             _allChapters = db.Chapters
                 .Where(c => c.NovelId == _novelId)
                 .OrderBy(c => c.Number)
-                .Select(c => new ChapterListItem { Number = c.Number, DisplayTitle = c.DisplayTitle, VolumeId = c.VolumeId })
+                .Select(c => new ChapterListItem
+                {
+                    Number = c.Number,
+                    DisplayTitle = c.DisplayTitle,
+                    VolumeId = c.VolumeId,
+                    IsRead = c.Number <= _lastReadChapterNumber
+                })
                 .ToList();
             ChaptersTitleText.Text = $"Mục lục · {_allChapters.Count} Chương";
             _chapterPage = 1;
@@ -369,7 +387,7 @@ namespace Miao.UI.Views.Pages
                 return null;
 
             var count = _volumeChapterCounts.TryGetValue(volumeId.Value, out var c) ? c : 0;
-            return $"{name} · Cộng{count}Chương";
+            return $"{name} · Cộng {count} Chương";
         }
 
         private void OnPreviousChapterPageClick(object? sender, RoutedEventArgs e)
@@ -439,6 +457,12 @@ namespace Miao.UI.Views.Pages
                 AppNavigator.NavigateTo(new ReaderPage(_novelId, number));
         }
 
+        private void OnLatestChapterClick(object? sender, PointerPressedEventArgs e)
+        {
+            if (_latestChapterNumber is int number)
+                AppNavigator.NavigateTo(new ReaderPage(_novelId, number));
+        }
+
         private void OnWorkspaceClick(object? sender, RoutedEventArgs e) => AppNavigator.NavigateTo(new WorkspacePage(_novelId));
 
         // ===================== Modal dùng chung (ModalService) =====================
@@ -487,16 +511,23 @@ namespace Miao.UI.Views.Pages
             EditPopup.IsOpen = false;
 
             var linksToCheck = new List<string>();
+
             if (!string.IsNullOrWhiteSpace(_sourceUrl))
                 linksToCheck.Add(_sourceUrl);
 
             using (var linkDb = new MiaoDbContext(AppPaths.DbFilePath))
             {
                 linksToCheck.AddRange(
-                    linkDb.NovelLinks.Where(l => l.NovelId == _novelId)
+                    linkDb.NovelLinks
+                        .Where(l => l.NovelId == _novelId)
                         .Select(l => l.Url)
                         .Where(u => !string.IsNullOrWhiteSpace(u)));
             }
+
+            // Loại link trùng nhau
+            linksToCheck = linksToCheck
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             if (linksToCheck.Count == 0)
             {
@@ -506,7 +537,11 @@ namespace Miao.UI.Views.Pages
 
             UpdateButton.IsEnabled = false;
 
-            int totalAdded = 0, totalFailed = 0, totalSkippedDuplicateTitle = 0;
+            int totalAdded = 0;
+            int totalFailed = 0;
+            int totalSkippedDuplicateTitle = 0;
+            int totalSkippedNumberConflict = 0;
+
             var linkResults = new List<string>();
 
             try
@@ -514,49 +549,91 @@ namespace Miao.UI.Views.Pages
                 foreach (var url in linksToCheck)
                 {
                     var source = _sources.FirstOrDefault(s => s.CanHandle(url));
+
                     if (source == null)
                     {
                         linkResults.Add($"{url}: không hỗ trợ nguồn này, bỏ qua.");
                         continue;
                     }
 
-                    if (source is LofterDownloadSource)
+                    // Lofter có workflow cập nhật riêng
+                    if (source is LofterDownloadSource lofterSource)
                     {
-                        linkResults.Add($"{url}: là Lofter, dùng nút cập nhật Lofter riêng.");
+                        await StartLofterUpdateAsync(lofterSource);
+
+                        // Không để logic cập nhật thông thường xử lý Lofter.
                         continue;
                     }
 
                     UpdateStatusText.Text = $"Đang kiểm tra: {url}";
 
                     List<(int number, string title, string chapterUrl)> allChapters;
+
                     try
                     {
                         allChapters = await source.GetChapterListAsync(url);
                     }
                     catch (Exception ex)
                     {
-                        linkResults.Add($"{url}: lỗi khi lấy danh sách chương — {ex.Message}");
+                        linkResults.Add(
+                            $"{url}: lỗi khi lấy danh sách chương — {ex.Message}");
                         continue;
                     }
 
-                    HashSet<string> existingUrls;
-                    HashSet<string> existingTitles;
-                    int nextNumber;
-                    using (var checkDb = new MiaoDbContext(AppPaths.DbFilePath))
+                    if (allChapters.Count == 0)
                     {
-                        var existingChapters = checkDb.Chapters.Where(c => c.NovelId == _novelId).ToList();
-                        existingUrls = existingChapters.Select(c => c.SourceUrl).ToHashSet();
-                        existingTitles = existingChapters.Select(c => NormalizeTitle(c.Title)).ToHashSet();
-                        nextNumber = existingChapters.Count == 0 ? 1 : existingChapters.Max(c => c.Number) + 1;
+                        linkResults.Add($"{url}: không tìm thấy chương nào.");
+                        continue;
                     }
 
-                    var newChapters = new List<(int number, string title, string chapterUrl)>();
+                    // Đọc trạng thái hiện tại của truyện
+
+                    List<Chapter> existingChapters;
+
+                    using (var checkDb = new MiaoDbContext(AppPaths.DbFilePath))
+                    {
+                        existingChapters = checkDb.Chapters
+                            .Where(c => c.NovelId == _novelId)
+                            .OrderBy(c => c.Number)
+                            .ToList();
+                    }
+
+                    var existingUrls = existingChapters
+                        .Where(c => !string.IsNullOrWhiteSpace(c.SourceUrl))
+                        .Select(c => c.SourceUrl)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    var existingTitles = existingChapters
+                        .Where(c => !string.IsNullOrWhiteSpace(c.Title))
+                        .Select(c => NormalizeTitle(c.Title))
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    var existingNumbers = existingChapters
+                        .Select(c => c.Number)
+                        .ToHashSet();
+
+                    // Tìm chương mới / chương bị thiếu
+
+                    var newChapters =
+                        new List<(int number, string title, string chapterUrl)>();
+
                     foreach (var ch in allChapters)
                     {
-                        if (existingUrls.Contains(ch.chapterUrl))
-                            continue;
+                        // 1. Đã có đúng URL nguồn -> bỏ qua
 
-                        if (existingTitles.Contains(NormalizeTitle(ch.title)))
+                        if (!string.IsNullOrWhiteSpace(ch.chapterUrl) &&
+                            existingUrls.Contains(ch.chapterUrl))
+                        {
+                            continue;
+                        }
+
+                        // 2. Nếu cùng tiêu đề đã có trong truyện từ nguồn khác,
+
+                        var normalizedTitle = NormalizeTitle(ch.title);
+
+                        if (!string.IsNullOrWhiteSpace(normalizedTitle) &&
+                            existingTitles.Contains(normalizedTitle))
                         {
                             totalSkippedDuplicateTitle++;
                             continue;
@@ -567,19 +644,38 @@ namespace Miao.UI.Views.Pages
 
                     if (newChapters.Count == 0)
                     {
-                        linkResults.Add($"{url}: không có chương mới.");
+                        linkResults.Add(
+                            $"{url}: không có chương mới hoặc chương thiếu.");
                         continue;
                     }
 
-                    int done = 0, addedThisLink = 0, failedThisLink = 0;
+                    int done = 0;
+                    int addedThisLink = 0;
+                    int failedThisLink = 0;
+                    int conflictThisLink = 0;
 
-                    foreach (var (_, title, chapterUrl) in newChapters)
+                    // Tải từng chương
+
+                    foreach (var (number, title, chapterUrl) in newChapters)
                     {
-                        UpdateStatusText.Text = $"[{url}] Đang tải chương ({++done}/{newChapters.Count})...";
+                        done++;
+
+                        UpdateStatusText.Text =
+                            $"[{url}] Đang tải chương {number} ({done}/{newChapters.Count})...";
+
+                        var normalizedTitle = NormalizeTitle(title);
 
                         string content;
-                        try { content = await source.GetChapterContentAsync(chapterUrl); }
-                        catch { content = ""; }
+
+                        try
+                        {
+                            content =
+                                await source.GetChapterContentAsync(chapterUrl);
+                        }
+                        catch
+                        {
+                            content = "";
+                        }
 
                         if (string.IsNullOrWhiteSpace(content))
                         {
@@ -587,54 +683,185 @@ namespace Miao.UI.Views.Pages
                             continue;
                         }
 
+                        // Dịch
+
                         string translatedTitle = title;
                         string displayContent = content;
 
                         if (!source.ProvidesTranslatedContent)
                         {
+                            // Dịch tiêu đề
+
                             try
                             {
-                                var t = (await _titleTranslator.TranslateChapterAsync(title)).Trim();
-                                if (!string.IsNullOrWhiteSpace(t)) translatedTitle = t;
-                            }
-                            catch { }
+                                var translated =
+                                    (await _titleTranslator
+                                        .TranslateChapterAsync(title))
+                                    .Trim();
 
-                            if (Regex.IsMatch(content, @"\p{IsCJKUnifiedIdeographs}"))
+                                if (!string.IsNullOrWhiteSpace(translated))
+                                    translatedTitle = translated;
+                            }
+                            catch
                             {
-                                UpdateStatusText.Text = $"[{url}] Đang dịch chương ({done}/{newChapters.Count})...";
+                                // Dịch tiêu đề lỗi -> giữ tiêu đề gốc
+                                translatedTitle = title;
+                            }
+
+                            // Dịch nội dung
+
+                            if (Regex.IsMatch(
+                                content,
+                                @"\p{IsCJKUnifiedIdeographs}"))
+                            {
+                                UpdateStatusText.Text =
+                                    $"[{url}] Đang dịch chương {number} ({done}/{newChapters.Count})...";
+
                                 try
                                 {
-                                    var result = await _titleTranslator.TranslateChapterAsync(content);
-                                    if (!string.IsNullOrWhiteSpace(result)) displayContent = result;
+                                    var result =
+                                        await _titleTranslator
+                                            .TranslateChapterAsync(content);
+
+                                    if (!string.IsNullOrWhiteSpace(result))
+                                    {
+                                        displayContent = result;
+                                    }
+                                    else
+                                    {
+                                        displayContent = content;
+                                    }
                                 }
-                                catch { }
+                                catch
+                                {
+                                    // Dịch lỗi -> vẫn lưu nội dung gốc
+                                    displayContent = content;
+                                }
                             }
                         }
 
-                        using var chapterDb = new MiaoDbContext(AppPaths.DbFilePath);
+                        // Xác định số chương cần lưu
+
+                        int chapterNumber;
+
+                        if (source.UsesSourceChapterNumbers)
+                        {
+                            // NGUỒN CÓ SỐ CHƯƠNG CỐ ĐỊNH
+
+                            chapterNumber = number;
+
+                            if (existingNumbers.Contains(chapterNumber))
+                            {
+                                conflictThisLink++;
+                                totalSkippedNumberConflict++;
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            // NGUỒN ĐÁNH SỐ TUẦN TỰ
+
+                            chapterNumber = 1;
+
+                            while (existingNumbers.Contains(chapterNumber))
+                                chapterNumber++;
+                        }
+
+                        // Lưu chương
+
+                        UpdateStatusText.Text =
+                            $"Đang lưu: nguồn số {number} — {title}";
+
+                        using var chapterDb =
+                            new MiaoDbContext(AppPaths.DbFilePath);
+
+                        // Kiểm tra lại URL ngay trước khi lưu.
+
+                        var urlAlreadyExists = chapterDb.Chapters.Any(c =>
+                            c.NovelId == _novelId &&
+                            !string.IsNullOrWhiteSpace(c.SourceUrl) &&
+                            c.SourceUrl == chapterUrl);
+
+                        if (urlAlreadyExists)
+                        {
+                            existingUrls.Add(chapterUrl);
+                            continue;
+                        }
+
+                        if (source.UsesSourceChapterNumbers)
+                        {
+                            var numberAlreadyExists = chapterDb.Chapters.Any(c =>
+                                c.NovelId == _novelId &&
+                                c.Number == chapterNumber);
+
+                            if (numberAlreadyExists)
+                            {
+                                conflictThisLink++;
+                                totalSkippedNumberConflict++;
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            while (chapterDb.Chapters.Any(c =>
+                                c.NovelId == _novelId &&
+                                c.Number == chapterNumber))
+                            {
+                                chapterNumber++;
+                            }
+                        }
+
                         chapterDb.Chapters.Add(new Chapter
                         {
                             NovelId = _novelId,
-                            Number = nextNumber++,
+                            Number = chapterNumber,
                             Title = title,
                             TranslatedTitle = translatedTitle,
                             SourceUrl = chapterUrl,
                             OriginalContent = content,
                             DisplayContent = displayContent
                         });
+
                         chapterDb.SaveChanges();
+
+                        // Cập nhật các tập hợp đang dùng trong vòng lặp
+
+                        existingNumbers.Add(chapterNumber);
+
+                        if (!string.IsNullOrWhiteSpace(chapterUrl))
+                            existingUrls.Add(chapterUrl);
+                        if (!string.IsNullOrWhiteSpace(normalizedTitle))
+                            existingTitles.Add(normalizedTitle);
+
                         addedThisLink++;
                     }
 
                     totalAdded += addedThisLink;
                     totalFailed += failedThisLink;
-                    linkResults.Add($"{url}: +{addedThisLink} chương mới" + (failedThisLink > 0 ? $", {failedThisLink} lỗi" : ""));
+
+                    var resultText =
+                        $"{url}: +{addedThisLink} chương";
+
+                    if (failedThisLink > 0)
+                        resultText += $", {failedThisLink} lỗi tải";
+
+                    if (conflictThisLink > 0)
+                        resultText +=
+                            $", {conflictThisLink} xung đột số chương";
+
+                    linkResults.Add(resultText + ".");
                 }
+
+                // Cập nhật thời gian truyện
 
                 if (totalAdded > 0)
                 {
-                    using var novelDb = new MiaoDbContext(AppPaths.DbFilePath);
-                    var novel = novelDb.Novels.FirstOrDefault(n => n.Id == _novelId);
+                    using var novelDb =
+                        new MiaoDbContext(AppPaths.DbFilePath);
+
+                    var novel =
+                        novelDb.Novels.FirstOrDefault(n => n.Id == _novelId);
+
                     if (novel != null)
                     {
                         novel.LastUpdatedAt = DateTime.Now;
@@ -642,14 +869,39 @@ namespace Miao.UI.Views.Pages
                     }
                 }
 
-                var summary = $"Hoàn tất — tổng cộng {totalAdded} chương mới từ {linksToCheck.Count} link.";
-                if (totalSkippedDuplicateTitle > 0)
-                    summary += $" Đã bỏ qua {totalSkippedDuplicateTitle} chương trùng tiêu đề (khác nguồn).";
-                if (totalFailed > 0)
-                    summary += $" {totalFailed} chương tải lỗi.";
+                // Tổng kết
 
-                UpdateStatusText.Text = summary + "\n" + string.Join("\n", linkResults);
+                var summary =
+                    $"Hoàn tất — tổng cộng {totalAdded} chương được thêm/cập nhật từ {linksToCheck.Count} link.";
+
+                if (totalSkippedDuplicateTitle > 0)
+                {
+                    summary +=
+                        $" Đã bỏ qua {totalSkippedDuplicateTitle} chương trùng tiêu đề.";
+                }
+
+                if (totalSkippedNumberConflict > 0)
+                {
+                    summary +=
+                        $" {totalSkippedNumberConflict} chương bị xung đột số chương.";
+                }
+
+                if (totalFailed > 0)
+                {
+                    summary +=
+                        $" {totalFailed} chương tải lỗi.";
+                }
+
+                UpdateStatusText.Text =
+                    summary + "\n" + string.Join("\n", linkResults);
+
+                // Reload mục lục
                 LoadNovel();
+            }
+            catch (Exception ex)
+            {
+                UpdateStatusText.Text =
+                    $"Lỗi khi cập nhật: {ex.Message}";
             }
             finally
             {
@@ -659,13 +911,21 @@ namespace Miao.UI.Views.Pages
 
         private static string NormalizeTitle(string title)
         {
-            if (string.IsNullOrWhiteSpace(title)) return "";
+            if (string.IsNullOrWhiteSpace(title))
+                return "";
 
             var normalized = title.Trim().ToLowerInvariant()
-                .Replace("：", ":").Replace("（", "(").Replace("）", ")")
-                .Replace("，", ",").Replace("！", "!").Replace("？", "?");
+                .Replace("：", ":")
+                .Replace("（", "(")
+                .Replace("）", ")")
+                .Replace("，", ",")
+                .Replace("！", "!")
+                .Replace("？", "?");
 
-            return Regex.Replace(normalized, @"[\s\-_:,.!?()\[\]""'']+", "");
+            return Regex.Replace(
+                normalized,
+                @"[\s\-_:,.!?()\[\]""']+",
+                "");
         }
 
         // ===================== Cập nhật chương mới từ Lofter =====================
@@ -1120,7 +1380,7 @@ namespace Miao.UI.Views.Pages
             ShowModal(SelectSetsCard);
         }
 
-        private void RefreshSelectSetsCard()
+        private void RefreshSelectSetsCard(bool refreshApplied = true)
         {
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
             var appliedIds = db.NovelGlossarySets.Where(ns => ns.NovelId == _novelId).Select(ns => ns.GlossarySetId).ToHashSet();
@@ -1140,9 +1400,14 @@ namespace Miao.UI.Views.Pages
             SharedOptionsList.ItemsSource = shared.Select(s => ToOption(s, appliedIds)).ToList();
             PrivateOptionsList.ItemsSource = priv.Select(s => ToOption(s, appliedIds)).ToList();
 
-            var appliedSets = allSets.Where(s => appliedIds.Contains(s.Id)).ToList();
-            AppliedOptionsList.ItemsSource = appliedSets.Select(s => ToOption(s, appliedIds)).ToList();
-            AppliedEmptyText.IsVisible = appliedSets.Count == 0;
+            // Chỉ nạp lại "Bộ tên áp dụng" khi thực sự cần (mở popup / bấm áp dụng),
+            // không nạp lại khi chỉ gõ tìm kiếm -> tránh chớp giật danh sách này mỗi lần gõ phím.
+            if (refreshApplied)
+            {
+                var appliedSets = allSets.Where(s => appliedIds.Contains(s.Id)).ToList();
+                AppliedOptionsList.ItemsSource = appliedSets.Select(s => ToOption(s, appliedIds)).ToList();
+                AppliedEmptyText.IsVisible = appliedSets.Count == 0;
+            }
 
             Dispatcher.UIThread.Post(ConfigureSetOptionTextWrapping, DispatcherPriority.Loaded);
             ConfigureSelectSetsCloseButton();
@@ -1151,7 +1416,7 @@ namespace Miao.UI.Views.Pages
         private static SetOptionItem ToOption(GlossarySet s, HashSet<Guid> appliedIds)
             => new() { Id = s.Id, Name = s.Name, IsApplied = appliedIds.Contains(s.Id) };
 
-        private void OnSetSearchChanged(object? sender, TextChangedEventArgs e) => RefreshSelectSetsCard();
+        private void OnSetSearchChanged(object? sender, TextChangedEventArgs e) => RefreshSelectSetsCard(refreshApplied: false);
 
         private void OnToggleSharedSectionClick(object? sender, PointerPressedEventArgs e)
             => SharedSectionPanel.IsVisible = !SharedSectionPanel.IsVisible;
@@ -1261,6 +1526,7 @@ namespace Miao.UI.Views.Pages
                 var content = button.Content?.ToString();
                 if (content is "Lọc lại tên" or "Xóa tất cả" or "Đóng")
                 {
+                    button.HorizontalAlignment = HorizontalAlignment.Stretch;
                     button.HorizontalContentAlignment = HorizontalAlignment.Center;
                     button.VerticalContentAlignment = VerticalAlignment.Center;
                 }
@@ -1290,6 +1556,21 @@ namespace Miao.UI.Views.Pages
             EditNameBox.Text = entry.TranslatedTerm;
             ConfigureNameEditCard();
             ShowModal(NameEditCard);
+        }
+
+        private async void OnEditOriginalTextChanged(object? sender, TextChangedEventArgs e)
+        {
+            var original = EditOriginalText.Text ?? "";
+
+            var quickGuess = _sinoVietnamese.ToHanViet(original);
+            EditHanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? original : quickGuess;
+
+            var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            // Người dùng có thể đã gõ tiếp trong lúc chờ — chỉ áp kết quả nếu
+            // nội dung ô Gốc vẫn chưa đổi.
+            if (!string.IsNullOrWhiteSpace(accurate) && EditOriginalText.Text == original)
+                EditHanVietBox.Text = accurate;
         }
 
         private void ConfigureNameEditCard()
@@ -1475,8 +1756,6 @@ namespace Miao.UI.Views.Pages
 
         //di chuột khỏi dropdwn
 
-        private DispatcherTimer? _popupCloseTimer;
-
         private void AttachHoverAutoClose(Popup popup, Control anchor)
         {
             if (popup.Child is not Control content)
@@ -1586,7 +1865,7 @@ namespace Miao.UI.Views.Pages
                     {
                         Content = row,
                         Tag = library.Id,
-                        HorizontalContentAlignment = HorizontalAlignment.Stretch
+                        HorizontalContentAlignment = HorizontalAlignment.Left
                     };
                     libraryButton.Classes.Add("MenuItemButton");
                     libraryButton.Click += OnLibraryItemClick;
@@ -1596,7 +1875,7 @@ namespace Miao.UI.Views.Pages
 
             panel.Children.Add(new Separator { Margin = new Thickness(4, 3, 4, 3) });
 
-            var createButton = new Button { Content = "+ Thêm danh sách mới" };
+            var createButton = new Button { Content = "+ Thêm danh sách mới", HorizontalContentAlignment = HorizontalAlignment.Left };
             createButton.Classes.Add("MenuItemButton");
             createButton.Click += OnCreateLibraryClick;
             panel.Children.Add(createButton);
@@ -1741,7 +2020,8 @@ namespace Miao.UI.Views.Pages
             var deleteButton = new Button
             {
                 Content = "🗑 Xóa truyện",
-                Tag = "DeleteNovelButton"
+                Tag = "DeleteNovelButton",
+                HorizontalContentAlignment = HorizontalAlignment.Left
             };
             deleteButton.Classes.Add("MenuItemButton");
             deleteButton.Click += OnDeleteNovelClick;

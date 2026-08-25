@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -10,13 +11,21 @@ namespace Miao.Core.Services
 {
     /// <summary>
     /// Translation provider for dichngay.com.
-    /// Matches the request format used by Dịch Ngay's web client.
+    /// Sends the whole chapter first.
+    /// If Dịch Ngay returns HTTP 413, the chapter is automatically
+    /// split into smaller paragraph/sentence batches and translated
+    /// piece by piece.
     /// </summary>
     public class DichNgayProvider : ITranslationProvider
     {
         private static readonly HttpClient Http = CreateHttpClient();
 
         private readonly string _endpoint;
+
+        // Giới hạn an toàn cho mỗi request fallback.
+        // Đây là giới hạn phía Miao, không phải giới hạn chính thức
+        // của Dịch Ngay.
+        private const int MaxBatchUtf8Bytes = 12000;
 
         public DichNgayProvider(string? endpoint = null)
         {
@@ -30,6 +39,28 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(text))
                 return string.Empty;
 
+            try
+            {
+                // ----------------------------------------------------
+                // Lần đầu: gửi nguyên chương như trước.
+                // ----------------------------------------------------
+                return await TranslateRequestAsync(text);
+            }
+            catch (DichNgayPayloadTooLargeException)
+            {
+                // ----------------------------------------------------
+                // Nếu 413: tự động chuyển sang chế độ chia nhỏ.
+                // ----------------------------------------------------
+                return await TranslateLargeTextAsync(text);
+            }
+        }
+
+        // ============================================================
+        // Gửi một request tới Dịch Ngay
+        // ============================================================
+
+        private async Task<string> TranslateRequestAsync(string text)
+        {
             var payload = new
             {
                 content = text,
@@ -54,6 +85,18 @@ namespace Miao.Core.Services
             {
                 using var response =
                     await Http.SendAsync(request);
+
+                // ----------------------------------------------------
+                // 413 = payload quá lớn.
+                //
+                // Không throw InvalidOperationException bình thường,
+                // vì cần báo cho TranslateAsync biết phải chia nhỏ.
+                // ----------------------------------------------------
+                if (response.StatusCode ==
+                    HttpStatusCode.RequestEntityTooLarge)
+                {
+                    throw new DichNgayPayloadTooLargeException();
+                }
 
                 if (response.StatusCode ==
                     HttpStatusCode.ServiceUnavailable)
@@ -130,6 +173,265 @@ namespace Miao.Core.Services
             }
         }
 
+        // ============================================================
+        // Dịch nội dung lớn sau khi nhận 413
+        // ============================================================
+
+        private async Task<string> TranslateLargeTextAsync(
+            string text)
+        {
+            var paragraphs =
+                SplitIntoParagraphs(text);
+
+            if (paragraphs.Count == 0)
+                return string.Empty;
+
+            var batches =
+                BuildBatches(paragraphs);
+
+            var translatedParts =
+                new List<string>();
+
+            foreach (var batch in batches)
+            {
+                if (string.IsNullOrWhiteSpace(batch))
+                    continue;
+
+                var translated =
+                    await TranslateBatchWithFallbackAsync(batch);
+
+                translatedParts.Add(translated);
+            }
+
+            return string.Join(
+                "\n\n",
+                translatedParts);
+        }
+
+        // ============================================================
+        // Dịch batch.
+        //
+        // Nếu paragraph/batch vẫn quá lớn và Dịch Ngay trả 413,
+        // tiếp tục chia nhỏ theo câu.
+        // ============================================================
+
+        private async Task<string> TranslateBatchWithFallbackAsync(
+            string text)
+        {
+            try
+            {
+                return await TranslateRequestAsync(text);
+            }
+            catch (DichNgayPayloadTooLargeException)
+            {
+                // ----------------------------------------------------
+                // Nếu batch vẫn quá lớn:
+                // chia tiếp theo câu.
+                // ----------------------------------------------------
+
+                var sentences =
+                    SplitIntoSentences(text);
+
+                if (sentences.Count <= 1)
+                {
+                    // Không thể chia nhỏ thêm một cách an toàn.
+                    throw new InvalidOperationException(
+                        "Một đoạn nội dung vẫn vượt giới hạn của Dịch Ngay " +
+                        "ngay cả sau khi đã chia nhỏ.");
+                }
+
+                var sentenceBatches =
+                    BuildBatches(sentences);
+
+                var translatedParts =
+                    new List<string>();
+
+                foreach (var batch in sentenceBatches)
+                {
+                    var translated =
+                        await TranslateBatchWithFallbackAsync(batch);
+
+                    translatedParts.Add(translated);
+                }
+
+                return string.Join(
+                    " ",
+                    translatedParts);
+            }
+        }
+
+        // ============================================================
+        // Tách paragraph
+        // ============================================================
+
+        private static List<string> SplitIntoParagraphs(
+            string text)
+        {
+            var normalized =
+                text
+                    .Replace("\r\n", "\n")
+                    .Replace('\r', '\n');
+
+            var matches =
+                Regex.Split(
+                    normalized,
+                    @"\n\s*\n+");
+
+            var result =
+                new List<string>();
+
+            foreach (var paragraph in matches)
+            {
+                var value =
+                    paragraph.Trim();
+
+                if (!string.IsNullOrWhiteSpace(value))
+                    result.Add(value);
+            }
+
+            // Nếu nội dung không có dòng trống,
+            // coi mỗi dòng là một paragraph.
+            if (result.Count <= 1 &&
+                normalized.Contains('\n'))
+            {
+                result.Clear();
+
+                foreach (var line in
+                         normalized.Split(
+                             '\n',
+                             StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var value =
+                        line.Trim();
+
+                    if (!string.IsNullOrWhiteSpace(value))
+                        result.Add(value);
+                }
+            }
+
+            if (result.Count == 0 &&
+                !string.IsNullOrWhiteSpace(text))
+            {
+                result.Add(text.Trim());
+            }
+
+            return result;
+        }
+
+        // ============================================================
+        // Tách câu
+        // ============================================================
+
+        private static List<string> SplitIntoSentences(
+            string text)
+        {
+            var result =
+                new List<string>();
+
+            var matches =
+                Regex.Matches(
+                    text,
+                    @"[^。！？!?\.]+[。！？!?\.]?",
+                    RegexOptions.Multiline);
+
+            foreach (Match match in matches)
+            {
+                var value =
+                    match.Value.Trim();
+
+                if (!string.IsNullOrWhiteSpace(value))
+                    result.Add(value);
+            }
+
+            if (result.Count == 0)
+                result.Add(text.Trim());
+
+            return result;
+        }
+
+        // ============================================================
+        // Gom paragraph/câu thành batch
+        // ============================================================
+
+        private static List<string> BuildBatches(
+            List<string> parts)
+        {
+            var batches =
+                new List<string>();
+
+            var current =
+                new StringBuilder();
+
+            foreach (var part in parts)
+            {
+                if (string.IsNullOrWhiteSpace(part))
+                    continue;
+
+                var separator =
+                    current.Length == 0
+                        ? string.Empty
+                        : "\n\n";
+
+                var candidate =
+                    current.ToString() +
+                    separator +
+                    part;
+
+                var candidateBytes =
+                    Encoding.UTF8.GetByteCount(candidate);
+
+                // ----------------------------------------------------
+                // Batch hiện tại còn đủ chỗ.
+                // ----------------------------------------------------
+                if (candidateBytes <= MaxBatchUtf8Bytes)
+                {
+                    if (current.Length > 0)
+                        current.Append("\n\n");
+
+                    current.Append(part);
+                    continue;
+                }
+
+                // ----------------------------------------------------
+                // Đẩy batch hiện tại vào danh sách.
+                // ----------------------------------------------------
+                if (current.Length > 0)
+                {
+                    batches.Add(
+                        current.ToString());
+
+                    current.Clear();
+                }
+
+                // ----------------------------------------------------
+                // Một paragraph đơn lẻ đã vượt giới hạn.
+                // Để TranslateBatchWithFallbackAsync xử lý tiếp
+                // bằng cách chia theo câu.
+                // ----------------------------------------------------
+                if (Encoding.UTF8.GetByteCount(part)
+                    > MaxBatchUtf8Bytes)
+                {
+                    batches.Add(part);
+                }
+                else
+                {
+                    current.Append(part);
+                }
+            }
+
+            if (current.Length > 0)
+            {
+                batches.Add(
+                    current.ToString());
+            }
+
+            return batches;
+        }
+
+        // ============================================================
+        // Parse response
+        // ============================================================
+
         private static string ExtractTranslatedValue(
             JsonElement value)
         {
@@ -192,6 +494,10 @@ namespace Miao.Core.Services
             return string.Empty;
         }
 
+        // ============================================================
+        // Normalize
+        // ============================================================
+
         private static string Normalize(string text)
         {
             return Regex.Replace(
@@ -202,6 +508,10 @@ namespace Miao.Core.Services
                     " ")
                 .Trim();
         }
+
+        // ============================================================
+        // HttpClient
+        // ============================================================
 
         private static HttpClient CreateHttpClient()
         {
@@ -216,6 +526,15 @@ namespace Miao.Core.Services
                 .ParseAdd("Miao/1.0");
 
             return client;
+        }
+
+        // ============================================================
+        // Exception riêng cho HTTP 413
+        // ============================================================
+
+        private sealed class DichNgayPayloadTooLargeException
+            : Exception
+        {
         }
     }
 }
