@@ -56,8 +56,6 @@ namespace Miao.UI.Views.Pages
             RenderPage();
         }
 
-        // ================== Tìm kiếm ==================
-
         private void OnSearchClick(object? sender, RoutedEventArgs e) => DoSearch();
 
         private void SearchBox_KeyDown(object? sender, KeyEventArgs e)
@@ -95,8 +93,6 @@ namespace Miao.UI.Views.Pages
             return sb.ToString().Replace('Đ', 'D').Replace('đ', 'd').Normalize(NormalizationForm.FormC);
         }
 
-        // ================== Phân trang ==================
-
         private int TotalPages => Math.Max(1, (int)Math.Ceiling(_filteredAuthors.Count / (double)PageSize));
 
         private void GoToPage(int page)
@@ -108,6 +104,10 @@ namespace Miao.UI.Views.Pages
         private void RenderPage()
         {
             _currentPage = Math.Clamp(_currentPage, 1, TotalPages);
+
+            var isEmpty = _filteredAuthors.Count == 0;
+            EmptyStateText.IsVisible = isEmpty;
+            AuthorsList.IsVisible = !isEmpty;
 
             AuthorsList.ItemsSource = _filteredAuthors
                 .Skip((_currentPage - 1) * PageSize)
@@ -164,8 +164,6 @@ namespace Miao.UI.Views.Pages
             button.Click += (_, _) => GoToPage(page);
             return button;
         }
-
-        // ================== Điều hướng ==================
 
         private void OnAuthorClick(object? sender, PointerPressedEventArgs e)
         {

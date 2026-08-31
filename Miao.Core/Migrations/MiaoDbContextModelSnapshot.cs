@@ -17,6 +17,21 @@ namespace Miao.Core.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("GlossaryGroupGlossarySet", b =>
+                {
+                    b.Property<Guid>("GroupsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SetsId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("GroupsId", "SetsId");
+
+                    b.HasIndex("SetsId");
+
+                    b.ToTable("GlossaryGroupGlossarySet");
+                });
+
             modelBuilder.Entity("Miao.Core.Models.Chapter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -84,6 +99,9 @@ namespace Miao.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("FactionId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ImagePath")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -98,6 +116,8 @@ namespace Miao.Core.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterGroupId");
+
+                    b.HasIndex("FactionId");
 
                     b.ToTable("Characters");
                 });
@@ -115,6 +135,13 @@ namespace Miao.Core.Migrations
                     b.Property<Guid>("CharacterId")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsEnabledForScan")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NormalizedAliasText")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterId");
@@ -122,10 +149,97 @@ namespace Miao.Core.Migrations
                     b.ToTable("CharacterAliases");
                 });
 
+            modelBuilder.Entity("Miao.Core.Models.CharacterDescriptionBlock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CharacterDescriptionSectionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TextContent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterDescriptionSectionId");
+
+                    b.ToTable("CharacterDescriptionBlocks");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterDescriptionSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.ToTable("CharacterDescriptionSections");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterFaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CharacterGroupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterGroupId");
+
+                    b.ToTable("CharacterFactions");
+                });
+
             modelBuilder.Entity("Miao.Core.Models.CharacterGroup", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("BannerFocalX")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("BannerFocalY")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("BannerScale")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("CoverImagePath")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsShared")
@@ -146,6 +260,56 @@ namespace Miao.Core.Migrations
                     b.HasIndex("OwnerNovelId");
 
                     b.ToTable("CharacterGroups");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterInfoEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CharacterInfoSectionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterInfoSectionId");
+
+                    b.ToTable("CharacterInfoEntries");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterInfoSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.ToTable("CharacterInfoSections");
                 });
 
             modelBuilder.Entity("Miao.Core.Models.CustomLibrary", b =>
@@ -185,6 +349,27 @@ namespace Miao.Core.Migrations
                     b.HasIndex("NovelId");
 
                     b.ToTable("CustomLibraryNovels");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.GlossaryGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsShared")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GlossaryGroups");
                 });
 
             modelBuilder.Entity("Miao.Core.Models.GlossarySet", b =>
@@ -299,6 +484,9 @@ namespace Miao.Core.Migrations
 
                     b.Property<DateTime?>("LastUpdatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("PreferredEditTarget")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SourceDescription")
                         .IsRequired()
@@ -523,6 +711,21 @@ namespace Miao.Core.Migrations
                     b.ToTable("Volumes");
                 });
 
+            modelBuilder.Entity("GlossaryGroupGlossarySet", b =>
+                {
+                    b.HasOne("Miao.Core.Models.GlossaryGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Miao.Core.Models.GlossarySet", null)
+                        .WithMany()
+                        .HasForeignKey("SetsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Miao.Core.Models.Chapter", b =>
                 {
                     b.HasOne("Miao.Core.Models.Novel", "Novel")
@@ -542,7 +745,14 @@ namespace Miao.Core.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Miao.Core.Models.CharacterFaction", "Faction")
+                        .WithMany()
+                        .HasForeignKey("FactionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("CharacterGroup");
+
+                    b.Navigation("Faction");
                 });
 
             modelBuilder.Entity("Miao.Core.Models.CharacterAlias", b =>
@@ -556,6 +766,39 @@ namespace Miao.Core.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("Miao.Core.Models.CharacterDescriptionBlock", b =>
+                {
+                    b.HasOne("Miao.Core.Models.CharacterDescriptionSection", "Section")
+                        .WithMany("Blocks")
+                        .HasForeignKey("CharacterDescriptionSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterDescriptionSection", b =>
+                {
+                    b.HasOne("Miao.Core.Models.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterFaction", b =>
+                {
+                    b.HasOne("Miao.Core.Models.CharacterGroup", "CharacterGroup")
+                        .WithMany()
+                        .HasForeignKey("CharacterGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CharacterGroup");
+                });
+
             modelBuilder.Entity("Miao.Core.Models.CharacterGroup", b =>
                 {
                     b.HasOne("Miao.Core.Models.Novel", "OwnerNovel")
@@ -564,6 +807,28 @@ namespace Miao.Core.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("OwnerNovel");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterInfoEntry", b =>
+                {
+                    b.HasOne("Miao.Core.Models.CharacterInfoSection", "Section")
+                        .WithMany("Entries")
+                        .HasForeignKey("CharacterInfoSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterInfoSection", b =>
+                {
+                    b.HasOne("Miao.Core.Models.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("Miao.Core.Models.CustomLibraryNovel", b =>
@@ -706,9 +971,19 @@ namespace Miao.Core.Migrations
                     b.Navigation("Aliases");
                 });
 
+            modelBuilder.Entity("Miao.Core.Models.CharacterDescriptionSection", b =>
+                {
+                    b.Navigation("Blocks");
+                });
+
             modelBuilder.Entity("Miao.Core.Models.CharacterGroup", b =>
                 {
                     b.Navigation("Characters");
+                });
+
+            modelBuilder.Entity("Miao.Core.Models.CharacterInfoSection", b =>
+                {
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("Miao.Core.Models.CustomLibrary", b =>

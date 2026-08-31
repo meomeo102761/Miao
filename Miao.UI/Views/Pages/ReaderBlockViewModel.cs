@@ -3,12 +3,9 @@ using System.ComponentModel;
 
 namespace Miao.UI.Views.Pages.Reader
 {
-    // Bọc ReaderBlock để bind vào UI — thêm IsEditing (được Page bật/tắt đồng loạt
-    // cho mọi khối khi vào/ra chế độ sửa) để 1 DataTemplate duy nhất tự đổi giữa
-    // hiển thị đọc (SelectableTextBlock) và ô sửa (TextBox).
     public class ReaderBlockViewModel : INotifyPropertyChanged
     {
-        public Guid BlockId { get; } = Guid.NewGuid(); // chỉ dùng nội bộ UI, không lưu DB
+        public Guid BlockId { get; } = Guid.NewGuid();
 
         public ReaderBlockType Type { get; set; }
 

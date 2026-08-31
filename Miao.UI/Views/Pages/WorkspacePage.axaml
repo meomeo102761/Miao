@@ -3,7 +3,7 @@
              xmlns:local="clr-namespace:Miao.UI.Views.Pages"
              x:Class="Miao.UI.Views.Pages.WorkspacePage"
              Background="{StaticResource BgMain}"
-             FontFamily="Segoe UI"
+             FontFamily="Inter"
              FontSize="15">
 
     <UserControl.Styles>
@@ -46,24 +46,25 @@
             <Setter Property="BorderThickness" Value="0"/>
         </Style>       
 
-        <!-- Trước: x:Key="NovelDangerButton" TargetType="Button" BasedOn="{StaticResource NovelActionButton}" -->
+        <!-- Nút "xóa" giờ dùng cùng tông xanh ngọc như các nút khác, không dùng đỏ nữa
+             (đổi màu, giữ nguyên tên class NovelDangerButton để khỏi phải sửa lại Classes= ở mọi chỗ dùng). -->
         <Style Selector="Button.NovelActionButton.NovelDangerButton">
-            <Setter Property="Background" Value="#E0503A"/>
+            <Setter Property="Background" Value="{StaticResource AccentJade}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
 
         <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="#F0A199"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.NovelDangerButton TextBlock">
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style Selector="Button.NovelActionButton.NovelDangerButton:pointerover TextBlock">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
         </Style>
         <Style Selector="Button.NovelActionButton.NovelPrimaryButton TextBlock">
             <Setter Property="Foreground" Value="White"/>
@@ -83,8 +84,20 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Margin" Value="3,0,0,0"/>
         </Style>
+        <!-- Thiếu rule này khiến chữ/icon của PagerButton (✎, ✕, ‹, ›...) bị style toàn cục
+             "Button TextBlock { Foreground: White }" đè lên -> icon trắng trên nền trắng, xem như biến mất. -->
+        <Style Selector="Button.PagerButton TextBlock">
+            <Setter Property="Foreground" Value="#555555"/>
+        </Style>
+        <Style Selector="Button.PagerButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
 
         <Style Selector="Button.pagerNumber.current">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.pagerNumber.current TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
@@ -104,6 +117,14 @@
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
         </Style>
+        <!-- Cùng lý do như PagerButton ở trên: "✚ Tạo quyển" là Content dạng chuỗi text thường,
+             nếu không có rule riêng cho TextBlock thì chữ bị style toàn cục tô trắng -> trắng trên trắng. -->
+        <Style Selector="Button.CreateVolumeButton TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.CreateVolumeButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
 
         <Style Selector="Expander /template/ ToggleButton#PART_toggle">
             <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
@@ -112,16 +133,38 @@
             <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
 
+        <Style Selector="Expander">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        </Style>
+
+        <Style Selector="Button.VolumeMenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="4,2"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.VolumeMenuItem:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+        </Style>
+        <Style Selector="Button.VolumeMenuItem TextBlock">
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+
     </UserControl.Styles>
 
-    <ScrollViewer>
-    <StackPanel Margin="20" MaxWidth="1000">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="20" MaxWidth="1140">
 
         <StackPanel Orientation="Horizontal" Cursor="Hand" HorizontalAlignment="Left"
                     Margin="0,32,0,18"
                     PointerPressed="OnBackToNovelClick">
             <TextBlock Text="‹ " FontSize="15" Foreground="{StaticResource AccentJade}" VerticalAlignment="Center"/>
-            <TextBlock x:Name="TitleText" Classes="PageTitle" Foreground="{StaticResource AccentJade}"/>
+            <TextBlock x:Name="TitleText" Classes="PageTitle" Foreground="{StaticResource AccentJade}" LineHeight="30"/>
         </StackPanel>
 
         <TextBlock Text="Không gian sửa chương"
@@ -129,14 +172,34 @@
 
         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
             <Button Content="✚ Tạo quyển" Classes="CreateVolumeButton" Click="OnCreateVolumeClick"/>
-            <Button x:Name="BulkDeleteButton" Classes="NovelActionButton NovelDangerButton"
+            <Button x:Name="AddToVolumeButton" Content="→ Thêm vào quyển" Classes="NovelActionButton" Margin="10,0,0,0"
+                    Click="OnAddToVolumeClick" IsVisible="False"/>
+            <Button x:Name="BulkDeleteButton" Classes="NovelActionButton NovelDangerButton" Margin="10,0,0,0"
                     Click="OnBulkDeleteChaptersClick" IsVisible="False"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,14" VerticalAlignment="Center">
+            <TextBlock Text="Từ chương" VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" FontSize="15"/>
+            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Width="70" Margin="8,0" VerticalAlignment="Center">
+                <TextBox x:Name="RangeFromBox" Padding="4,6" VerticalContentAlignment="Center"
+                         BorderThickness="0" CornerRadius="4" Background="Transparent"
+                         TextAlignment="Center" FontSize="15"/>
+            </Border>
+            <TextBlock Text="đến" VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" FontSize="15"/>
+            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Width="70" Margin="8,0" VerticalAlignment="Center">
+                <TextBox x:Name="RangeToBox" Padding="4,6" VerticalContentAlignment="Center"
+                         BorderThickness="0" CornerRadius="4" Background="Transparent"
+                         TextAlignment="Center" FontSize="15"/>
+            </Border>
+            <Button Content="Áp dụng" Classes="NovelActionButton NovelPrimaryButton" Margin="8,0,0,0" Click="OnApplyRangeClick"/>
+            <Button Content="Chọn tất cả" Classes="NovelActionButton NovelPrimaryButton" Margin="8,0,0,0" Click="OnSelectAllChaptersClick"/>
+            <Button Content="Bỏ chọn" Classes="NovelActionButton NovelPrimaryButton" Margin="8,0,0,0" Click="OnDeselectAllChaptersClick"/>
         </StackPanel>
 
         <ItemsControl x:Name="VolumesList">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="local:WorkspacePage+VolumeGroup">
-                    <Expander Margin="0,0,0,12" IsExpanded="True">
+                    <Expander Margin="0,0,0,12" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
 
                         <Expander.Header>
                             <Grid Margin="0,2,8,2">
@@ -149,14 +212,14 @@
                                 <CheckBox Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"
                                         IsChecked="{Binding IsAllSelected}" Click="OnGroupSelectAllClick" Tag="{Binding}"/>
 
-                                <TextBlock Grid.Column="1" Text="{Binding HeaderText}"
+                                <TextBlock Grid.Column="1" Text="{Binding HeaderText}" LineHeight="22"
                                         FontSize="15" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal"
                                             IsVisible="{Binding CanManage}">
                                     <Button Content="✎" Classes="PagerButton" ToolTip.Tip="Sửa quyển"
                                             Click="OnEditVolumeClick" Tag="{Binding}"/>
-                                    <Button Content="🗑" Classes="PagerButton" ToolTip.Tip="Xóa quyển"
+                                    <Button Content="✕" Classes="PagerButton" ToolTip.Tip="Xóa quyển"
                                             Click="OnDeleteVolumeClick" Tag="{Binding}"/>
                                 </StackPanel>
                             </Grid>
@@ -167,22 +230,31 @@
                             <ItemsControl ItemsSource="{Binding PagedChapters}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="local:WorkspacePage+ChapterRow">
-                                        <Grid Height="42" Margin="0,0,0,5">
+                                        <Grid Height="42" Margin="0,0,0,5"
+                                              DragDrop.AllowDrop="True" Tag="{Binding}"
+                                              DragDrop.DragOver="OnChapterRowDragOver" DragDrop.Drop="OnChapterRowDrop">
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="18"/>
                                                 <ColumnDefinition Width="26"/>
                                                 <ColumnDefinition Width="30"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                            <TextBlock Grid.Column="0" Text="::" FontSize="14" FontWeight="Bold"
+                                                    Foreground="{StaticResource TextMuted}" Cursor="SizeAll"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    ToolTip.Tip="Kéo để đổi vị trí chương"
+                                                    PointerPressed="OnChapterDragHandlePressed" Tag="{Binding}"/>
+
+                                            <CheckBox Grid.Column="1" IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                     IsCheckedChanged="OnChapterCheckToggled"
                                                     Tag="{Binding}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
-                                            <TextBlock Grid.Column="1" Text="{Binding Number}"
+                                            <TextBlock Grid.Column="2" Text="{Binding Number}"
                                                     Foreground="#333" FontWeight="Bold" FontSize="15"
                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-                                            <Border Grid.Column="2" Background="White" CornerRadius="7" Padding="10,5"
+                                            <Border Grid.Column="3" Background="White" CornerRadius="7" Padding="10,5"
                                                     BorderBrush="{StaticResource BorderSoft}" BorderThickness="1">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
@@ -191,17 +263,12 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <DockPanel Grid.Column="0" Cursor="Hand"
-                                                            PointerPressed="OnChapterClick" Tag="{Binding}">
+                                                    <DockPanel Grid.Column="0">
                                                         <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}"
-                                                                FontSize="12" Foreground="#999"
+                                                                FontSize="13" Foreground="#999"
                                                                 VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                         <TextBlock Text="{Binding Title}" Foreground="#333" FontSize="15"
                                                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{Binding GlobalIndex, StringFormat=' · #{0} toàn truyện'}"
-                                                                FontSize="12" Foreground="{StaticResource TextMuted}"
-                                                                VerticalAlignment="Center"
-                                                                IsVisible="{Binding ShowGlobalIndex}"/>
                                                     </DockPanel>
 
                                                     <Button Grid.Column="1" Content="✎" Classes="PagerButton"
@@ -229,7 +296,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="local:WorkspacePage+PagerItem">
                                             <Grid>
-                                                <TextBlock Text="…" FontSize="12" Margin="4,0"
+                                                <TextBlock Text="…" FontSize="13" Margin="4,0"
                                                            Foreground="{StaticResource TextMuted}"
                                                            VerticalAlignment="Center"
                                                            IsVisible="{Binding IsEllipsis}"/>
@@ -252,63 +319,25 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Border x:Name="CreateVolumeCard" IsVisible="False" Background="White" CornerRadius="12" Width="400" Padding="20">
+        <Border x:Name="CreateVolumeCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="20">
             <StackPanel>
                 <TextBlock Text="Tạo quyển mới" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,0,0,12"/>
 
                 <TextBlock Text="Tên quyển:" Foreground="#333" FontSize="15" Margin="0,0,0,4"/>
                 <TextBox x:Name="NewVolumeNameBox" FontSize="15" Height="38" Padding="8,0" VerticalContentAlignment="Center"
-                         Margin="0,0,0,12" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
-
-                <TextBlock Text="Chỉ chọn được trong các chương đang &quot;Chưa phân quyển&quot; (tránh trùng số chương giữa các quyển)."
-                           FontSize="12" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,0,0,8"/>
-
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <RadioButton x:Name="RangeModeRadio" Content="Theo phạm vi chương" GroupName="VolumeAssignMode"
-                                 Foreground="#333" FontSize="15" IsChecked="True" IsCheckedChanged="OnAssignModeChanged" Margin="0,0,14,0"/>
-                    <RadioButton x:Name="ManualModeRadio" Content="Chọn từng chương" GroupName="VolumeAssignMode"
-                                 Foreground="#333" FontSize="15" IsCheckedChanged="OnAssignModeChanged"/>
-                </StackPanel>
-
-                <StackPanel x:Name="RangePanel">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                        <StackPanel Margin="0,0,12,0">
-                            <TextBlock Text="Từ chương:" Foreground="#333" FontSize="15" Margin="0,0,0,4"/>
-                            <TextBox x:Name="RangeFromBox" Width="90" Height="38" Padding="8,0" FontSize="15"
-                                     VerticalContentAlignment="Center" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
-                        </StackPanel>
-                        <StackPanel>
-                            <TextBlock Text="Đến chương:" Foreground="#333" FontSize="15" Margin="0,0,0,4"/>
-                            <TextBox x:Name="RangeToBox" Width="90" Height="38" Padding="8,0" FontSize="15"
-                                     VerticalContentAlignment="Center" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-
-                <StackPanel x:Name="ManualPanel" IsVisible="False">
-                    <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
-                        <ItemsControl x:Name="ManualPickList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="local:WorkspacePage+PickItem">
-                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                              Foreground="#333" FontSize="15" Margin="0,3"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </StackPanel>
+                        Margin="0,0,0,12" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <TextBlock x:Name="CreateVolumeErrorText" Foreground="#D1621E" FontSize="12" Margin="0,0,0,8"
-                           TextWrapping="Wrap" IsVisible="False"/>
+                        TextWrapping="Wrap" IsVisible="False"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Tạo quyển" Width="105" Classes="NovelActionButton NovelPrimaryButton" Click="OnCreateVolumeSaveClick"/>
+                    <Button Content="Tạo quyển" Width="105" Margin="0,0,10,0" Classes="NovelActionButton NovelPrimaryButton" Click="OnCreateVolumeSaveClick"/>
                     <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnCreateVolumeCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <Border x:Name="EditVolumeCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="20">
+        <Border x:Name="EditVolumeCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="20,24,20,20">
             <StackPanel>
                 <TextBlock Text="Sửa quyển" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,12"/>
                 <TextBlock Text="Tên quyển:" Foreground="#333" FontSize="15" Margin="0,0,0,4"/>
@@ -316,8 +345,8 @@
                          Margin="0,0,0,14" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Lưu" Width="85" Classes="NovelActionButton NovelPrimaryButton" Click="OnEditVolumeSaveClick"/>
-                    <Button Content="Xóa quyển" Width="95" Classes="NovelActionButton" Click="OnEditVolumeDeleteClick"/>
+                    <Button Content="Lưu" Width="85" Margin="0,0,10,0" Classes="NovelActionButton NovelPrimaryButton" Click="OnEditVolumeSaveClick"/>
+                    <Button Content="Xóa quyển" Width="95" Margin="0,0,10,0" Classes="NovelActionButton" Click="OnEditVolumeDeleteClick"/>
                     <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnEditVolumeCancelClick"/>
                 </StackPanel>
             </StackPanel>
@@ -326,12 +355,12 @@
         <Border x:Name="EditChapterCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="20">
             <StackPanel>
                 <TextBlock Text="Sửa tên chương" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,12"/>
-                <TextBlock x:Name="EditChapterNumberText" Foreground="{StaticResource TextMuted}" FontSize="12" Margin="0,0,0,4"/>
+                <TextBlock x:Name="EditChapterNumberText" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,0,0,4"/>
                 <TextBox x:Name="EditChapterTitleBox" FontSize="15" Height="38" Padding="8,0" VerticalContentAlignment="Center"
                          Margin="0,0,0,14" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Lưu" Width="85" Classes="NovelActionButton NovelPrimaryButton" Click="OnEditChapterSaveClick"/>
+                    <Button Content="Lưu" Width="85" Margin="0,0,10,0" Classes="NovelActionButton NovelPrimaryButton" Click="OnEditChapterSaveClick"/>
                     <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnEditChapterCancelClick"/>
                 </StackPanel>
             </StackPanel>
@@ -343,7 +372,7 @@
                 <TextBlock x:Name="ConfirmMessageText" FontSize="13" Foreground="#444" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Xác nhận" Width="95" Classes="NovelActionButton NovelDangerButton" Click="OnConfirmYesClick"/>
+                    <Button Content="Xác nhận" Width="95" Margin="0,0,10,0" Classes="NovelActionButton NovelDangerButton" Click="OnConfirmYesClick"/>
                     <Button Content="Hủy" Width="85" Classes="NovelActionButton" Click="OnConfirmCancelClick"/>
                 </StackPanel>
             </StackPanel>

@@ -6,7 +6,7 @@
         xmlns:views="using:Miao.UI.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Miao.UI.Views.MainWindow"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/favicons/favicon.ico"
         Title="Miao"
         WindowState="Maximized">
         <views:MainView />

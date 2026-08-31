@@ -16,15 +16,6 @@ namespace Miao.UI.Views.Pages
         private readonly Guid _novelId;
         private List<TagCategoryGroup> _allGroups = new();
 
-        /// <summary>
-        /// Thay cho ShowDialog() + đọc property Confirmed đồng bộ của WPF (không dùng được
-        /// với ModalService vì Show() không block). Gọi callback này khi người dùng bấm
-        /// Xong/Huỷ, tham số là true nếu đã lưu (bấm Xong), false nếu huỷ.
-        /// Cách dùng ở nơi gọi:
-        ///   var picker = new TagPickerView(novelId);
-        ///   picker.OnClosed = confirmed => { if (confirmed) { ...reload... } };
-        ///   ModalService.Show(picker);
-        /// </summary>
         public Action<bool>? OnClosed { get; set; }
 
         public TagPickerView(Guid novelId)

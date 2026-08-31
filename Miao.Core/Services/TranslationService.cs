@@ -68,9 +68,6 @@ namespace Miao.Core.Services
             if (string.IsNullOrEmpty(text))
                 return text ?? string.Empty;
 
-            // Retry tối đa 3 lần khi gặp lỗi tạm thời (503/timeout/mất mạng chập
-            // chờn do gọi API dồn dập lúc tải nhiều chương) — tránh tính oan
-            // 1 chương là "dịch lỗi" chỉ vì 1 request đơn lẻ bị nghẽn thoáng qua.
             const int maxAttempts = 3;
 
             for (var attempt = 1; attempt < maxAttempts; attempt++)
@@ -85,8 +82,6 @@ namespace Miao.Core.Services
                 }
             }
 
-            // Lần thử cuối: để lỗi ném ra bình thường, caller (DownloadPage,
-            // DownloadFilePage...) vẫn bắt và đếm vào translationFailed như cũ.
             return await _provider.TranslateAsync(text);
         }
     }

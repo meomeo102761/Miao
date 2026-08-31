@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -16,6 +17,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
 using Microsoft.EntityFrameworkCore;
 using Miao.Core.Data;
 using Miao.Core.Models;
@@ -25,25 +28,17 @@ using Miao.UI.Views.Pages.Reader;
 
 namespace Miao.UI.Views.Pages
 {
-    // Hook nhẹ để MainView (chưa dựng) có thể tắt/bật thanh cuộn ngoài khi vào/ra
-    // trang đọc — thay cho việc ReaderPage tham chiếu thẳng tới MainWindow.Current
-    // như bản WPF cũ (Core/UI không nên biết trực tiếp về khung ngoài).
     public static class ReaderHost
     {
         public static Action<bool>? SetOuterScrollEnabled;
     }
 
-    // Một "khối hiển thị" ở chế độ đọc: hoặc là 1 đoạn văn bản đã GỘP nhiều dòng
-    // (block) liên tiếp lại để có thể bôi đen/chọn liền mạch như Word, hoặc là 1 ảnh.
-    // Đây thuần là dữ liệu hiển thị — dữ liệu gốc theo từng dòng vẫn nằm ở _blocks
-    // để phục vụ Sửa bản gốc / gán glossary theo đúng dòng.
     public sealed class ReaderDisplayGroup
     {
         public bool IsImage { get; set; }
         public string Text { get; set; } = "";
         public string? ImagePath { get; set; }
 
-        // Chỉ áp dụng khi IsImage == false: khoảng chỉ số dòng trong _blocks mà group này gộp lại
         public int StartBlockIndex { get; set; }
         public int EndBlockIndex { get; set; }
     }
@@ -61,55 +56,100 @@ namespace Miao.UI.Views.Pages
 
         private bool _loadingChapter;
         private bool _isEditing;
-        private bool _updatingReaderSettings;
+        private bool _updatingReaderSettings;      
+
+        private enum EditTarget { Original = 0, Translated = 1 }
+        private EditTarget _editTarget = EditTarget.Original;
+        private TextBox? _activeEditTextBox;
 
         private readonly SinoVietnameseConverter _sinoVietnamese;
         private ObservableCollection<ReaderBlockViewModel> _blocks = new();
         private ObservableCollection<ReaderDisplayGroup> _readGroups = new();
+        private ObservableCollection<ReaderDisplayGroup> _editGroups = new();
 
-        // Khối text đang được thao tác chuột phải (Copy/Thêm/Thêm nhân vật) — mỗi
-        // SelectableTextBlock ở chế độ đọc có ContextMenu RIÊNG (không dùng chung 1
-        // StaticResource nữa) nên sự kiện Click luôn khớp đúng đoạn đang thao tác.
         private ReaderDisplayGroup? _activeContextGroup;
         private SelectableTextBlock? _activeContextTextBlock;
+        private int _activeSelectionStartOffset;
 
-        // Tra cứu nhanh: tên/biệt danh nhân vật (không phân biệt hoa thường) -> Character,
-        // dùng khi double-click vào 1 từ trong đoạn văn để hiện ảnh + tên nhân vật.
         private Dictionary<string, Character> _characterLookup = new(StringComparer.OrdinalIgnoreCase);
 
         public ReaderPage(Guid novelId, int chapterNumber, bool startInEditMode = false)
         {
             InitializeComponent();
+
+            SetupReadBlocksTemplate();
+
             _novelId = novelId;
             _chapterNumber = chapterNumber;
 
-            var handataPath = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "handata");
+            var handataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "handata");
             var hanVietDictionaryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "translate", "zh_to_vi", "HanViet.json");
             _sinoVietnamese = new SinoVietnameseConverter(handataPath, hanVietDictionaryPath);
 
-            EditBlocksList.ItemsSource = _blocks;
+            EditBlocksList.ItemsSource = _editGroups;
             ReadBlocksList.ItemsSource = _readGroups;
 
             ApplyFontSettings();
+            LoadEditTargetPreference();
             LoadChapter();
 
             if (startInEditMode)
-                EnterEditMode();
+                EnterEditMode(EditTarget.Original);
+        }
+
+        private void SetupReadBlocksTemplate()
+        {
+            ReadBlocksList.ItemTemplate = new FuncDataTemplate<ReaderDisplayGroup>((group, _) =>
+            {
+                var grid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+                if (group == null) return grid;
+
+                if (group.IsImage)
+                {
+                    var img = new Image
+                    {
+                        Stretch = Stretch.Uniform, MaxWidth = 640,
+                        Margin = new Thickness(0, 10, 0, 24),
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+
+                    if (this.TryFindResource("CoverImageConverter", out var conv) && conv is IValueConverter converter)
+                        img.Source = converter.Convert(group.ImagePath, typeof(IImage), null, CultureInfo.CurrentCulture) as IImage;
+
+                    grid.Children.Add(img);
+                    return grid;
+                }
+
+                var stb = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, Tag = group };
+                stb.Classes.Add("readerParagraph");
+                stb.Inlines?.AddRange(ReaderRichText.ToInlines(group.Text ?? ""));
+                stb.ContextRequested += OnTextBlockContextRequested;
+                stb.DoubleTapped += OnParagraphDoubleTapped;
+
+                var addItem = new MenuItem { Header = "Thêm" };
+                addItem.Click += OnContextAddStyledClick;
+                var addCharItem = new MenuItem { Header = "Thêm nhân vật" };
+                addCharItem.Click += OnContextAddCharacterClick;
+                var copyItem = new MenuItem { Header = "Copy" };
+                copyItem.Click += OnContextCopyClick;
+
+                var contextMenu = new ContextMenu();
+                contextMenu.Items.Add(addItem);
+                contextMenu.Items.Add(addCharItem);
+                contextMenu.Items.Add(copyItem);
+                stb.ContextMenu = contextMenu;
+
+                grid.Children.Add(stb);
+                return grid;
+            });
         }
 
         private static MiaoDbContext OpenDb() =>
             new(Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "miao.db"));
 
-        // ================= VÒNG ĐỜI TRANG =================
-
         private void OnReaderLoaded(object? sender, RoutedEventArgs e)
         {
             ReaderHost.SetOuterScrollEnabled?.Invoke(false);
-
-            // Avalonia: dùng Tunnel để bắt sự kiện trước khi con xử lý, tương đương
-            // PreviewMouseDown của WPF — dùng để tự đóng FontPanel khi bấm ra ngoài.
-            ReaderRoot.AddHandler(InputElement.PointerPressedEvent, OnReaderRootPointerDown,
-                Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
             ReadingCard.PropertyChanged += OnReadingCardPropertyChanged;
             UpdateReadingContentWidth(ReadingCard.Bounds.Width);
@@ -120,13 +160,13 @@ namespace Miao.UI.Views.Pages
             if (_readerLibraryPopup != null)
                 _readerLibraryPopup.IsOpen = false;
 
-            ReaderRoot.RemoveHandler(InputElement.PointerPressedEvent, OnReaderRootPointerDown);
+            FontPanelPopup.IsOpen = false;
             ReadingCard.PropertyChanged -= OnReadingCardPropertyChanged;
 
             ReaderHost.SetOuterScrollEnabled?.Invoke(true);
         }
 
-        private void OnReadingCardPropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e)
+        private void OnReadingCardPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
             if (e.Property == BoundsProperty)
                 UpdateReadingContentWidth(ReadingCard.Bounds.Width);
@@ -141,19 +181,6 @@ namespace Miao.UI.Views.Pages
             ReadBlocksList.Width = newWidth;
             EditBlocksList.Width = newWidth;
         }
-
-        private void OnReaderRootPointerDown(object? sender, PointerPressedEventArgs e)
-        {
-            if (!FontPanel.IsVisible) return;
-
-            if (e.Source is Visual sourceVisual &&
-                (sourceVisual == FontPanel || sourceVisual.GetVisualAncestors().Contains(FontPanel)))
-                return;
-
-            FontPanel.IsVisible = false;
-        }
-
-        // ================= TẢI / ĐIỀU HƯỚNG CHƯƠNG =================
 
         private void LoadChapter()
         {
@@ -178,16 +205,12 @@ namespace Miao.UI.Views.Pages
             ChapterTitleText.Text = _currentChapter.DisplayTitle;
             ChapterHeadingText.Text = _currentChapter.DisplayTitle;
 
-            PinButton.Content = _currentChapter.IsPinned ? "📌✓" : "📌";
-            FavoriteButton.Content = (novel?.IsFavorite ?? false) ? "★" : "☆";
+            SetPinIconState(_currentChapter.IsPinned);
+            SetFavoriteIconState(novel?.IsFavorite ?? false);
 
             LoadCharacterLookup();
 
-            var hasTranslation = !string.IsNullOrWhiteSpace(_currentChapter.DisplayContent);
-            SetReaderBlocks(hasTranslation
-                ? _currentChapter.DisplayContent
-                : "Chương này chưa có bản dịch hoàn chỉnh. Hãy dịch chương trước khi đọc.");
-
+            SetReaderBlocks(BuildDisplayContentForTarget(EditTarget.Translated));
             TranslatingText.IsVisible = false;
 
             var chapters = db.Chapters.Where(c => c.NovelId == _novelId).OrderBy(c => c.Number).ToList();
@@ -210,6 +233,18 @@ namespace Miao.UI.Views.Pages
 
             ReaderScrollViewer.ScrollToHome();
             _loadingChapter = false;
+        }
+
+        private string BuildDisplayContentForTarget(EditTarget target)
+        {
+            if (_currentChapter == null) return "";
+
+            if (target == EditTarget.Original)
+                return _currentChapter.OriginalContent;
+
+            return !string.IsNullOrWhiteSpace(_currentChapter.DisplayContent)
+                ? _currentChapter.DisplayContent
+                : "Chương này chưa có bản dịch hoàn chỉnh. Hãy dịch chương trước khi đọc.";
         }
 
         private void OnNovelTitleClick(object? sender, PointerPressedEventArgs e)
@@ -243,8 +278,6 @@ namespace Miao.UI.Views.Pages
             LoadChapter();
         }
 
-        // ================= HIỂN THỊ NỘI DUNG (block-based, thay FlowDocument) =================
-
         private void SetReaderBlocks(string? content)
         {
             var parsed = ReaderBlock.Parse(content);
@@ -253,25 +286,23 @@ namespace Miao.UI.Views.Pages
                 _blocks.Add(ReaderBlockViewModel.FromBlock(block, isEditing: _isEditing));
 
             RebuildReadGroups();
+            RebuildEditGroups();
             UpdateEditModeVisibility();
             ApplyReaderBackground(AppSettingsService.Instance.Settings.ReaderBackground);
         }
 
-        // Gộp các dòng văn bản liên tiếp (không phải ảnh) thành 1 khối hiển thị duy nhất
-        // để người đọc bôi đen/chọn văn bản liền mạch qua nhiều dòng, giống trình soạn
-        // thảo văn bản thông thường, thay vì bị chặn cứng trong từng dòng riêng lẻ.
-        private void RebuildReadGroups()
+        private static void BuildGroups(IList<ReaderBlockViewModel> blocks, ObservableCollection<ReaderDisplayGroup> target)
         {
-            _readGroups.Clear();
+            target.Clear();
 
             var i = 0;
-            while (i < _blocks.Count)
+            while (i < blocks.Count)
             {
-                var block = _blocks[i];
+                var block = blocks[i];
 
                 if (block.IsImage)
                 {
-                    _readGroups.Add(new ReaderDisplayGroup
+                    target.Add(new ReaderDisplayGroup
                     {
                         IsImage = true,
                         ImagePath = block.ImagePath,
@@ -284,13 +315,13 @@ namespace Miao.UI.Views.Pages
 
                 var start = i;
                 var lines = new List<string>();
-                while (i < _blocks.Count && !_blocks[i].IsImage)
+                while (i < blocks.Count && !blocks[i].IsImage)
                 {
-                    lines.Add(_blocks[i].Text ?? "");
+                    lines.Add(blocks[i].Text ?? "");
                     i++;
                 }
 
-                _readGroups.Add(new ReaderDisplayGroup
+                target.Add(new ReaderDisplayGroup
                 {
                     IsImage = false,
                     Text = string.Join("\n", lines),
@@ -298,6 +329,38 @@ namespace Miao.UI.Views.Pages
                     EndBlockIndex = i - 1
                 });
             }
+        }
+
+        private void RebuildReadGroups() => BuildGroups(_blocks, _readGroups);
+        private void RebuildEditGroups() => BuildGroups(_blocks, _editGroups);
+
+        private void SyncBlocksFromEditGroups()
+        {
+            var newBlocks = new List<ReaderBlockViewModel>();
+
+            foreach (var group in _editGroups)
+            {
+                if (group.IsImage)
+                {
+                    if (group.StartBlockIndex >= 0 && group.StartBlockIndex < _blocks.Count)
+                        newBlocks.Add(_blocks[group.StartBlockIndex]);
+                    continue;
+                }
+
+                foreach (var line in (group.Text ?? "").Split('\n'))
+                {
+                    newBlocks.Add(new ReaderBlockViewModel
+                    {
+                        Type = ReaderBlockType.Text,
+                        Text = line,
+                        IsEditing = true
+                    });
+                }
+            }
+
+            _blocks.Clear();
+            foreach (var b in newBlocks)
+                _blocks.Add(b);
         }
 
         private void UpdateEditModeVisibility()
@@ -339,19 +402,18 @@ namespace Miao.UI.Views.Pages
                 ReadingCard.BorderBrush = new SolidColorBrush(Color.FromRgb(232, 227, 217));
             }
 
-            // Cập nhật màu chữ qua DynamicResource -> mọi SelectableTextBlock/TextBox trong
-            // vùng đọc (kể cả ở chế độ Sửa) tự đổi màu theo nền, không bị "chìm" khi chọn nền tối.
             ReaderRoot.Resources["ReaderForegroundBrush"] = textForeground;
         }
 
-        // ================= CHÈN / XOÁ ẢNH TRONG CHẾ ĐỘ SỬA =================
+        private ReaderDisplayGroup? _lastFocusedEditGroup;
 
-        private ReaderBlockViewModel? _lastFocusedTextBlock;
-
-        private void OnBlockTextBoxFocused(object? sender, RoutedEventArgs e)
+        private void OnEditGroupTextBoxFocused(object? sender, RoutedEventArgs e)
         {
-            if (sender is TextBox tb && tb.DataContext is ReaderBlockViewModel vm)
-                _lastFocusedTextBlock = vm;
+            if (sender is TextBox tb && tb.DataContext is ReaderDisplayGroup group)
+            {
+                _lastFocusedEditGroup = group;
+                _activeEditTextBox = tb;
+            }
         }
 
         private async void OnInsertImageClick(object? sender, RoutedEventArgs e)
@@ -380,6 +442,8 @@ namespace Miao.UI.Views.Pages
                 await using var destStream = File.Create(destPath);
                 await sourceStream.CopyToAsync(destStream);
 
+                SyncBlocksFromEditGroups();
+
                 var newBlock = new ReaderBlockViewModel
                 {
                     Type = ReaderBlockType.Image,
@@ -387,12 +451,13 @@ namespace Miao.UI.Views.Pages
                     IsEditing = true
                 };
 
-                var insertIndex = _lastFocusedTextBlock != null
-                    ? _blocks.IndexOf(_lastFocusedTextBlock) + 1
+                var insertIndex = _lastFocusedEditGroup != null
+                    ? _lastFocusedEditGroup.EndBlockIndex + 1
                     : _blocks.Count;
 
                 _blocks.Insert(Math.Clamp(insertIndex, 0, _blocks.Count), newBlock);
                 RebuildReadGroups();
+                RebuildEditGroups();
             }
             catch (Exception ex)
             {
@@ -400,15 +465,19 @@ namespace Miao.UI.Views.Pages
             }
         }
 
-        private void OnRemoveImageBlockClick(object? sender, RoutedEventArgs e)
+        private void OnRemoveImageGroupClick(object? sender, RoutedEventArgs e)
         {
-            if (sender is not Button btn || btn.Tag is not ReaderBlockViewModel vm) return;
-            _blocks.Remove(vm);
+            if (sender is not Button btn || btn.Tag is not ReaderDisplayGroup group || !group.IsImage) return;
+
+            SyncBlocksFromEditGroups();
+
+            if (group.StartBlockIndex >= 0 && group.StartBlockIndex < _blocks.Count)
+                _blocks.RemoveAt(group.StartBlockIndex);
+
             RebuildReadGroups();
+            RebuildEditGroups();
         }
 
-        // Thư mục ảnh dùng chung cho MỌI cách thêm ảnh (chọn file, dán clipboard...) —
-        // tự tạo nếu chưa có, mỗi truyện 1 thư mục riêng "Images/Novel_{novelId}".
         private string GetNovelImageDirectory()
         {
             var dbDirectory = AppSettingsService.Instance.Settings.DataFolder;
@@ -417,40 +486,29 @@ namespace Miao.UI.Views.Pages
             return dir;
         }
 
-        // Dán ảnh (Ctrl+V) trực tiếp vào ô đang sửa: nếu clipboard đang chứa ảnh (copy từ
-        // trình duyệt/ứng dụng khác) thì lưu vào cùng thư mục ảnh của truyện và chèn thành
-        // 1 block ảnh ngay sau dòng đang focus, thay vì dán chữ rác hoặc không làm gì.
-        // Lưu ý: định dạng clipboard ảnh phụ thuộc hệ điều hành/phiên bản Avalonia — nếu
-        // ở máy bạn danh sách format khác "image/png"/"PNG"/"Bitmap", báo mình để chỉnh lại.
-        // Dán ảnh (Ctrl+V) trực tiếp vào ô đang sửa: nếu clipboard đang chứa ảnh (copy từ
-        // trình duyệt/ứng dụng khác) thì lưu vào cùng thư mục ảnh của truyện và chèn thành
-        // 1 block ảnh ngay sau dòng đang focus, thay vì dán chữ rác hoặc không làm gì.
-        //
-        // GetFormatsAsync/GetDataAsync chỉ có trên IClipboard từ Avalonia 11.1 trở lên, nên
-        // gọi qua reflection để build được ở MỌI phiên bản Avalonia — nếu bản bạn đang dùng
-        // không hỗ trợ, TryGetClipboardImageBytesAsync trả về null và hành vi dán chữ mặc
-        // định vẫn hoạt động bình thường (không crash, chỉ là tính năng dán ảnh không chạy).
         private async void OnEditTextBoxPasteCheck(object? sender, KeyEventArgs e)
         {
             var isPaste = e.Key == Key.V &&
                 (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta));
             if (!isPaste) return;
-            if (sender is not TextBox tb || tb.DataContext is not ReaderBlockViewModel vm) return;
+            if (sender is not TextBox tb || tb.DataContext is not ReaderDisplayGroup group) return;
 
             var topLevel = TopLevel.GetTopLevel(this);
             var clipboard = topLevel?.Clipboard;
             if (clipboard == null) return;
 
             var bytes = await TryGetClipboardImageBytesAsync(clipboard);
-            if (bytes == null || bytes.Length == 0) return; // không có ảnh -> để dán chữ mặc định
+            if (bytes == null || bytes.Length == 0) return;
 
-            e.Handled = true; // có ảnh: chặn hành vi dán chữ mặc định của TextBox
+            e.Handled = true;
 
             try
             {
                 var imageDirectory = GetNovelImageDirectory();
                 var destPath = Path.Combine(imageDirectory, $"{_novelId}_{_chapterNumber}_{Guid.NewGuid():N}.png");
                 await File.WriteAllBytesAsync(destPath, bytes);
+
+                SyncBlocksFromEditGroups();
 
                 var newBlock = new ReaderBlockViewModel
                 {
@@ -459,9 +517,10 @@ namespace Miao.UI.Views.Pages
                     IsEditing = true
                 };
 
-                var insertIndex = Math.Clamp(_blocks.IndexOf(vm) + 1, 0, _blocks.Count);
+                var insertIndex = Math.Clamp(group.EndBlockIndex + 1, 0, _blocks.Count);
                 _blocks.Insert(insertIndex, newBlock);
                 RebuildReadGroups();
+                RebuildEditGroups();
             }
             catch (Exception ex)
             {
@@ -500,38 +559,103 @@ namespace Miao.UI.Views.Pages
             }
         }
 
-        // ================= SỬA BẢN GỐC (dịch lại khi lưu) =================
-
-        private async void OnToggleEdit(object? sender, RoutedEventArgs e)
+        private void LoadEditTargetPreference()
         {
-            if (_isEditing)
-                await SaveEditAsync();
-            else
-                EnterEditMode();
+            using var db = OpenDb();
+            var novel = db.Novels.Find(_novelId);
+            var target = novel != null && novel.PreferredEditTarget == 1 ? EditTarget.Translated : EditTarget.Original;
+            _editTarget = target;
+            UpdateEditTargetButtons(target);
         }
 
-        private void EnterEditMode()
+        private void UpdateEditTargetButtons(EditTarget target)
+        {
+            EditTargetOriginalButton.Classes.Set("active", target == EditTarget.Original);
+            EditTargetTranslatedButton.Classes.Set("active", target == EditTarget.Translated);
+        }
+
+        private void OnSetEditTargetOriginal(object? sender, RoutedEventArgs e)
+        {
+            SavePreferredEditTarget(EditTarget.Original);
+            if (_isEditing) EnterEditMode(EditTarget.Original);
+        }
+
+        private void OnSetEditTargetTranslated(object? sender, RoutedEventArgs e)
+        {
+            SavePreferredEditTarget(EditTarget.Translated);
+            if (_isEditing) EnterEditMode(EditTarget.Translated);
+        }
+        private void SavePreferredEditTarget(EditTarget target)
+        {
+            using var db = OpenDb();
+            var novel = db.Novels.Find(_novelId);
+            if (novel != null)
+            {
+                novel.PreferredEditTarget = (int)target;
+                db.SaveChanges();
+            }
+            _editTarget = target;
+            UpdateEditTargetButtons(target);
+        }
+
+        private void OnToggleEdit(object? sender, RoutedEventArgs e)
+        {
+            if (_isEditing) { _ = SaveEditAsync(); return; }
+            EnterEditMode(_editTarget);
+        }
+
+        private void EnterEditMode(EditTarget target)
         {
             if (_currentChapter == null) return;
 
             _isEditing = true;
-            SetReaderBlocks(_currentChapter.OriginalContent);
-            EditButton.Content = "💾";
-            ToolTip.SetTip(EditButton, "Lưu bản gốc");
+            _editTarget = target;
+
+            SetReaderBlocks(target == EditTarget.Original ? _currentChapter.OriginalContent : _currentChapter.DisplayContent);
+
+            EditButton.Classes.Set("active", true);
+            ToolTip.SetTip(EditButton, target == EditTarget.Original ? "Lưu bản gốc (sẽ dịch lại)" : "Lưu bản dịch (không dịch lại)");
             InsertImageButton.IsVisible = true;
+            BoldButton.IsVisible = ItalicButton.IsVisible = UnderlineButton.IsVisible = StrikeButton.IsVisible = true;
+
+            ChapterTitleEditBox.Text = target == EditTarget.Original
+                ? _currentChapter.Title
+                : (string.IsNullOrWhiteSpace(_currentChapter.TranslatedTitle) ? _currentChapter.Title : _currentChapter.TranslatedTitle);
+            ChapterTitleEditBox.IsVisible = true;
+            ChapterHeadingText.IsVisible = false;
+        }
+
+        private void ExitEditMode()
+        {
+            _isEditing = false;
+            EditButton.Classes.Set("active", false);
+            ToolTip.SetTip(EditButton, "Sửa");
+            InsertImageButton.IsVisible = false;
+            BoldButton.IsVisible = ItalicButton.IsVisible = UnderlineButton.IsVisible = StrikeButton.IsVisible = false;
+            ChapterTitleEditBox.IsVisible = false;
+            ChapterHeadingText.IsVisible = true;
         }
 
         private async Task SaveEditAsync()
         {
+            if (_editTarget == EditTarget.Original) await SaveOriginalEditAsync();
+            else await SaveTranslatedEditAsync();
+        }
+
+        private async Task SaveOriginalEditAsync()
+        {
             if (_currentChapter == null) return;
 
+            SyncBlocksFromEditGroups();
             var newOriginalContent = GetBlocksAsText();
             if (string.IsNullOrWhiteSpace(newOriginalContent)) return;
+
+            var newTitle = ChapterTitleEditBox.Text?.Trim() ?? _currentChapter.Title;
+            var titleChanged = newTitle != _currentChapter.Title;
 
             var oldOriginalLines = SplitLines(_currentChapter.OriginalContent);
             var oldDisplayLines = SplitLines(_currentChapter.DisplayContent);
             var newOriginalLines = SplitLines(newOriginalContent);
-
             var newDisplayLines = new string[newOriginalLines.Length];
             var translationSucceeded = true;
 
@@ -575,7 +699,7 @@ namespace Miao.UI.Views.Pages
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[SaveEditAsync] Lỗi dịch lại chương: {ex}");
+                System.Diagnostics.Debug.WriteLine($"[SaveOriginalEditAsync] Lỗi dịch lại chương: {ex}");
                 translationSucceeded = false;
             }
             finally
@@ -588,25 +712,378 @@ namespace Miao.UI.Views.Pages
                 ? string.Join("\n", newDisplayLines)
                 : _currentChapter.DisplayContent;
 
+            string newTranslatedTitle = _currentChapter.TranslatedTitle;
+            if (titleChanged)
+            {
+                try
+                {
+                    var translator = TranslationService.CreateFromSettings();
+                    var t = (await translator.TranslateChapterAsync(newTitle)).Trim();
+                    newTranslatedTitle = string.IsNullOrWhiteSpace(t) ? newTitle : t;
+                }
+                catch { newTranslatedTitle = _currentChapter.TranslatedTitle; }
+            }
+
             using var db = OpenDb();
             var chapterInDb = db.Chapters.First(c => c.Id == _currentChapter.Id);
-
             chapterInDb.OriginalContent = newOriginalContent;
+            chapterInDb.Title = newTitle;
+            if (titleChanged) chapterInDb.TranslatedTitle = newTranslatedTitle;
             chapterInDb.Status = ChapterStatus.Edited;
             chapterInDb.LastEditedAt = DateTime.UtcNow;
             chapterInDb.DisplayContent = newDisplayContent;
-
             db.SaveChanges();
 
             _currentChapter.OriginalContent = chapterInDb.OriginalContent;
             _currentChapter.DisplayContent = chapterInDb.DisplayContent;
+            _currentChapter.Title = chapterInDb.Title;
+            _currentChapter.TranslatedTitle = chapterInDb.TranslatedTitle;
 
-            _isEditing = false;
-            EditButton.Content = "✏";
-            ToolTip.SetTip(EditButton, "Sửa bản gốc");
-            InsertImageButton.IsVisible = false;
+            ExitEditMode();
+            ChapterTitleText.Text = _currentChapter.DisplayTitle;
+            SetReaderBlocks(_currentChapter.DisplayContent);
+        }
+
+        private async Task SaveTranslatedEditAsync()
+        {
+            if (_currentChapter == null) return;
+
+            SyncBlocksFromEditGroups();
+            var newDisplayContent = GetBlocksAsText();
+            if (string.IsNullOrWhiteSpace(newDisplayContent)) return;
+
+            var newTranslatedTitle = ChapterTitleEditBox.Text?.Trim() ?? _currentChapter.TranslatedTitle;
+
+            using var db = OpenDb();
+            var chapterInDb = db.Chapters.First(c => c.Id == _currentChapter.Id);
+            chapterInDb.DisplayContent = newDisplayContent;
+            chapterInDb.TranslatedTitle = newTranslatedTitle;
+            chapterInDb.Status = ChapterStatus.Edited;
+            chapterInDb.LastEditedAt = DateTime.UtcNow;
+            db.SaveChanges();
+
+            _currentChapter.DisplayContent = chapterInDb.DisplayContent;
+            _currentChapter.TranslatedTitle = chapterInDb.TranslatedTitle;
+
+            await Task.CompletedTask;
+            ExitEditMode();
+            ChapterTitleText.Text = _currentChapter.DisplayTitle;
+            SetReaderBlocks(_currentChapter.DisplayContent);
+        }
+
+        private void OnBoldClick(object? sender, RoutedEventArgs e) => WrapActiveTextBox("b");
+        private void OnItalicClick(object? sender, RoutedEventArgs e) => WrapActiveTextBox("i");
+        private void OnUnderlineClick(object? sender, RoutedEventArgs e) => WrapActiveTextBox("u");
+        private void OnStrikeClick(object? sender, RoutedEventArgs e) => WrapActiveTextBox("s");
+
+        private void WrapActiveTextBox(string tag)
+        {
+            if (_activeEditTextBox == null) return;
+            var text = _activeEditTextBox.Text ?? "";
+            var (newText, newStart, newEnd) = ReaderRichText.WrapSelection(text, _activeEditTextBox.SelectionStart, _activeEditTextBox.SelectionEnd, tag);
+            _activeEditTextBox.Text = newText;
+            _activeEditTextBox.SelectionStart = newStart;
+            _activeEditTextBox.SelectionEnd = newEnd;
+        }
+      
+        private void HandleAddName(string? rawSelectedText, bool isOriginalSelection)
+        {
+            var selectedText = rawSelectedText?.Trim();
+            if (string.IsNullOrWhiteSpace(selectedText) || _activeContextGroup == null || _activeContextGroup.IsImage)
+                return;
+
+            using var db = OpenDb();
+            var set = db.NovelGlossarySets
+                .Where(x => x.NovelId == _novelId)
+                .Select(x => x.GlossarySet!)
+                .OrderBy(x => x.Name)
+                .FirstOrDefault();
+
+            if (set == null)
+            {
+                _ = DialogService.ShowYesNoAsync(
+                    "Truyện chưa có bộ tên nào được áp dụng. Hãy thêm bộ tên cho truyện trước.",
+                    "Thêm tên");
+                return;
+            }
+
+            if (isOriginalSelection)
+            {
+                var existing = db.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == set.Id && x.OriginalTerm == selectedText);
+                ShowGlossaryEntryDialog(set.Id, selectedText, existing?.TranslatedTerm ?? "", existing?.HanViet ?? "",
+                    oldTranslatedText: existing?.TranslatedTerm ?? "", blockIndex: -1);
+            }
+            else
+            {
+                var blockIndex = GetSelectionBlockIndex();
+                var originalGuess = selectedText;
+
+                var existing = db.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == set.Id && x.OriginalTerm == originalGuess);
+                ShowGlossaryEntryDialog(set.Id, originalGuess, existing?.TranslatedTerm ?? selectedText, existing?.HanViet ?? "",
+                    oldTranslatedText: selectedText, blockIndex: blockIndex ?? -1);
+            }
+        }
+
+        private void OnEditTextBoxContextRequested(object? sender, ContextRequestedEventArgs e)
+        {
+            if (sender is not TextBox tb) return;
+            _activeEditTextBox = tb;
+            _activeContextGroup = tb.DataContext as ReaderDisplayGroup;
+            _activeSelectionStartOffset = Math.Min(tb.SelectionStart, tb.SelectionEnd);
+        }
+
+        private void OnEditContextAddNameClick(object? sender, RoutedEventArgs e)
+            => HandleAddName(_activeEditTextBox?.SelectedText, isOriginalSelection: _editTarget == EditTarget.Original);
+
+        private void OnTextBlockContextRequested(object? sender, ContextRequestedEventArgs e)
+        {
+            if (sender is not SelectableTextBlock stb) return;
+
+            _activeContextTextBlock = stb;
+            _activeContextGroup = stb.Tag as ReaderDisplayGroup;
+
+            _activeSelectionStartOffset = Math.Min(stb.SelectionStart, stb.SelectionEnd);
+        }
+
+        private async void OnContextCopyClick(object? sender, RoutedEventArgs e)
+        {
+            var text = _activeContextTextBlock?.SelectedText;
+            if (string.IsNullOrEmpty(text)) return;
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel?.Clipboard != null)
+                await topLevel.Clipboard.SetTextAsync(text);
+        }
+
+        private void OnContextAddStyledClick(object? sender, RoutedEventArgs e)
+            => HandleAddName(_activeContextTextBlock?.SelectedText, isOriginalSelection: false);
+
+        private void OnContextAddCharacterClick(object? sender, RoutedEventArgs e)
+        {
+            var selectedText = _activeContextTextBlock?.SelectedText?.Trim();
+            if (string.IsNullOrWhiteSpace(selectedText)) return;
+
+            ModalService.Show(new ReaderAddCharacterModal(_novelId, selectedText, () => LoadCharacterLookup()));
+        }
+
+        private void ReplaceInDisplayContent(string oldText, string newText, bool wholeChapter, int? blockIndex)
+        {
+            if (_currentChapter == null || string.IsNullOrEmpty(oldText) || oldText == newText) return;
+
+            using var db = OpenDb();
+            var chapterInDb = db.Chapters.First(c => c.Id == _currentChapter.Id);
+            var content = chapterInDb.DisplayContent ?? "";
+
+            if (wholeChapter)
+            {
+                content = content.Replace(oldText, newText);
+            }
+            else if (blockIndex is int idx)
+            {
+                var lines = SplitLines(content);
+                if (idx >= 0 && idx < lines.Length)
+                {
+                    var pos = lines[idx].IndexOf(oldText, StringComparison.Ordinal);
+                    if (pos >= 0)
+                        lines[idx] = lines[idx][..pos] + newText + lines[idx][(pos + oldText.Length)..];
+                    content = string.Join("\n", lines);
+                }
+            }
+
+            chapterInDb.DisplayContent = content;
+            db.SaveChanges();
+
+            _currentChapter.DisplayContent = content;
+            SetReaderBlocks(_currentChapter.DisplayContent);
+        }
+
+        private static void ReplaceInNovelDisplayTitle(Novel novel, string oldText, string newText)
+        {
+            if (!string.IsNullOrWhiteSpace(novel.CustomTitle) &&
+                novel.CustomTitle.Contains(oldText, StringComparison.Ordinal))
+            {
+                novel.CustomTitle = novel.CustomTitle.Replace(oldText, newText);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(novel.TranslatedTitle) &&
+                novel.TranslatedTitle.Contains(oldText, StringComparison.Ordinal))
+            {
+                novel.TranslatedTitle = novel.TranslatedTitle.Replace(oldText, newText);
+                return;
+            }
+            if (novel.Title.Contains(oldText, StringComparison.Ordinal))
+                novel.Title = novel.Title.Replace(oldText, newText);
+        }
+
+        private static void ReplaceInChapterDisplayTitle(Chapter chapter, string oldText, string newText)
+        {
+            if (!string.IsNullOrWhiteSpace(chapter.TranslatedTitle) &&
+                chapter.TranslatedTitle.Contains(oldText, StringComparison.Ordinal))
+            {
+                chapter.TranslatedTitle = chapter.TranslatedTitle.Replace(oldText, newText);
+                return;
+            }
+            if (chapter.Title.Contains(oldText, StringComparison.Ordinal))
+                chapter.Title = chapter.Title.Replace(oldText, newText);
+        }
+
+        private void ReplaceAcrossNovel(string oldText, string newText)
+        {
+            if (_currentChapter == null || string.IsNullOrEmpty(oldText) || oldText == newText) return;
+
+            using var db = OpenDb();
+
+            var novel = db.Novels.Find(_novelId);
+            if (novel != null)
+                ReplaceInNovelDisplayTitle(novel, oldText, newText);
+
+            var chapters = db.Chapters.Where(c => c.NovelId == _novelId).ToList();
+
+            foreach (var chapter in chapters)
+            {
+                ReplaceInChapterDisplayTitle(chapter, oldText, newText);
+
+                var content = chapter.DisplayContent ?? "";
+                if (content.Contains(oldText, StringComparison.Ordinal))
+                {
+                    chapter.DisplayContent = content.Replace(oldText, newText);
+                }
+
+                if (chapter.Id == _currentChapter.Id)
+                {
+                    _currentChapter.DisplayContent = chapter.DisplayContent ?? "";
+                    _currentChapter.Title = chapter.Title;
+                    _currentChapter.TranslatedTitle = chapter.TranslatedTitle;
+                }
+            }
+
+            db.SaveChanges();
+
+            NovelTitleText.Text = novel?.DisplayTitle ?? novel?.Title ?? NovelTitleText.Text;
+            ChapterTitleText.Text = _currentChapter.DisplayTitle;
+            ChapterHeadingText.Text = _currentChapter.DisplayTitle;
+
+            var refreshedChapters = db.Chapters.Where(c => c.NovelId == _novelId).OrderBy(c => c.Number).ToList();
+            ChapterComboBox.ItemsSource = refreshedChapters;
+            ChapterComboBox.SelectedItem = refreshedChapters.FirstOrDefault(c => c.Number == _chapterNumber);
 
             SetReaderBlocks(_currentChapter.DisplayContent);
+        }
+
+        private const int OriginalGuessWindow = 6;
+
+        private static bool IsBoundaryChar(char c)
+        {
+            if (char.IsWhiteSpace(c)) return true;
+            if (char.IsLetterOrDigit(c)) return false;
+            if (c >= 0x4E00 && c <= 0x9FFF) return false;
+            if (c >= 0x3400 && c <= 0x4DBF) return false;
+            if (c >= 0xF900 && c <= 0xFAFF) return false;
+            return true;
+        }
+
+        private int? GetSelectionBlockIndex()
+        {
+            if (_activeContextGroup == null || _activeContextGroup.IsImage) return null;
+
+            var fullText = _activeContextGroup.Text;
+            var offset = Math.Clamp(_activeSelectionStartOffset, 0, fullText.Length);
+
+            var lineOffset = fullText[..offset].Count(c => c == '\n');
+            return Math.Clamp(
+                _activeContextGroup.StartBlockIndex + lineOffset,
+                _activeContextGroup.StartBlockIndex,
+                _activeContextGroup.EndBlockIndex);
+        }
+
+        private static string? TryFindKnownTermNearSelection(MiaoDbContext db, Guid glossarySetId, string originalLine, int centerIndex)
+        {
+            var knownTerms = db.GlossarySetEntries
+                .Where(x => x.GlossarySetId == glossarySetId)
+                .Select(x => x.OriginalTerm)
+                .ToList()
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .OrderByDescending(t => t.Length); 
+
+            foreach (var term in knownTerms)
+            {
+                var searchFrom = 0;
+                while (true)
+                {
+                    var idx = originalLine.IndexOf(term, searchFrom, StringComparison.Ordinal);
+                    if (idx < 0) break;
+
+                    if (centerIndex >= idx && centerIndex < idx + term.Length)
+                        return term;
+
+                    searchFrom = idx + 1;
+                }
+            }
+
+            return null;
+        }
+
+        private string GetOriginalLineForSelection(int blockIndex, string groupText, string selectedText,
+            Guid? glossarySetId = null, MiaoDbContext? db = null)
+        {
+            if (_currentChapter == null) return "";
+
+            var originalLines = SplitLines(_currentChapter.OriginalContent);
+            if (blockIndex < 0 || blockIndex >= originalLines.Length) return "";
+
+            var originalLine = originalLines[blockIndex].Trim();
+            if (originalLine.Length == 0) return "";
+
+            var groupLines = groupText.Split('\n');
+            var lineIndexInGroup = blockIndex - (_activeContextGroup?.StartBlockIndex ?? blockIndex);
+            if (lineIndexInGroup < 0 || lineIndexInGroup >= groupLines.Length) return originalLine;
+
+            var lineText = groupLines[lineIndexInGroup];
+            if (lineText.Length == 0 || string.IsNullOrEmpty(selectedText)) return originalLine;
+
+            var precedingLength = 0;
+            for (var i = 0; i < lineIndexInGroup; i++)
+                precedingLength += groupLines[i].Length + 1;
+
+            var selectionStartOffset = Math.Clamp(_activeSelectionStartOffset - precedingLength, 0, Math.Max(0, lineText.Length - 1));
+
+            var ratio = Math.Clamp((double)selectionStartOffset / lineText.Length, 0, 1);
+            var centerIndex = Math.Clamp((int)(ratio * originalLine.Length), 0, originalLine.Length - 1);
+
+            if (db != null && glossarySetId != null)
+            {
+                var knownMatch = TryFindKnownTermNearSelection(db, glossarySetId.Value, originalLine, centerIndex);
+                if (!string.IsNullOrWhiteSpace(knownMatch))
+                    return knownMatch;
+            }
+
+            var estimatedOriginalLength = Math.Clamp(
+                (double)selectedText.Length / lineText.Length * originalLine.Length,
+                1, originalLine.Length);
+            var halfSpan = Math.Clamp((int)Math.Round(estimatedOriginalLength / 2.0), 2, OriginalGuessWindow);
+
+            if (IsBoundaryChar(originalLine[centerIndex]))
+            {
+                var found = false;
+                for (int d = 1; d <= halfSpan && !found; d++)
+                {
+                    if (centerIndex - d >= 0 && !IsBoundaryChar(originalLine[centerIndex - d]))
+                    { centerIndex -= d; found = true; }
+                    else if (centerIndex + d < originalLine.Length && !IsBoundaryChar(originalLine[centerIndex + d]))
+                    { centerIndex += d; found = true; }
+                }
+                if (!found) return "";
+            }
+
+            var start = centerIndex;
+            while (start > 0 && centerIndex - (start - 1) <= halfSpan && !IsBoundaryChar(originalLine[start - 1]))
+                start--;
+
+            var end = centerIndex;
+            while (end < originalLine.Length - 1 && (end + 1) - centerIndex <= halfSpan && !IsBoundaryChar(originalLine[end + 1]))
+                end++;
+
+            return originalLine.Substring(start, end - start + 1).Trim();
         }
 
         private static string[] SplitLines(string? text)
@@ -634,8 +1111,6 @@ namespace Miao.UI.Views.Pages
 
             return result;
         }
-
-        // ================= BẢNG TUỲ CHỈNH FONT / NỀN ĐỌC =================
 
         private void ApplyFontSettings()
         {
@@ -679,10 +1154,11 @@ namespace Miao.UI.Views.Pages
             FontSizeValueText.Text = $"{s.ReaderFontSize:0} px";
             LineHeightValueText.Text = $"{s.ReaderLineHeight:0.0}×";
 
-            // Áp trực tiếp font/cỡ chữ lên vùng đọc (thuộc tính TextElement được kế thừa
-            // xuống mọi TextBlock/SelectableTextBlock/TextBox con bên trong ReadingCard).
             ReadingCard.SetValue(TextElement.FontFamilyProperty, new FontFamily(s.ReaderFontFamily));
             ReadingCard.SetValue(TextElement.FontSizeProperty, s.ReaderFontSize);
+
+            ReaderRoot.Resources["ReaderFontFamilyValue"] = new FontFamily(s.ReaderFontFamily);
+            ReaderRoot.Resources["ReaderFontSizeValue"] = s.ReaderFontSize;
 
             _lineHeightMultiplier = s.ReaderLineHeight;
             UpdateComputedLineHeight();
@@ -690,10 +1166,6 @@ namespace Miao.UI.Views.Pages
             ApplyReaderBackground(s.ReaderBackground);
         }
 
-        // LineHeight của Avalonia là giá trị PIXEL TUYỆT ĐỐI, không phải hệ số nhân — trước
-        // đây gán thẳng "1.5" (hệ số) vào LineHeight khiến mỗi dòng cao đúng 1.5px và các
-        // dòng chữ chồng khít lên nhau (chữ bị "rối"/đè nhau). Giờ tính LineHeight thực tế
-        // = cỡ chữ hiện tại × hệ số giãn dòng, và tính lại mỗi khi 1 trong 2 giá trị đổi.
         private double _lineHeightMultiplier = 1.5;
 
         private void UpdateComputedLineHeight()
@@ -706,7 +1178,7 @@ namespace Miao.UI.Views.Pages
 
         private void OnToggleFontPanel(object? sender, RoutedEventArgs e)
         {
-            FontPanel.IsVisible = !FontPanel.IsVisible;
+            FontPanelPopup.IsOpen = !FontPanelPopup.IsOpen;
         }
 
         private void OnFontChanged(object? sender, SelectionChangedEventArgs e)
@@ -718,6 +1190,7 @@ namespace Miao.UI.Views.Pages
             AppSettingsService.Instance.Save();
 
             ReadingCard.SetValue(TextElement.FontFamilyProperty, new FontFamily(family));
+            ReaderRoot.Resources["ReaderFontFamilyValue"] = new FontFamily(family);
         }
 
         private void OnFontSizeChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -731,7 +1204,8 @@ namespace Miao.UI.Views.Pages
             AppSettingsService.Instance.Save();
 
             ReadingCard.SetValue(TextElement.FontSizeProperty, e.NewValue);
-            UpdateComputedLineHeight(); // cỡ chữ đổi -> line height (px) cũng phải tính lại
+            ReaderRoot.Resources["ReaderFontSizeValue"] = e.NewValue;
+            UpdateComputedLineHeight();
         }
 
         private void OnLineHeightChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -758,7 +1232,14 @@ namespace Miao.UI.Views.Pages
             ApplyReaderBackground(color);
         }
 
-        // ================= YÊU THÍCH / GHIM =================
+        private static IBrush GetAccentJadeBrush() =>
+            (IBrush)(Application.Current?.FindResource("AccentJade") ?? Brushes.Teal);
+
+        private void SetFavoriteIconState(bool isFavorite) =>
+            FavoriteIconPath.Fill = isFavorite ? GetAccentJadeBrush() : Brushes.Transparent;
+
+        private void SetPinIconState(bool isPinned) =>
+            PinIconPath.Fill = isPinned ? GetAccentJadeBrush() : Brushes.Transparent;
 
         private void OnToggleFavorite(object? sender, RoutedEventArgs e)
         {
@@ -768,7 +1249,7 @@ namespace Miao.UI.Views.Pages
 
             novel.IsFavorite = !novel.IsFavorite;
             db.SaveChanges();
-            FavoriteButton.Content = novel.IsFavorite ? "★" : "☆";
+            SetFavoriteIconState(novel.IsFavorite);
         }
 
         private void OnTogglePin(object? sender, RoutedEventArgs e)
@@ -782,10 +1263,8 @@ namespace Miao.UI.Views.Pages
             db.SaveChanges();
 
             _currentChapter.IsPinned = chapterInDb.IsPinned;
-            PinButton.Content = chapterInDb.IsPinned ? "📌✓" : "📌";
+            SetPinIconState(chapterInDb.IsPinned);
         }
-
-        // ================= THÊM VÀO THƯ VIỆN (Avalonia Popup) =================
 
         private void OnAddToLibraryReaderClick(object? sender, RoutedEventArgs e)
         {
@@ -802,7 +1281,7 @@ namespace Miao.UI.Views.Pages
                 Background = Brushes.White,
                 BorderBrush = borderSoft,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8),
+                CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(4),
                 Width = 240,
                 Child = panel
@@ -825,8 +1304,6 @@ namespace Miao.UI.Views.Pages
                     Grid.SetColumn(nameText, 0);
                     row.Children.Add(nameText);
 
-                    // Nhấn lại vào 1 thư viện đã thêm sẽ BỎ CHỌN (xoá khỏi thư viện đó),
-                    // thay vì trước đây bấm hoài không có phản ứng gì nếu đã tồn tại.
                     if (addedLibraryIds.Contains(library.Id))
                     {
                         var check = new TextBlock
@@ -853,7 +1330,12 @@ namespace Miao.UI.Views.Pages
                 }
             }
 
-            panel.Children.Add(new Separator { Margin = new Thickness(4, 3, 4, 3) });
+            panel.Children.Add(new Separator
+            {
+                Background = borderSoft,
+                Height = 1,
+                Margin = new Thickness(4, 3, 4, 3)
+            });
 
             var createButton = new Button { Content = "+ Thêm danh sách mới", Classes = { "ReaderMenuItemButton" } };
             createButton.Click += OnReaderCreateLibraryClick;
@@ -880,7 +1362,7 @@ namespace Miao.UI.Views.Pages
                 .FirstOrDefault(x => x.CustomLibraryId == libraryId && x.NovelId == _novelId);
 
             if (existing != null)
-                db.CustomLibraryNovels.Remove(existing); // bấm lại -> bỏ khỏi thư viện
+                db.CustomLibraryNovels.Remove(existing);
             else
                 db.CustomLibraryNovels.Add(new CustomLibraryNovel { CustomLibraryId = libraryId, NovelId = _novelId });
 
@@ -941,186 +1423,6 @@ namespace Miao.UI.Views.Pages
             ModalService.Show(card);
         }
 
-        // ================= VÙNG ĐỌC: MENU CHUỘT PHẢI (Thêm / Thêm nhân vật / Copy) =================
-
-        private void OnTextBlockContextRequested(object? sender, ContextRequestedEventArgs e)
-        {
-            if (sender is not SelectableTextBlock stb) return;
-
-            _activeContextTextBlock = stb;
-            _activeContextGroup = stb.Tag as ReaderDisplayGroup;
-        }
-
-        private async void OnContextCopyClick(object? sender, RoutedEventArgs e)
-        {
-            var text = _activeContextTextBlock?.SelectedText;
-            if (string.IsNullOrEmpty(text)) return;
-
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel?.Clipboard != null)
-                await topLevel.Clipboard.SetTextAsync(text);
-        }
-
-        private void OnContextAddStyledClick(object? sender, RoutedEventArgs e)
-        {
-            var selectedText = _activeContextTextBlock?.SelectedText?.Trim();
-            if (string.IsNullOrWhiteSpace(selectedText) || _activeContextGroup == null || _activeContextGroup.IsImage) return;
-
-            var blockIndex = GetSelectionBlockIndex();
-            if (blockIndex == null) return;
-
-            using var db = OpenDb();
-            var set = db.NovelGlossarySets
-                .Where(x => x.NovelId == _novelId)
-                .Select(x => x.GlossarySet!)
-                .OrderBy(x => x.Name)
-                .FirstOrDefault();
-
-            if (set == null)
-            {
-                _ = DialogService.ShowYesNoAsync(
-                    "Truyện chưa có bộ tên nào được áp dụng. Hãy thêm bộ tên cho truyện trước.",
-                    "Thêm tên");
-                return;
-            }
-
-            var originalGuess = GetOriginalLineForSelection(blockIndex.Value, _activeContextGroup.Text, selectedText);
-            if (string.IsNullOrWhiteSpace(originalGuess))
-                originalGuess = selectedText;
-
-            var existing = db.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == set.Id && x.OriginalTerm == originalGuess);
-            ShowGlossaryEntryDialog(
-                set.Id, originalGuess, existing?.TranslatedTerm ?? selectedText, existing?.HanViet ?? "",
-                oldTranslatedText: selectedText, blockIndex: blockIndex.Value);
-        }
-
-        // Nhấn "Thêm nhân vật" trong menu chuột phải: mở hộp thoại tạo/gán nhân vật
-        // cho đúng từ/cụm từ vừa bôi đen.
-        private void OnContextAddCharacterClick(object? sender, RoutedEventArgs e)
-        {
-            var selectedText = _activeContextTextBlock?.SelectedText?.Trim();
-            if (string.IsNullOrWhiteSpace(selectedText)) return;
-
-            ShowAddCharacterDialog(selectedText);
-        }
-
-        private void ReplaceInDisplayContent(string oldText, string newText, bool wholeChapter, int? blockIndex)
-        {
-            if (_currentChapter == null || string.IsNullOrEmpty(oldText) || oldText == newText) return;
-
-            using var db = OpenDb();
-            var chapterInDb = db.Chapters.First(c => c.Id == _currentChapter.Id);
-            var content = chapterInDb.DisplayContent ?? "";
-
-            if (wholeChapter)
-            {
-                content = content.Replace(oldText, newText);
-            }
-            else if (blockIndex is int idx)
-            {
-                var lines = SplitLines(content);
-                if (idx >= 0 && idx < lines.Length)
-                {
-                    var pos = lines[idx].IndexOf(oldText, StringComparison.Ordinal);
-                    if (pos >= 0)
-                        lines[idx] = lines[idx][..pos] + newText + lines[idx][(pos + oldText.Length)..];
-                    content = string.Join("\n", lines);
-                }
-            }
-
-            chapterInDb.DisplayContent = content;
-            db.SaveChanges();
-
-            _currentChapter.DisplayContent = content;
-            SetReaderBlocks(_currentChapter.DisplayContent);
-        }
-
-        private const int OriginalGuessWindow = 6;
-
-        private static bool IsBoundaryChar(char c)
-        {
-            if (char.IsWhiteSpace(c)) return true;
-            if (char.IsLetterOrDigit(c)) return false;
-            if (c >= 0x4E00 && c <= 0x9FFF) return false;
-            if (c >= 0x3400 && c <= 0x4DBF) return false;
-            if (c >= 0xF900 && c <= 0xFAFF) return false;
-            return true;
-        }
-
-        // Với chế độ đọc gộp nhiều dòng vào 1 khối, cần tính lại đúng "dòng" (block index
-        // trong _blocks) mà đoạn đang được chọn thuộc về, dựa vào số ký tự xuống dòng '\n'
-        // đứng trước vị trí bắt đầu của phần được bôi đen trong văn bản đã gộp.
-        private int? GetSelectionBlockIndex()
-        {
-            if (_activeContextGroup == null || _activeContextGroup.IsImage) return null;
-
-            var selected = _activeContextTextBlock?.SelectedText ?? "";
-            var fullText = _activeContextGroup.Text;
-
-            if (string.IsNullOrEmpty(selected))
-                return _activeContextGroup.StartBlockIndex;
-
-            var offset = fullText.IndexOf(selected, StringComparison.Ordinal);
-            if (offset < 0)
-                return _activeContextGroup.StartBlockIndex;
-
-            var lineOffset = fullText[..offset].Count(c => c == '\n');
-            return Math.Clamp(
-                _activeContextGroup.StartBlockIndex + lineOffset,
-                _activeContextGroup.StartBlockIndex,
-                _activeContextGroup.EndBlockIndex);
-        }
-
-        private string GetOriginalLineForSelection(int blockIndex, string groupText, string selectedText)
-        {
-            if (_currentChapter == null) return "";
-
-            var originalLines = SplitLines(_currentChapter.OriginalContent);
-            if (blockIndex < 0 || blockIndex >= originalLines.Length) return "";
-
-            var originalLine = originalLines[blockIndex].Trim();
-            if (originalLine.Length == 0) return "";
-
-            // Lấy đúng dòng con (trong nhóm đã gộp) tương ứng với blockIndex
-            var groupLines = groupText.Split('\n');
-            var lineIndexInGroup = blockIndex - (_activeContextGroup?.StartBlockIndex ?? blockIndex);
-            var lineText = lineIndexInGroup >= 0 && lineIndexInGroup < groupLines.Length
-                ? groupLines[lineIndexInGroup]
-                : groupText;
-
-            if (lineText.Length == 0 || string.IsNullOrEmpty(selectedText)) return originalLine;
-
-            var selectionStartOffset = Math.Max(0, lineText.IndexOf(selectedText, StringComparison.Ordinal));
-            var ratio = Math.Clamp((double)selectionStartOffset / lineText.Length, 0, 1);
-            var centerIndex = Math.Clamp((int)(ratio * originalLine.Length), 0, originalLine.Length - 1);
-
-            if (IsBoundaryChar(originalLine[centerIndex]))
-            {
-                var found = false;
-                for (int d = 1; d <= OriginalGuessWindow && !found; d++)
-                {
-                    if (centerIndex - d >= 0 && !IsBoundaryChar(originalLine[centerIndex - d]))
-                    { centerIndex -= d; found = true; }
-                    else if (centerIndex + d < originalLine.Length && !IsBoundaryChar(originalLine[centerIndex + d]))
-                    { centerIndex += d; found = true; }
-                }
-                if (!found) return "";
-            }
-
-            var start = centerIndex;
-            while (start > 0 && centerIndex - (start - 1) <= OriginalGuessWindow && !IsBoundaryChar(originalLine[start - 1]))
-                start--;
-
-            var end = centerIndex;
-            while (end < originalLine.Length - 1 && (end + 1) - centerIndex <= OriginalGuessWindow && !IsBoundaryChar(originalLine[end + 1]))
-                end++;
-
-            return originalLine.Substring(start, end - start + 1).Trim();
-        }
-
-        // Tra Hán Việt chính xác hơn (khớp cụm tên riêng qua Name.json) trong nền
-        // rồi mới cập nhật ô Hán Việt — chỉ áp kết quả nếu người dùng chưa gõ
-        // tiếp sang nội dung khác trong lúc chờ (tránh ghi đè nhầm).
         private static async Task RefineHanVietAsync(TextBox originalBox, TextBox hanVietBox)
         {
             var original = originalBox.Text ?? "";
@@ -1132,26 +1434,27 @@ namespace Miao.UI.Views.Pages
                 hanVietBox.Text = accurate;
         }
 
-        // Dialog thêm/sửa tên qua ModalService thay cho Window riêng của WPF
         private void ShowGlossaryEntryDialog(Guid glossarySetId, string selectedOriginal, string currentTranslation,
             string currentHanViet, string oldTranslatedText, int blockIndex)
         {
             var originalBox = new TextBox { Text = selectedOriginal, Margin = new Thickness(0, 0, 0, 14) };
             var hanVietText = string.IsNullOrWhiteSpace(currentHanViet) ? _sinoVietnamese.ToHanViet(selectedOriginal) : currentHanViet;
             var hanVietBox = new TextBox { Text = hanVietText, Margin = new Thickness(0, 0, 0, 14) };
-            var pinYinBox = new TextBox { Text = _sinoVietnamese.ToPinYin(selectedOriginal), Margin = new Thickness(0, 0, 0, 14) };
 
             if (string.IsNullOrWhiteSpace(currentHanViet))
             {
                 _ = RefineHanVietAsync(originalBox, hanVietBox);
             }
 
+            var isFirstOriginalTextEvent = true;
+
             async void OnOriginalTextChanged(string? text)
             {
+                if (isFirstOriginalTextEvent) { isFirstOriginalTextEvent = false; return; }
+
                 var current = text ?? "";
                 var quickGuess = _sinoVietnamese.ToHanViet(current);
                 hanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? current : quickGuess;
-                pinYinBox.Text = _sinoVietnamese.ToPinYin(current);
 
                 await RefineHanVietAsync(originalBox, hanVietBox);
             }
@@ -1165,8 +1468,6 @@ namespace Miao.UI.Views.Pages
             root.Children.Add(originalBox);
             root.Children.Add(new TextBlock { Text = "Hán Việt:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
             root.Children.Add(hanVietBox);
-            root.Children.Add(new TextBlock { Text = "Bính âm:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
-            root.Children.Add(pinYinBox);
             root.Children.Add(new TextBlock { Text = "Dịch:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
             root.Children.Add(translatedBox);
 
@@ -1202,10 +1503,6 @@ namespace Miao.UI.Views.Pages
 
             void SaveGlossaryEntry(string newOriginal, string translated)
             {
-                var pinYin = string.IsNullOrWhiteSpace(pinYinBox.Text?.Trim())
-                    ? _sinoVietnamese.ToPinYin(newOriginal)
-                    : pinYinBox.Text!.Trim();
-
                 using var saveDb = OpenDb();
                 var entry = saveDb.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == glossarySetId && x.OriginalTerm == selectedOriginal);
                 if (entry == null)
@@ -1215,7 +1512,7 @@ namespace Miao.UI.Views.Pages
                         GlossarySetId = glossarySetId,
                         OriginalTerm = newOriginal,
                         HanViet = hanVietBox.Text?.Trim() ?? "",
-                        PinYin = pinYin,
+                        PinYin = _sinoVietnamese.ToPinYin(newOriginal),
                         TranslatedTerm = translated
                     });
                 }
@@ -1224,7 +1521,7 @@ namespace Miao.UI.Views.Pages
                     entry.OriginalTerm = newOriginal;
                     entry.TranslatedTerm = translated;
                     entry.HanViet = hanVietBox.Text?.Trim() ?? "";
-                    entry.PinYin = pinYin;
+                    entry.PinYin = _sinoVietnamese.ToPinYin(newOriginal);
                 }
                 saveDb.SaveChanges();
             }
@@ -1236,7 +1533,7 @@ namespace Miao.UI.Views.Pages
                 if (string.IsNullOrWhiteSpace(newOriginal) || string.IsNullOrWhiteSpace(translated)) return;
 
                 SaveGlossaryEntry(newOriginal, translated);
-                ReplaceInDisplayContent(oldTranslatedText, translated, wholeChapter: true, blockIndex: null);
+                ReplaceAcrossNovel(oldTranslatedText, translated);
                 ModalService.Close();
             };
 
@@ -1258,31 +1555,26 @@ namespace Miao.UI.Views.Pages
                 ModalService.Close();
             };
 
-            deleteButton.Click += (_, _) =>
+            deleteButton.Click += async (_, _) =>
             {
+                var result = await DialogService.ShowYesNoAsync(
+                    "Xóa tên này sẽ dịch lại cụm từ gốc bằng máy dịch và thay thế trong TOÀN BỘ truyện đang dùng bộ tên này (không chỉ truyện đang đọc). Tiếp tục?",
+                    "Xóa tên");
+                if (result != DialogResult.Yes) return;
+
                 using var deleteDb = OpenDb();
                 var entry = deleteDb.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == glossarySetId && x.OriginalTerm == selectedOriginal);
-                if (entry != null)
-                {
-                    deleteDb.GlossarySetEntries.Remove(entry);
-                    deleteDb.SaveChanges();
-                }
+                if (entry == null) { ModalService.Close(); return; }
+
                 ModalService.Close();
+
+                await GlossaryApplicationService.DeleteEntryAndRevertAsync(deleteDb, entry.Id);
+
+                LoadChapter();
             };
 
             ModalService.Show(card);
         }
-
-        // ================= NHÂN VẬT: NHẬN DIỆN TÊN + BẤM VÀO ĐỂ XEM ẢNH =================
-        //
-        // GIẢ ĐỊNH schema (dựa trên 3 model Character / CharacterAlias / CharacterGroup bạn gửi):
-        //   - MiaoDbContext có DbSet<CharacterGroup> CharacterGroups, DbSet<Character> Characters,
-        //     DbSet<CharacterAlias> CharacterAliases. Nếu tên DbSet trong project khác, đổi lại
-        //     3 chỗ dùng "db.CharacterGroups / db.Characters / db.CharacterAliases" bên dưới.
-        //   - Nhân vật thuộc về truyện hiện tại nếu: CharacterGroup.OwnerNovelId == _novelId
-        //     (bộ riêng của truyện) HOẶC CharacterGroup.IsShared == true (bộ dùng chung, tương
-        //     tự cách GlossarySet dùng NovelGlossarySets). Nếu thực tế có bảng nối kiểu
-        //     "NovelCharacterGroups" riêng, thay điều kiện Where bên dưới cho khớp.
 
         private void LoadCharacterLookup()
         {
@@ -1291,11 +1583,11 @@ namespace Miao.UI.Views.Pages
             try
             {
                 using var db = OpenDb();
+                var scopeIds = CharacterService.GetEffectiveScanScopeCharacterIdsAsync(db, _novelId).Result;
+
                 var characters = db.Characters
                     .Include(c => c.Aliases)
-                    .Include(c => c.CharacterGroup)
-                    .Where(c => c.CharacterGroup != null &&
-                                (c.CharacterGroup.OwnerNovelId == _novelId || c.CharacterGroup.IsShared))
+                    .Where(c => scopeIds.Contains(c.Id))
                     .ToList();
 
                 foreach (var c in characters)
@@ -1303,7 +1595,7 @@ namespace Miao.UI.Views.Pages
                     if (!string.IsNullOrWhiteSpace(c.Name) && !_characterLookup.ContainsKey(c.Name))
                         _characterLookup[c.Name] = c;
 
-                    foreach (var alias in c.Aliases)
+                    foreach (var alias in c.Aliases.Where(a => a.IsEnabledForScan))
                     {
                         if (!string.IsNullOrWhiteSpace(alias.AliasText) && !_characterLookup.ContainsKey(alias.AliasText))
                             _characterLookup[alias.AliasText] = c;
@@ -1312,14 +1604,10 @@ namespace Miao.UI.Views.Pages
             }
             catch (Exception ex)
             {
-                // Nếu DbSet Characters/CharacterAliases/CharacterGroups chưa tồn tại trong
-                // MiaoDbContext, tính năng nhận diện nhân vật sẽ tự tắt thay vì làm crash trang đọc.
                 System.Diagnostics.Debug.WriteLine($"[LoadCharacterLookup] {ex}");
             }
         }
 
-        // Double-click vào 1 từ trong đoạn văn: SelectableTextBlock tự chọn từ dưới con trỏ,
-        // nếu từ đó khớp tên/biệt danh nhân vật đã biết -> hiện ảnh + tên trong 1 flyout nhỏ.
         private void OnParagraphDoubleTapped(object? sender, TappedEventArgs e)
         {
             if (sender is not SelectableTextBlock stb) return;
@@ -1333,18 +1621,17 @@ namespace Miao.UI.Views.Pages
 
         private void ShowCharacterFlyout(Character character, Control anchor)
         {
-            var panel = new StackPanel { Margin = new Thickness(14), Width = 200 };
+            var panel = new StackPanel { Margin = new Thickness(14), Width = 180, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
 
             if (!string.IsNullOrWhiteSpace(character.ImagePath) && File.Exists(character.ImagePath))
             {
                 try
                 {
-                    panel.Children.Add(new Image
+                    panel.Children.Add(new Border
                     {
-                        Source = new Avalonia.Media.Imaging.Bitmap(character.ImagePath),
-                        Height = 160,
-                        Stretch = Stretch.Uniform,
-                        Margin = new Thickness(0, 0, 0, 10)
+                        Width = 140, Height = 140, CornerRadius = new CornerRadius(10), ClipToBounds = true,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Child = new Image { Source = new Avalonia.Media.Imaging.Bitmap(character.ImagePath), Stretch = Stretch.Uniform }
                     });
                 }
                 catch { /* ảnh lỗi/không đọc được -> bỏ qua, vẫn hiện tên */ }
@@ -1359,18 +1646,6 @@ namespace Miao.UI.Views.Pages
                 TextAlignment = TextAlignment.Center
             });
 
-            if (!string.IsNullOrWhiteSpace(character.Description))
-            {
-                panel.Children.Add(new TextBlock
-                {
-                    Text = character.Description,
-                    Margin = new Thickness(0, 6, 0, 0),
-                    TextWrapping = TextWrapping.Wrap,
-                    FontSize = 13,
-                    Foreground = (IBrush)(Application.Current?.FindResource("TextMuted") ?? Brushes.Gray)
-                });
-            }
-
             var card = new Border
             {
                 Background = Brushes.White,
@@ -1382,113 +1657,6 @@ namespace Miao.UI.Views.Pages
 
             var flyout = new Flyout { Content = card, Placement = PlacementMode.Pointer };
             flyout.ShowAt(anchor);
-        }
-
-        // Hộp thoại "Thêm nhân vật" — tạo nhân vật mới (hoặc gán alias cho nhân vật đã có)
-        // gắn với đúng cụm từ vừa bôi đen trong văn bản.
-        private void ShowAddCharacterDialog(string suggestedName)
-        {
-            var nameBox = new TextBox { Text = suggestedName, Margin = new Thickness(0, 0, 0, 14) };
-            var descBox = new TextBox { AcceptsReturn = true, Height = 70, Margin = new Thickness(0, 0, 0, 14) };
-
-            string? pickedImagePath = null;
-            var previewImage = new Image { Height = 120, Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 0, 10), IsVisible = false };
-            var pickImageButton = new Button { Content = "Chọn ảnh nhân vật", Classes = { "SecondaryButton" }, Margin = new Thickness(0, 0, 0, 14) };
-
-            pickImageButton.Click += async (_, _) =>
-            {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel is null) return;
-
-                var result = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-                {
-                    Title = "Chọn ảnh nhân vật",
-                    AllowMultiple = false,
-                    FileTypeFilter = new[] { FilePickerFileTypes.ImageAll }
-                });
-                if (result is null || result.Count == 0) return;
-
-                var imageDirectory = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "Images", "Characters");
-                Directory.CreateDirectory(imageDirectory);
-                var destPath = Path.Combine(imageDirectory, $"{Guid.NewGuid():N}{Path.GetExtension(result[0].Name)}");
-
-                await using var sourceStream = await result[0].OpenReadAsync();
-                await using var destStream = File.Create(destPath);
-                await sourceStream.CopyToAsync(destStream);
-
-                pickedImagePath = destPath;
-                previewImage.Source = new Avalonia.Media.Imaging.Bitmap(destPath);
-                previewImage.IsVisible = true;
-            };
-
-            var saveButton = new Button { Content = "Lưu", Width = 100, Classes = { "JadeButton" }, Margin = new Thickness(5, 0, 5, 0) };
-            var cancelButton = new Button { Content = "Hủy", Width = 100, Classes = { "SecondaryButton" }, Margin = new Thickness(5, 0, 5, 0) };
-            var buttonRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
-            buttonRow.Children.Add(saveButton);
-            buttonRow.Children.Add(cancelButton);
-
-            var root = new StackPanel { Margin = new Thickness(24), Width = 320 };
-            root.Children.Add(new TextBlock { Text = "Tên nhân vật:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
-            root.Children.Add(nameBox);
-            root.Children.Add(new TextBlock { Text = "Mô tả (không bắt buộc):", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
-            root.Children.Add(descBox);
-            root.Children.Add(previewImage);
-            root.Children.Add(pickImageButton);
-            root.Children.Add(buttonRow);
-
-            var card = new Border { Background = Brushes.White, CornerRadius = new CornerRadius(12), Child = root };
-
-            cancelButton.Click += (_, _) => ModalService.Close();
-            saveButton.Click += (_, _) =>
-            {
-                var name = nameBox.Text?.Trim() ?? "";
-                if (string.IsNullOrWhiteSpace(name)) return;
-
-                try
-                {
-                    using var db = OpenDb();
-
-                    // Dùng (hoặc tạo) 1 CharacterGroup riêng của truyện này để lưu nhân vật mới
-                    var group = db.CharacterGroups.FirstOrDefault(g => g.OwnerNovelId == _novelId);
-                    if (group == null)
-                    {
-                        group = new CharacterGroup { OwnerNovelId = _novelId, Name = "Nhân vật truyện" };
-                        db.CharacterGroups.Add(group);
-                        db.SaveChanges();
-                    }
-
-                    var character = db.Characters.FirstOrDefault(c => c.CharacterGroupId == group.Id && c.Name == name);
-                    var isNewCharacter = character == null;
-                    character ??= new Character { CharacterGroupId = group.Id, Name = name };
-
-                    character.Description = descBox.Text?.Trim() ?? "";
-                    if (!string.IsNullOrWhiteSpace(pickedImagePath))
-                        character.ImagePath = pickedImagePath;
-
-                    if (isNewCharacter)
-                        db.Characters.Add(character);
-
-                    db.SaveChanges();
-
-                    // Nếu cụm từ bôi đen khác tên chính -> lưu thành 1 cách gọi khác (alias)
-                    if (!string.Equals(character.Name, suggestedName, StringComparison.OrdinalIgnoreCase) &&
-                        !db.CharacterAliases.Any(a => a.CharacterId == character.Id && a.AliasText == suggestedName))
-                    {
-                        db.CharacterAliases.Add(new CharacterAlias { CharacterId = character.Id, AliasText = suggestedName });
-                        db.SaveChanges();
-                    }
-
-                    LoadCharacterLookup();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[ShowAddCharacterDialog] {ex}");
-                }
-
-                ModalService.Close();
-            };
-
-            ModalService.Show(card);
         }
     }
 }

@@ -77,7 +77,7 @@
                 <Border Background="#F8FAFA" CornerRadius="4" Height="38" Width="240"
                         BorderBrush="#CCC" BorderThickness="1">
                     <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" Padding="8,0"
-                             VerticalContentAlignment="Center" FontFamily="Arial" FontSize="16"
+                             VerticalContentAlignment="Center" FontFamily="Inter" FontSize="16"
                              KeyDown="SearchBox_KeyDown"/>
                 </Border>
 
@@ -85,6 +85,11 @@
                         Classes="jadeButton" Click="OnSearchClick"/>
             </StackPanel>
         </Grid>
+
+        <TextBlock x:Name="EmptyStateText" Grid.Row="1" Text="Không tìm thấy tác giả nào."
+                   FontFamily="Inter" FontSize="15" FontStyle="Italic"
+                   Foreground="{StaticResource TextMuted}"
+                   HorizontalAlignment="Center" Margin="0,24,0,0" IsVisible="False"/>
 
         <ItemsControl x:Name="AuthorsList" Grid.Row="1">
             <ItemsControl.ItemTemplate>
@@ -94,22 +99,22 @@
                             PointerPressed="OnAuthorClick" Tag="{Binding AuthorKey}"
                             HorizontalAlignment="Stretch">
 
-                        <Grid Margin="8,0" Height="42">
+                        <Grid Margin="8,8" MinHeight="42">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70*"/>
                                 <ColumnDefinition Width="30*"/>
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" Text="{Binding DisplayName}"
-                                       FontFamily="Arial" FontSize="15.2" FontWeight="Bold"
+                                       FontFamily="Inter" FontSize="15" FontWeight="Bold"
                                        Foreground="{StaticResource TextPrimary}"
-                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
 
                             <TextBlock Grid.Column="1" Text="{Binding Count, StringFormat={}{0} truyện}"
-                                       FontFamily="Arial" FontSize="15"
+                                       FontFamily="Inter" FontSize="15"
                                        Foreground="{StaticResource TextMuted}"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                        </Grid>
+                        </Grid>                    
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

@@ -2,11 +2,6 @@ using System.Collections.Generic;
 
 namespace Miao.Core.Services
 {
-    /// <summary>
-    /// Sinh danh sách số trang hiển thị kiểu "1 2 3 4 ... 20": luôn có trang đầu, trang cuối,
-    /// trang hiện tại và 1 trang liền kề mỗi bên; chỗ nào bị hụt thì chèn null (dấu "…").
-    /// Dùng chung cho các trang có phân trang dạng số (AuthorListPage, AuthorPage, CustomLibraryDetailPage...).
-    /// </summary>
     public static class PagerNumbers
     {
         public static List<int?> Build(int current, int total)

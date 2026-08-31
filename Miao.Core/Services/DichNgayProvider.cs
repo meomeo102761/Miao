@@ -9,22 +9,12 @@ using System.Threading.Tasks;
 
 namespace Miao.Core.Services
 {
-    /// <summary>
-    /// Translation provider for dichngay.com.
-    /// Sends the whole chapter first.
-    /// If Dịch Ngay returns HTTP 413, the chapter is automatically
-    /// split into smaller paragraph/sentence batches and translated
-    /// piece by piece.
-    /// </summary>
     public class DichNgayProvider : ITranslationProvider
     {
         private static readonly HttpClient Http = CreateHttpClient();
 
         private readonly string _endpoint;
 
-        // Giới hạn an toàn cho mỗi request fallback.
-        // Đây là giới hạn phía Miao, không phải giới hạn chính thức
-        // của Dịch Ngay.
         private const int MaxBatchUtf8Bytes = 12000;
 
         public DichNgayProvider(string? endpoint = null)
@@ -41,23 +31,13 @@ namespace Miao.Core.Services
 
             try
             {
-                // ----------------------------------------------------
-                // Lần đầu: gửi nguyên chương như trước.
-                // ----------------------------------------------------
                 return await TranslateRequestAsync(text);
             }
             catch (DichNgayPayloadTooLargeException)
             {
-                // ----------------------------------------------------
-                // Nếu 413: tự động chuyển sang chế độ chia nhỏ.
-                // ----------------------------------------------------
                 return await TranslateLargeTextAsync(text);
             }
         }
-
-        // ============================================================
-        // Gửi một request tới Dịch Ngay
-        // ============================================================
 
         private async Task<string> TranslateRequestAsync(string text)
         {
@@ -86,12 +66,6 @@ namespace Miao.Core.Services
                 using var response =
                     await Http.SendAsync(request);
 
-                // ----------------------------------------------------
-                // 413 = payload quá lớn.
-                //
-                // Không throw InvalidOperationException bình thường,
-                // vì cần báo cho TranslateAsync biết phải chia nhỏ.
-                // ----------------------------------------------------
                 if (response.StatusCode ==
                     HttpStatusCode.RequestEntityTooLarge)
                 {
@@ -173,10 +147,6 @@ namespace Miao.Core.Services
             }
         }
 
-        // ============================================================
-        // Dịch nội dung lớn sau khi nhận 413
-        // ============================================================
-
         private async Task<string> TranslateLargeTextAsync(
             string text)
         {
@@ -208,13 +178,6 @@ namespace Miao.Core.Services
                 translatedParts);
         }
 
-        // ============================================================
-        // Dịch batch.
-        //
-        // Nếu paragraph/batch vẫn quá lớn và Dịch Ngay trả 413,
-        // tiếp tục chia nhỏ theo câu.
-        // ============================================================
-
         private async Task<string> TranslateBatchWithFallbackAsync(
             string text)
         {
@@ -224,17 +187,12 @@ namespace Miao.Core.Services
             }
             catch (DichNgayPayloadTooLargeException)
             {
-                // ----------------------------------------------------
-                // Nếu batch vẫn quá lớn:
-                // chia tiếp theo câu.
-                // ----------------------------------------------------
 
                 var sentences =
                     SplitIntoSentences(text);
 
                 if (sentences.Count <= 1)
                 {
-                    // Không thể chia nhỏ thêm một cách an toàn.
                     throw new InvalidOperationException(
                         "Một đoạn nội dung vẫn vượt giới hạn của Dịch Ngay " +
                         "ngay cả sau khi đã chia nhỏ.");
@@ -259,10 +217,6 @@ namespace Miao.Core.Services
                     translatedParts);
             }
         }
-
-        // ============================================================
-        // Tách paragraph
-        // ============================================================
 
         private static List<string> SplitIntoParagraphs(
             string text)
@@ -289,8 +243,6 @@ namespace Miao.Core.Services
                     result.Add(value);
             }
 
-            // Nếu nội dung không có dòng trống,
-            // coi mỗi dòng là một paragraph.
             if (result.Count <= 1 &&
                 normalized.Contains('\n'))
             {
@@ -317,10 +269,6 @@ namespace Miao.Core.Services
 
             return result;
         }
-
-        // ============================================================
-        // Tách câu
-        // ============================================================
 
         private static List<string> SplitIntoSentences(
             string text)
@@ -349,10 +297,6 @@ namespace Miao.Core.Services
             return result;
         }
 
-        // ============================================================
-        // Gom paragraph/câu thành batch
-        // ============================================================
-
         private static List<string> BuildBatches(
             List<string> parts)
         {
@@ -380,9 +324,6 @@ namespace Miao.Core.Services
                 var candidateBytes =
                     Encoding.UTF8.GetByteCount(candidate);
 
-                // ----------------------------------------------------
-                // Batch hiện tại còn đủ chỗ.
-                // ----------------------------------------------------
                 if (candidateBytes <= MaxBatchUtf8Bytes)
                 {
                     if (current.Length > 0)
@@ -392,9 +333,6 @@ namespace Miao.Core.Services
                     continue;
                 }
 
-                // ----------------------------------------------------
-                // Đẩy batch hiện tại vào danh sách.
-                // ----------------------------------------------------
                 if (current.Length > 0)
                 {
                     batches.Add(
@@ -403,11 +341,6 @@ namespace Miao.Core.Services
                     current.Clear();
                 }
 
-                // ----------------------------------------------------
-                // Một paragraph đơn lẻ đã vượt giới hạn.
-                // Để TranslateBatchWithFallbackAsync xử lý tiếp
-                // bằng cách chia theo câu.
-                // ----------------------------------------------------
                 if (Encoding.UTF8.GetByteCount(part)
                     > MaxBatchUtf8Bytes)
                 {
@@ -427,10 +360,6 @@ namespace Miao.Core.Services
 
             return batches;
         }
-
-        // ============================================================
-        // Parse response
-        // ============================================================
 
         private static string ExtractTranslatedValue(
             JsonElement value)
@@ -485,7 +414,7 @@ namespace Miao.Core.Services
                 }
                 catch (JsonException)
                 {
-                    // Response có thể chứa text trực tiếp.
+                    
                 }
 
                 return raw;
@@ -493,10 +422,6 @@ namespace Miao.Core.Services
 
             return string.Empty;
         }
-
-        // ============================================================
-        // Normalize
-        // ============================================================
 
         private static string Normalize(string text)
         {
@@ -509,28 +434,22 @@ namespace Miao.Core.Services
                 .Trim();
         }
 
-        // ============================================================
-        // HttpClient
-        // ============================================================
-
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient
+            var handler = new SocketsHttpHandler
             {
-                Timeout =
-                    TimeSpan.FromSeconds(60)
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
             };
 
-            client.DefaultRequestHeaders
-                .UserAgent
-                .ParseAdd("Miao/1.0");
+            var client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(60)
+            };
+
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Miao/1.0");
 
             return client;
         }
-
-        // ============================================================
-        // Exception riêng cho HTTP 413
-        // ============================================================
 
         private sealed class DichNgayPayloadTooLargeException
             : Exception

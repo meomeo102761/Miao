@@ -28,10 +28,6 @@ namespace Miao.UI.Views.Pages
 
         private async void OnBrowse(object? sender, RoutedEventArgs e)
         {
-            // Avalonia dùng IStorageProvider thay cho OpenFolderDialog của WPF —
-            // API này chạy được cả Desktop lẫn Android, nhưng trên Android hệ thống
-            // sẽ hiện giao diện chọn thư mục riêng của OS (Storage Access Framework),
-            // khác giao diện Explorer quen thuộc trên Windows.
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel?.StorageProvider is not { } storageProvider) return;
 

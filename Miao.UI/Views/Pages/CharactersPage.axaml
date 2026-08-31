@@ -2,16 +2,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Miao.UI.Views.Pages.CharactersPage"
              Background="{StaticResource BgMain}">
-    <StackPanel Margin="24" Spacing="12">
-        <TextBlock Text="Nhân vật" Classes="pageTitle"/>
-        <Border Background="{StaticResource AccentJadeSoft}"
-                BorderBrush="{StaticResource BorderSoft}"
-                BorderThickness="1"
-                CornerRadius="10"
-                Padding="18">
-            <TextBlock Text="Trang quản lý nhân vật đang được phát triển."
-                       Classes="bodyText"
-                       Foreground="{StaticResource TextMuted}"/>
-        </Border>
-    </StackPanel>
+    <Grid MaxWidth="1140" Margin="20" HorizontalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,32,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Nhân vật" Classes="pageTitle" Margin="0" VerticalAlignment="Center"/>
+            <TextBox x:Name="SearchBox" Grid.Column="1" Classes="editTextBox" Margin="0,0,10,0"
+                    PlaceholderText="Tìm dàn nhân vật…" TextChanged="OnSearchTextChanged"/>
+            <Button Grid.Column="2" Content="+ Thêm dàn nhân vật" Classes="jade" Margin="0,0,10,0" Click="OnAddGroupClick"/>
+            <Button x:Name="EditModeButton" Grid.Column="3" Content="Sửa" Classes="outline" Click="OnToggleEditModeClick"/>
+        </Grid>
+
+        <TextBlock x:Name="EmptyHint" Grid.Row="1" Classes="bodyText" Foreground="{StaticResource TextMuted}"
+                   Text="Chưa có dàn nhân vật nào. Thêm dàn đầu tiên — VD Naruto, One Piece…"
+                   IsVisible="False" Margin="0,0,0,16"/>
+
+        <WrapPanel x:Name="GroupsPanel" Grid.Row="2" Orientation="Horizontal" ItemSpacing="16" LineSpacing="16"/>
+    </Grid>
 </UserControl>

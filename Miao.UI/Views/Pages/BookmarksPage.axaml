@@ -3,11 +3,11 @@
              xmlns:local="clr-namespace:Miao.UI.Views.Pages"
              x:Class="Miao.UI.Views.Pages.BookmarksPage"
              Background="{StaticResource BgMain}"
-             FontFamily="Arial">
+             FontFamily="Inter">
 
     <UserControl.Styles>
         <Style Selector="Button.pageButton">
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -39,8 +39,8 @@
         <TextBlock Text="Bookmarks" Classes="PageTitle" FontSize="25" Margin="0,32,0,16"/>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-            <Button x:Name="ReadingTabButton" Classes="navButton" Width="150" Click="OnReadingTabClick"/>
-            <Button x:Name="FavoriteTabButton" Classes="navButton" Width="150" Margin="10,0,0,0" Click="OnFavoriteTabClick"/>
+            <Button x:Name="ReadingTabButton" Classes="tabToggle" Width="150" Click="OnReadingTabClick"/>
+            <Button x:Name="FavoriteTabButton" Classes="tabToggle" Width="150" Margin="10,0,0,0" Click="OnFavoriteTabClick"/>
         </StackPanel>
 
         <Border Background="#DEE8E6" CornerRadius="6" Padding="16,10" Margin="0,0,0,4">
@@ -63,7 +63,7 @@
                                 <Grid><TextBlock Text="₍^. .^₎Ⳋ" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/><Image Source="{Binding CoverPath, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill"/></Grid>
                             </Border>
                             <StackPanel VerticalAlignment="Center" Cursor="Hand" PointerPressed="OnItemClick" Tag="{Binding}">
-                                <TextBlock Text="{Binding NovelTitle}" FontSize="17.6" FontWeight="Bold" Foreground="{StaticResource AccentJade}"/>
+                                <TextBlock Text="{Binding NovelTitle}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentJade}"/>
                                 <TextBlock Text="{Binding AuthorLabel}" FontSize="15" Foreground="{StaticResource TextPrimary}" Margin="0,3,0,0"/>
                                 <TextBlock Text="{Binding ChapterLabel}" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
                             </StackPanel>

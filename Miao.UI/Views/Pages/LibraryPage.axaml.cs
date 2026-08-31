@@ -212,7 +212,7 @@ namespace Miao.UI.Views.Pages
         {
             if (sender is not Control fe || fe.Tag is not Novel novel) return;
 
-            AppNavigator.NavigateTo(new NovelDetailPage(novel.Id));   // bỏ hẳn try/catch tạm thời
+            AppNavigator.NavigateTo(new NovelDetailPage(novel.Id)); 
         }
     }
 }

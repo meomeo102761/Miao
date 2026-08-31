@@ -30,8 +30,6 @@ namespace Miao.Core.Models
         NoteEntry
     }
 
-    // Mỗi thay đổi local được ghi 1 dòng ở đây trước khi đẩy lên Google Drive.
-    // SyncService đọc bảng này để biết cần push gì, và xoá sau khi push thành công.
     public class PendingSync
     {
         public Guid Id { get; set; } = Guid.NewGuid();

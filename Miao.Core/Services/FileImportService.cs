@@ -123,10 +123,6 @@ namespace Miao.Core.Services
                 if (string.IsNullOrWhiteSpace(plainText))
                     continue;
 
-                // Luôn ưu tiên tiêu đề thật do tác giả đặt trong nội dung EPUB.
-                // EpubLocalTextContentFile không có FileName trong phiên bản
-                // VersOne.Epub đang được project sử dụng, nên không truy cập
-                // thuộc tính đó ở đây.
                 var title = ExtractChapterTitle(html);
                 if (string.IsNullOrWhiteSpace(title))
                     title = $"Mục không có tiêu đề ({index})";

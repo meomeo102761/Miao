@@ -15,7 +15,7 @@ namespace Miao.UI.Views.Pages
     {
         private const int ItemsPerRow = 5;
         private const int RowsPerPage = 3;
-        private const int PageSize = ItemsPerRow * RowsPerPage; // 15
+        private const int PageSize = ItemsPerRow * RowsPerPage;
 
         private readonly List<Novel> _novels;
         private int _currentPage = 1;

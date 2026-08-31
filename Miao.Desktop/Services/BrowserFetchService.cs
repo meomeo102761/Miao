@@ -7,11 +7,6 @@ using Miao.Core.Services;
 
 namespace Miao.Desktop.Services
 {
-    /// <summary>
-    /// Dùng WebView2 (Microsoft Edge) để tải trang cần JS render hoặc chụp ảnh màn hình.
-    /// CHỈ CHẠY ĐƯỢC TRÊN WINDOWS — WebView2 không tồn tại trên macOS/Linux/Android/iOS,
-    /// nên class này đặt ở Miao.Desktop, không đặt trong Miao.UI dùng chung.
-    /// </summary>
     public class BrowserFetchService : IPageFetcher, IScreenshotFetcher
     {
         private WebView2? _webView;
@@ -49,12 +44,6 @@ namespace Miao.Desktop.Services
         {
             await EnsureInitializedAsync();
 
-            // QUAN TRỌNG: cửa sổ ẩn mặc định chỉ 1x1 pixel. Trang đọc Fanqie
-            // lazy-load đoạn văn/ảnh phía sau bằng IntersectionObserver dựa
-            // theo vị trí cuộn trong viewport — với viewport 1x1 thì gần như
-            // không có gì được coi là "đang hiển thị" nên nội dung sau đoạn
-            // đầu và ảnh không bao giờ được kích hoạt load. Phóng to tạm thời
-            // (giống CaptureScreenshotAsync) trước khi điều hướng.
             _hiddenWindow!.Width = 1200;
             _hiddenWindow.Height = 3000;
             _webView!.Width = 1200;
@@ -97,12 +86,6 @@ namespace Miao.Desktop.Services
                 _webView.NavigationCompleted -= Handler;
             }
 
-            // Trang Fanqie render nội dung chương bằng JS SAU KHI điều hướng xong,
-            // nên chờ cố định một khoảng ngắn (như FetchHtmlFastAsync mặc định
-            // 500ms) không ổn định — mạng/máy chậm một chút là chưa kịp render,
-            // gây ra tình trạng "có chương tải được có chương không". Thay vào đó,
-            // poll cho tới khi thấy div.muye-reader-content xuất hiện trong DOM
-            // (hoặc hết thời gian chờ tối đa) rồi mới chụp HTML.
             const int maxWaitMs = 8000;
             const int pollIntervalMs = 300;
             var waitedMs = 0;
@@ -124,10 +107,6 @@ namespace Miao.Desktop.Services
 
             try
             {
-                // Cuộn xuống đáy nhiều lần để kích hoạt lazy-load hết đoạn văn/ảnh
-                // còn lại, dừng khi chiều cao trang không tăng thêm nữa (đã tải hết).
-                // Nếu bước này lỗi (VD script tạm thời fail) thì bỏ qua, vẫn chụp
-                // HTML hiện có thay vì làm hỏng luôn cả chương.
                 await ScrollToLoadAllContentAsync();
             }
             catch (Exception ex)
@@ -139,7 +118,6 @@ namespace Miao.Desktop.Services
             var json = await _webView.CoreWebView2.ExecuteScriptAsync(
                 "document.documentElement.outerHTML");
 
-            // Trả cửa sổ về kích thước ẩn nhỏ như cũ (luôn chạy dù có lỗi ở trên).
             _hiddenWindow.Width = 1;
             _hiddenWindow.Height = 1;
             _webView.Width = 1;
@@ -171,7 +149,6 @@ namespace Miao.Desktop.Services
                 if (height == lastHeight)
                 {
                     stableRounds++;
-                    // Chiều cao không đổi 2 lần liên tiếp -> coi như đã load hết.
                     if (stableRounds >= 2)
                         break;
                 }
@@ -183,8 +160,6 @@ namespace Miao.Desktop.Services
                 lastHeight = height;
             }
 
-            // Đợi thêm một chút để nội dung render nốt, tránh chụp đúng lúc DOM
-            // đang cập nhật dở dang (cắt cụt giữa chừng).
             await Task.Delay(400);
         }
 

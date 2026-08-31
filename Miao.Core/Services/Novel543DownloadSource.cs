@@ -18,7 +18,6 @@ namespace Miao.Core.Services
 
         public bool ProvidesTranslatedContent => false;
 
-        // Novel543 có số chương thật trong URL.
         public bool UsesSourceChapterNumbers => true;
 
         private readonly IPageFetcher _fetcher;
@@ -32,10 +31,6 @@ namespace Miao.Core.Services
             KnownDomains.Any(d =>
                 url.Contains(d, StringComparison.OrdinalIgnoreCase));
 
-        // ================================================================
-        // Nội dung rác cần loại khỏi chương
-        // ================================================================
-
         private static readonly string[] BoilerplatePatterns =
         {
             "上一章",
@@ -46,8 +41,6 @@ namespace Miao.Core.Services
             "溫馨提示",
         };
 
-        // Load HTML
-
         private async Task<HtmlDocument> LoadAsync(string url)
         {
             var html = await _fetcher.FetchHtmlAsync(url);
@@ -57,8 +50,6 @@ namespace Miao.Core.Services
 
             return doc;
         }
-
-        // Lấy giá trị đầu tiên không rỗng
 
         private static string FirstNonEmpty(
             HtmlDocument doc,
@@ -84,8 +75,6 @@ namespace Miao.Core.Services
 
             return "";
         }
-
-        // Thông tin truyện
 
         public async Task<(
             string Title,
@@ -134,8 +123,6 @@ namespace Miao.Core.Services
                 description);
         }
 
-        // Lấy số chương từ URL
-
         private static bool TryGetChapterNumber(
             string url,
             out int chapterNumber,
@@ -167,8 +154,6 @@ namespace Miao.Core.Services
 
             return true;
         }
-
-        // Tạo URL trang phụ
 
         private static string MakeSubPageUrl(
             string chapterUrl,
@@ -206,8 +191,6 @@ namespace Miao.Core.Services
 
             return builder.Uri.ToString();
         }
-
-        // Lấy danh sách chương
 
         public async Task<List<(
             int Number,
@@ -316,8 +299,6 @@ namespace Miao.Core.Services
                 pageUrl = nextUrl;
             }
 
-            // Sắp xếp theo số chương thật của Novel543.
-
             result = result
                 .OrderBy(x => x.Number)
                 .ToList();
@@ -325,14 +306,10 @@ namespace Miao.Core.Services
             return result;
         }
 
-        // Tải nội dung chương
-
         public async Task<string> GetChapterContentAsync(
             string chapterUrl)
         {
             var parts = new List<string>();
-
-            // Trang đầu
 
             if (!Uri.TryCreate(
                     chapterUrl,
@@ -347,15 +324,12 @@ namespace Miao.Core.Services
                 chapterUrl
             };
 
-            // Xác định URL gốc
-
             if (TryGetChapterNumber(
                     chapterUrl,
                     out _,
                     out var isSubPage) &&
                 !isSubPage)
             {
-                // Thử tối đa 20 trang con.
                 const int maxSubPages = 20;
 
                 for (var pageNumber = 2;
@@ -369,8 +343,6 @@ namespace Miao.Core.Services
 
                     if (string.IsNullOrWhiteSpace(subPageUrl))
                         break;
-
-                    // Kiểm tra trang phụ có tồn tại hay không.
 
                     try
                     {
@@ -398,13 +370,10 @@ namespace Miao.Core.Services
                     }
                     catch
                     {
-                        // Không có trang tiếp theo → hết chương.
                         break;
                     }
                 }
             }
-
-            // Tải và gộp tất cả các trang
 
             var seenUrls =
                 new HashSet<string>(
@@ -438,7 +407,7 @@ namespace Miao.Core.Services
                 }
                 catch
                 {
-                    // Nếu trang phụ lỗi thì giữ những phần đã tải được.
+                    
                 }
             }
 
@@ -446,8 +415,6 @@ namespace Miao.Core.Services
                 "\n\n",
                 parts);
         }
-
-        // URL helper
 
         private static string MakeAbsolute(
             string baseUrl,

@@ -90,7 +90,6 @@ namespace Miao.UI.Views.Pages
             PagerPanel.IsVisible = true;
             PagerPanel.Children.Add(CreatePagerButton("‹", isCurrent: false, isEnabled: _currentPage > 1, page: _currentPage - 1));
 
-            // Đã chuyển PagerNumbers.Build vào Miao.Core (dùng chung, không tự viết lại BuildPagerNumbers ở đây nữa)
             foreach (var page in PagerNumbers.Build(_currentPage, totalPages))
             {
                 if (page == null)
@@ -98,7 +97,7 @@ namespace Miao.UI.Views.Pages
                     PagerPanel.Children.Add(new TextBlock
                     {
                         Text = "…",
-                        FontFamily = new FontFamily("Arial"),
+                        FontFamily = new FontFamily("Inter"),
                         FontSize = 15,
                         Foreground = (IBrush)this.FindResource("TextMuted")!,
                         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,

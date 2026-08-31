@@ -27,8 +27,6 @@ namespace Miao.UI.Views.Pages
         protected override Control ConfirmCardElement => ConfirmCard;
         protected override TextBlock ConfirmMessageTextElement => ConfirmMessageText;
 
-        // Đổi tên riêng (Rename) không có sẵn trong ConfirmablePage vì đó là card khác ConfirmCard,
-        // nên vẫn giữ show/hide RenameCard thủ công như code cũ.
         private CustomLibrarySummary? _renamingLibrary;
 
         public CustomLibrariesPage()
@@ -51,8 +49,6 @@ namespace Miao.UI.Views.Pages
                 })
                 .ToList();
 
-            // Avalonia: Dispatcher.UIThread.Post thay cho Dispatcher.BeginInvoke của WPF,
-            // vẫn chạy sau khi ItemsControl render xong danh sách.
             Dispatcher.UIThread.Post(UpdateEditControlsVisibility, DispatcherPriority.Loaded);
         }
 
@@ -78,10 +74,40 @@ namespace Miao.UI.Views.Pages
 
         private void OnLibraryItemDrop(object? sender, DragEventArgs e)
         {
-            // TODO: xử lý logic kéo-thả đổi vị trí giữa các thư viện
-        }
+            if (_draggedLibrary == null) return;
+            if (sender is not StyledElement fe || fe.DataContext is not CustomLibrarySummary target)
+            {
+                _draggedLibrary = null;
+                return;
+            }
 
-        // ----- Chế độ Sửa -----
+            if (target.Id == _draggedLibrary.Id)
+            {
+                _draggedLibrary = null;
+                return;
+            }
+
+            if (LibrariesList.ItemsSource is not List<CustomLibrarySummary> items)
+            {
+                _draggedLibrary = null;
+                return;
+            }
+
+            var oldIndex = items.FindIndex(x => x.Id == _draggedLibrary.Id);
+            var newIndex = items.FindIndex(x => x.Id == target.Id);
+            if (oldIndex < 0 || newIndex < 0)
+            {
+                _draggedLibrary = null;
+                return;
+            }
+
+            var moved = _draggedLibrary;
+            items.RemoveAt(oldIndex);
+            items.Insert(newIndex, moved);
+
+            _draggedLibrary = null;
+            SaveOrderAndReload(items);
+        }
 
         private void OnEditModeClick(object? sender, RoutedEventArgs e)
         {
@@ -94,35 +120,47 @@ namespace Miao.UI.Views.Pages
         {
             foreach (var el in FindVisualChildren<Control>(LibrariesList))
             {
-                if (el.Name == "MoveButtonsPanel" || el.Name == "LibraryEditControls")
+                if (el.Name == "DragHandleIcon" || el.Name == "LibraryEditControls")
                     el.IsVisible = _isEditMode;
             }
         }
 
-        // ----- Kéo-thả đổi thứ tự -----
+        private const double DragThreshold = 5.0;
+        private Point _dragStartPoint;
+        private CustomLibrarySummary? _draggedLibrary;
+        private PointerPressedEventArgs? _dragPressedEvent;
 
-        private void OnMoveUpClick(object? sender, RoutedEventArgs e)
+        private void OnDragHandleMouseDown(object? sender, PointerPressedEventArgs e)
         {
-            if (sender is not Control c || c.Tag is not CustomLibrarySummary lib) return;
-            if (LibrariesList.ItemsSource is not List<CustomLibrarySummary> items) return;
-
-            var index = items.FindIndex(x => x.Id == lib.Id);
-            if (index <= 0) return;
-
-            (items[index - 1], items[index]) = (items[index], items[index - 1]);
-            SaveOrderAndReload(items);
+            _dragStartPoint = e.GetPosition(this);
+            _dragPressedEvent = e;
         }
 
-        private void OnMoveDownClick(object? sender, RoutedEventArgs e)
+        private async void OnDragHandleMouseMove(object? sender, PointerEventArgs e)
         {
-            if (sender is not Control c || c.Tag is not CustomLibrarySummary lib) return;
-            if (LibrariesList.ItemsSource is not List<CustomLibrarySummary> items) return;
+            if (!_isEditMode ||
+                _dragPressedEvent == null ||
+                !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                return;
 
-            var index = items.FindIndex(x => x.Id == lib.Id);
-            if (index < 0 || index >= items.Count - 1) return;
+            if (sender is not Control control || control.DataContext is not CustomLibrarySummary lib)
+                return;
 
-            (items[index], items[index + 1]) = (items[index + 1], items[index]);
-            SaveOrderAndReload(items);
+            var pos = e.GetPosition(this);
+            var diff = _dragStartPoint - pos;
+
+            if (Math.Abs(diff.X) <= DragThreshold && Math.Abs(diff.Y) <= DragThreshold)
+                return;
+
+            _draggedLibrary = lib;
+
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText(lib.Id.ToString()));
+
+            var pressedEvent = _dragPressedEvent;
+            _dragPressedEvent = null;
+
+            await DragDrop.DoDragDropAsync(pressedEvent, data, DragDropEffects.Move);
         }
 
         private void SaveOrderAndReload(List<CustomLibrarySummary> items)
@@ -136,8 +174,6 @@ namespace Miao.UI.Views.Pages
             db.SaveChanges();
             LoadLibraries();
         }        
-
-        // ----- Đổi tên -----
 
         private void OnRenameClick(object? sender, RoutedEventArgs e)
         {

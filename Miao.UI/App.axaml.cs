@@ -16,7 +16,6 @@ namespace Miao.UI
         {
             switch (ApplicationLifetime)
             {
-                // Windows/Desktop
                 case IClassicDesktopStyleApplicationLifetime desktop:
                     desktop.MainWindow = new MainWindow
                     {
@@ -24,7 +23,6 @@ namespace Miao.UI
                     };
                     break;
 
-                // Android/iOS/Browser
                 case ISingleViewApplicationLifetime singleView:
                     singleView.MainView = new MainView();
                     break;

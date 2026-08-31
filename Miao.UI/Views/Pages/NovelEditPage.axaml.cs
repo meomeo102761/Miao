@@ -51,8 +51,6 @@ namespace Miao.UI.Views.Pages
             LoadNovel();
         }
 
-        // ===================== Tải dữ liệu truyện =====================
-
         private void LoadNovel()
         {
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
@@ -79,8 +77,6 @@ namespace Miao.UI.Views.Pages
 
             TryLoadCoverPreview(novel.CoverImagePath);
         }
-
-        // ===================== Tag: nạp, sắp xếp theo layout đã lưu =====================
 
         private void LoadTagCheckboxes(string tagsText)
         {
@@ -184,8 +180,6 @@ namespace Miao.UI.Views.Pages
             }
         }
 
-        // ===================== Tag: hiển thị nhóm & gợi ý tìm kiếm =====================
-
         private void RefreshTagGroupsDisplay()
         {
             bool isSearching = _tagSuggestKeyword.Length > 0;
@@ -263,8 +257,6 @@ namespace Miao.UI.Views.Pages
             _tagSuggestShowAll = true;
             RefreshTagSuggestList();
         }
-
-        // ===================== Ảnh bìa =====================
 
         private void TryLoadCoverPreview(string? path)
         {
@@ -348,8 +340,6 @@ namespace Miao.UI.Views.Pages
             }
         }
 
-        // ===================== Liên kết bổ sung =====================
-
         private void OnAddLinkClick(object? sender, RoutedEventArgs e)
             => _links.Add(new LinkItem());
 
@@ -358,8 +348,6 @@ namespace Miao.UI.Views.Pages
             if (sender is Control fe && fe.Tag is LinkItem item)
                 _links.Remove(item);
         }
-
-        // ===================== Lưu / Xóa / Hủy =====================
 
         private void OnSaveClick(object? sender, RoutedEventArgs e)
         {

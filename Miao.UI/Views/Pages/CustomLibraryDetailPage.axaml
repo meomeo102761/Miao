@@ -11,7 +11,7 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="White"/>
             <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Width" Value="120"/>
@@ -47,7 +47,7 @@
             <Setter Property="Height" Value="36"/>
             <Setter Property="Background" Value="#E4574C"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -76,7 +76,7 @@
             <Setter Property="Height" Value="36"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
@@ -103,7 +103,7 @@
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
             <Setter Property="Margin" Value="3,0"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="White"/>
@@ -156,7 +156,7 @@
 
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="‹ Thư viện riêng"
-                                FontFamily="Arial" FontSize="15"
+                                FontFamily="Inter" FontSize="15"
                                 Foreground="{StaticResource AccentJade}"
                                 Cursor="Hand"
                                 PointerPressed="OnBackToLibrariesClick"
@@ -197,36 +197,36 @@
                                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0"
                                             Cursor="Hand" IsVisible="False"
                                             PointerPressed="OnDeleteBadgeClick" Tag="{Binding}">
-                                        <TextBlock Text="🗑" FontSize="15" Foreground="White"
+                                        <TextBlock Text="✕" FontSize="15" Foreground="White"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </Grid>
 
-                                <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17.6" FontWeight="Bold"
-                                        Foreground="#444" Margin="0,8,0,0" TextAlignment="Left" HorizontalAlignment="Stretch"
+                                <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="18" FontWeight="Bold"
+                                        Foreground="#444" Margin="0,8,0,0" TextAlignment="Center" HorizontalAlignment="Stretch"
                                         TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                         Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}"/>
 
-                                <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Arial" FontSize="15" Foreground="#333"
+                                <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Inter" FontSize="15" Foreground="#333"
+                                        Margin="0,2,0,0" HorizontalAlignment="Stretch" TextAlignment="Center"
+                                        TextWrapping="Wrap"/>
+
+                                <TextBlock Text="{Binding DirectionTag}" FontFamily="Inter" FontSize="15" Foreground="#999"
                                         Margin="0,2,0,0" HorizontalAlignment="Center" TextAlignment="Center"
                                         TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
 
-                                <TextBlock Text="{Binding DirectionTag}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                <TextBlock Text="{Binding Status}" FontFamily="Inter" FontSize="15" Foreground="#999"
                                         Margin="0,2,0,0" HorizontalAlignment="Center" TextAlignment="Center"
                                         TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
 
-                                <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15" Foreground="#999"
-                                        Margin="0,2,0,0" HorizontalAlignment="Center" TextAlignment="Center"
-                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-
-                                <TextBlock Text="{Binding ReadProgress}" FontFamily="Arial" FontSize="15" Foreground="#999"
+                                <TextBlock Text="{Binding ReadProgress}" FontFamily="Inter" FontSize="15" Foreground="#999"
                                         Margin="0,2,0,8" HorizontalAlignment="Center" TextAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <TextBlock x:Name="EmptyText" Text="Thư viện này chưa có truyện nào — bấm ➕ khi đọc 1 truyện để thêm vào đây."
+                <TextBlock x:Name="EmptyText" Text="Thư viện này chưa có truyện nào — bấm + khi đọc 1 truyện để thêm vào đây."
                            Classes="bodyText" Foreground="{StaticResource TextMuted}" FontStyle="Italic" IsVisible="False"
                            HorizontalAlignment="Center" Margin="0,20,0,0"/>
 
@@ -239,7 +239,7 @@
                     <TextBlock x:Name="ConfirmMessageText" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,20"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <Button Content="Xóa" Classes="dialogDanger" Click="OnConfirmYesClick"/>
-                        <Button Content="Hủy" Classes="dialogSecondary" Click="OnConfirmNoClick"/>
+                        <Button Content="Hủy" Classes="dialogSecondary" Margin="10,0,0,0" Click="OnConfirmNoClick"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

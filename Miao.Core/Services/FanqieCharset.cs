@@ -1,21 +1,6 @@
 namespace Miao.Core.Services
 {
-    /// <summary>
-    /// Bảng thế ký tự dùng để giải mã nội dung chương Fanqie khi bị che bằng
-    /// vùng Private Use Area (PUA) của Unicode. Sinh tự động (đối chiếu trực
-    /// tiếp, không gõ tay) từ mảng CHARSET trong file
-    /// "src/rules/special/0035-fanqienovel-com.rule.js" (hàm decodeText) của
-    /// repo Novel-Downloader5, đảm bảo khớp từng ký tự với bản gốc.
-    ///
-    /// Cơ chế: trang /reader/{id} trả về HTML mà phần nội dung dùng các
-    /// code point PUA trong khoảng [CodeStart, CodeEnd] thay cho ký tự thật;
-    /// người dùng vẫn đọc được bình thường vì trang nhúng kèm 1 font tùy biến
-    /// ánh xạ các code point này sang đúng hình chữ. Muốn lấy được text thật,
-    /// chỉ cần tra ngược code point về Charset theo vị trí (code - CodeStart).
-    ///
-    /// Đường này KHÔNG cần REG_KEY/API — chỉ dùng được cho chương MIỄN PHÍ
-    /// (chương VIP chưa đăng nhập sẽ không có nội dung để giải mã).
-    /// </summary>
+
     public static class FanqieCharset
     {
         public const int CodeStart = 58344;

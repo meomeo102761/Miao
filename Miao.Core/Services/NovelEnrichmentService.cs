@@ -6,8 +6,6 @@ using Miao.Core.Models;
 
 namespace Miao.Core.Services
 {
-    // Gán TotalChapterCount + DirectionTag cho 1 danh sách Novel — logic được rút ra
-    // từ LibraryPage.LoadNovels(), dùng chung cho mọi trang hiển thị NovelCardTemplate.
     public static class NovelEnrichmentService
     {
         private sealed class NovelTagInfo

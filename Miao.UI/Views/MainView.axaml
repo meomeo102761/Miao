@@ -8,7 +8,7 @@
         <Style Selector="Button.TopNavButton">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -39,7 +39,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -69,7 +69,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -118,21 +118,23 @@
         <Border Grid.Row="0" Background="{StaticResource AccentJade}">
             <DockPanel LastChildFill="False">
                 <TextBlock Text="₍^. .^₎Ⳋ Miao" DockPanel.Dock="Left" Foreground="White" FontSize="20" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Center" Margin="24,0,30,0" PointerPressed="OnLogoClick"/>
-                <Button x:Name="MenuToggleButton" Content="🐾 Menu" DockPanel.Dock="Right" Classes="TopNavButton" Width="110" IsVisible="False" Click="OnMenuToggleClick"/>
+                <Button x:Name="MenuToggleButton" Content="ꨄ︎ Menu" DockPanel.Dock="Right" Classes="TopNavButton" Width="110" IsVisible="False" Click="OnMenuToggleClick"/>
                 <StackPanel x:Name="NavButtonsPanel" Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Top">
                     <Button Content="Tìm truyện" Classes="TopNavButton" Click="GoSearch"/>
                     <Grid x:Name="DownloadMenuArea"
-                        Width="105" Height="60"
-                        PointerEntered="OnDownloadMenuEnter">
+                        Height="60"
+                        PointerEntered="OnDownloadMenuEnter"
+                        PointerExited="OnDownloadMenuLeave">
 
-                        <Button Content="Tải truyện" Width="105" Height="60" Classes="TopNavButton"/>
-
+                        <Button Content="Tải truyện" Height="60" Classes="TopNavButton"/>
                         <Popup x:Name="DownloadPopup"
                             PlacementTarget="{Binding #DownloadMenuArea}"
                             Placement="Bottom"
-                            IsLightDismissEnabled="True">
+                            IsLightDismissEnabled="False">
 
-                            <Border Background="{StaticResource AccentJade}" MinWidth="105">
+                            <Border x:Name="DownloadPopupContent" Background="{StaticResource AccentJade}" MinWidth="105"
+                                    PointerEntered="OnDownloadMenuEnter"
+                                    PointerExited="OnDownloadMenuLeave">
                                 <StackPanel>
                                     <Button Content="Bằng link" Classes="DownloadSubButton" Click="GoDownloadLink"/>
                                     <Button Content="Bằng file" Classes="DownloadSubButton" Click="GoDownloadFile"/>
@@ -152,16 +154,16 @@
         </Border>
         <Popup x:Name="MobileNavPopup" PlacementTarget="{Binding #MenuToggleButton}" Placement="BottomEdgeAlignedRight" IsLightDismissEnabled="True">
             <Border Width="200" Background="{StaticResource AccentJade}" CornerRadius="0,0,8,8" BoxShadow="0 2 14 0 #40000000"><StackPanel>
-                <Button Content="🔍 Tìm truyện" Classes="MobileNavItem" Click="OnMobileGoSearch"/>
-                <Button Content="⬇ Tải truyện (link)" Classes="MobileNavItem" Click="OnMobileGoDownloadLink"/>
-                <Button Content="⬇ Tải truyện (file)" Classes="MobileNavItem" Click="OnMobileGoDownloadFile"/>
-                <Button Content="📚 Thư viện" Classes="MobileNavItem" Click="OnMobileGoCustomLibraries"/>
-                <Button Content="✍ Viết truyện" Classes="MobileNavItem" Click="OnMobileGoWriteNovel"/>
-                <Button Content="🔖 Bookmarks" Classes="MobileNavItem" Click="OnMobileGoBookmarks"/>
-                <Button Content="👤 Nhân vật" Classes="MobileNavItem" Click="OnMobileGoCharacters"/>
-                <Button Content="🐈 Tác giả" Classes="MobileNavItem" Click="OnMobileGoAuthorList"/>
-                <Button Content="🐾 Bộ tên" Classes="MobileNavItem" Click="OnMobileGoGlossary"/>
-                <Button Content="⚙ Cài đặt" Classes="MobileNavItem" Click="OnMobileGoSettings"/>
+                <Button Content="Tìm truyện" Classes="MobileNavItem" Click="OnMobileGoSearch"/>
+                <Button Content="Tải truyện (link)" Classes="MobileNavItem" Click="OnMobileGoDownloadLink"/>
+                <Button Content="Tải truyện (file)" Classes="MobileNavItem" Click="OnMobileGoDownloadFile"/>
+                <Button Content="Thư viện" Classes="MobileNavItem" Click="OnMobileGoCustomLibraries"/>
+                <Button Content="Viết truyện" Classes="MobileNavItem" Click="OnMobileGoWriteNovel"/>
+                <Button Content="Bookmarks" Classes="MobileNavItem" Click="OnMobileGoBookmarks"/>
+                <Button Content="Nhân vật" Classes="MobileNavItem" Click="OnMobileGoCharacters"/>
+                <Button Content="Tác giả" Classes="MobileNavItem" Click="OnMobileGoAuthorList"/>
+                <Button Content="Bộ tên" Classes="MobileNavItem" Click="OnMobileGoGlossary"/>
+                <Button Content="Cài đặt" Classes="MobileNavItem" Click="OnMobileGoSettings"/>
             </StackPanel></Border>
         </Popup>
         <ScrollViewer x:Name="MainScrollViewer" Grid.Row="1"

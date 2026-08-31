@@ -19,27 +19,27 @@
                         </Grid>
                     </Border>
 
-                   <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17"
-                              FontWeight="Bold" Foreground="#444" Margin="0,8,0,0"
-                              TextAlignment="Left" HorizontalAlignment="Stretch"
-                              TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
+                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="17"
+                               FontWeight="Bold" Foreground="#444" Margin="0,8,0,0"
+                               TextAlignment="Center" HorizontalAlignment="Stretch"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
 
-                    <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Inter" FontSize="15"
                                Foreground="#333" Margin="0,2,0,0" MaxWidth="200"
-                               HorizontalAlignment="Center" TextAlignment="Center"
-                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                               HorizontalAlignment="Stretch" TextAlignment="Center"
+                               TextWrapping="Wrap"/>
 
-                    <TextBlock Text="{Binding DirectionTag}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding DirectionTag}" FontFamily="Inter" FontSize="15"
                                Foreground="#999" Margin="0,2,0,0" MaxWidth="200"
                                HorizontalAlignment="Center" TextAlignment="Center"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
 
-                    <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding Status}" FontFamily="Inter" FontSize="15"
                                Foreground="#999" Margin="0,2,0,0" MaxWidth="200"
                                HorizontalAlignment="Center" TextAlignment="Center"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
 
-                    <TextBlock Text="{Binding ReadProgress}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding ReadProgress}" FontFamily="Inter" FontSize="15"
                                Foreground="#999" Margin="0,2,0,8" MaxWidth="200"
                                HorizontalAlignment="Center" TextAlignment="Center"/>
                 </StackPanel>

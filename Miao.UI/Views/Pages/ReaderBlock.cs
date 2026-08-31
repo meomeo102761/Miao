@@ -6,15 +6,11 @@ namespace Miao.UI.Views.Pages.Reader
 {
     public enum ReaderBlockType { Text, Image }
 
-    // Thay thế FlowDocument/Paragraph/InlineUIContainer của WPF — vì Avalonia không có
-    // RichTextBox, ta tự tách nội dung chương thành danh sách khối (text hoặc ảnh) để
-    // render bằng ItemsControl. Mỗi dòng gốc trong Chapter.DisplayContent/OriginalContent
-    // ứng với đúng 1 khối, giữ nguyên ý nghĩa dữ liệu cũ.
     public class ReaderBlock
     {
         public ReaderBlockType Type { get; set; }
-        public string Text { get; set; } = "";       // dùng khi Type == Text
-        public string ImagePath { get; set; } = "";  // dùng khi Type == Image
+        public string Text { get; set; } = "";
+        public string ImagePath { get; set; } = ""; 
 
         private static readonly Regex ImagePlaceholderRegex = new(@"^\[\[IMG:(.+?)\]\]$", RegexOptions.Compiled);
 
@@ -34,8 +30,6 @@ namespace Miao.UI.Views.Pages.Reader
             return blocks;
         }
 
-        // Ngược lại với Parse — ghép các khối trở về text thô để lưu vào DB,
-        // giữ đúng format "[[IMG:path]]" như dữ liệu cũ.
         public static string Serialize(IEnumerable<ReaderBlock> blocks) =>
             string.Join("\n", blocks.Select(b =>
                 b.Type == ReaderBlockType.Image ? $"[[IMG:{b.ImagePath}]]" : b.Text));

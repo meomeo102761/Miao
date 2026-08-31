@@ -57,9 +57,6 @@ namespace Miao.Core.Services
                     bookId,
                     url);
 
-            // Nếu API mobile (hay bị đổi domain/chặn) không trả đủ thông tin,
-            // fallback sang parse thẳng thẻ meta của trang /page/{bookId} —
-            // trang này chắc chắn tải được vì GetChapterListAsync đang dùng nó.
             if (string.IsNullOrWhiteSpace(title) ||
                 string.IsNullOrWhiteSpace(cover))
             {
@@ -173,11 +170,6 @@ namespace Miao.Core.Services
 
                 doc.LoadHtml(html);
 
-                // Nguồn chính: khối <script type="application/ld+json"> chứa
-                // structured data (schema.org NewsArticle) mà trang luôn nhúng
-                // cho SEO — có title/author/cover đầy đủ, đáng tin cậy hơn hẳn
-                // og:title/og:image (Fanqie không dùng OpenGraph tag trên trang
-                // /page/{bookId} nên 2 tag đó không hề tồn tại).
                 var (ldTitle, ldAuthor, ldCover) = GetNovelInfoFromJsonLd(doc);
 
                 var title = ldTitle;
@@ -187,8 +179,6 @@ namespace Miao.Core.Services
                 var description =
                     GetMetaContent(doc, "og:description", "description", "twitter:description");
 
-                // Dự phòng: nếu vì lý do gì đó trang không có JSON-LD, thử
-                // meta tag chuẩn rồi mới tới regex mò chữ "作者:".
                 if (string.IsNullOrWhiteSpace(title))
                     title = GetMetaContent(doc, "og:title", "twitter:title");
 
@@ -223,13 +213,8 @@ namespace Miao.Core.Services
                         title = HtmlEntity.DeEntitize(titleNode.InnerText).Trim();
                 }
 
-                // headline/og:title/<title> đều có thể dính hậu tố quảng cáo SEO
-                // (VD "《Tên》完整版在线免费阅读_《Tên》小说_番茄小说官网") — dọn chung.
                 title = CleanNovelTitle(title);
 
-                // description có tiền tố quảng cáo cố định kiểu
-                // "番茄小说提供{tên truyện}完整版在线免费阅读，精彩小说尽在番茄小说网。"
-                // trước phần tóm tắt thật — cắt bỏ tiền tố này nếu có.
                 description = CleanNovelDescription(description);
 
                 return (
@@ -254,9 +239,6 @@ namespace Miao.Core.Services
             "小说网", "TXT下载", "全本", "无弹窗", "番茄小说", "fanqienovel"
         };
 
-        // Fanqie hay đặt <title>/og:title theo kiểu SEO nhồi từ khoá, ví dụ
-        // "《Tên truyện》最新章节_《Tên truyện》全文阅读_番茄小说" — tên thật luôn
-        // nằm ở đoạn đầu tiên trước dấu phân cách hoặc từ khoá rác đầu tiên.
         private static string CleanNovelTitle(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
@@ -324,8 +306,7 @@ namespace Miao.Core.Services
                 }
                 catch (JsonException)
                 {
-                    // Khối ld+json này không parse được (hoặc không đúng dạng
-                    // mong đợi) -> thử khối tiếp theo nếu có.
+
                 }
             }
 
@@ -337,7 +318,6 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(description))
                 return description ?? "";
 
-            // "番茄小说提供{tên truyện}完整版在线免费阅读，精彩小说尽在番茄小说网。{tóm tắt thật}"
             var match = Regex.Match(description, @"^番茄小说提供.*?小说网[。.]\s*");
             if (match.Success)
                 return description.Substring(match.Length).Trim();
@@ -474,9 +454,6 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(itemId))
                 return "";
 
-            // Đường 1: API giải mã "chính thức" (AES + gunzip) — chỉ dùng được
-            // khi đã cấu hình MIAO_FANQIE_REG_KEY, nên bỏ qua sớm nếu chưa có
-            // để khỏi tốn 1 request chắc chắn lỗi.
             if (!string.IsNullOrWhiteSpace(_config.RegKey))
             {
                 try
@@ -498,16 +475,6 @@ namespace Miao.Core.Services
                 }
             }
 
-            // Đường 2 (fallback, KHÔNG cần REG_KEY): mở thẳng trang đọc bằng
-            // trình duyệt thật (WebView2, qua IPageFetcher.FetchFanqieChapterAsync),
-            // lấy phần nội dung thô rồi giải mã bảng thế ký tự PUA.
-            // Lưu ý: Miao không track được chương nào VIP/free (chapter list
-            // của app không có cờ này) nên đường này chạy cho MỌI chương.
-            // Trên thực tế đa số web đọc kiểu Fanqie chỉ khóa ở lớp giao diện —
-            // HTML gốc vẫn chứa sẵn nội dung (đã obfuscate bằng PUA) kể cả
-            // chương bị khóa, nên fallback này thường đọc được cả chương VIP.
-            // Nếu về sau Fanqie thắt chặt và chặn thật ở server, đường này sẽ
-            // trả về rỗng cho chương VIP và cần quay lại dùng REG_KEY/API ngoài.
             return await GetChapterContentViaHtmlFallbackAsync(
                 chapterUrl);
         }
@@ -524,13 +491,6 @@ namespace Miao.Core.Services
                 if (string.IsNullOrWhiteSpace(html))
                     return "";
 
-                // QUAN TRỌNG: không dùng regex "<div ...>(.*?)</div>" để tách nội
-                // dung — non-greedy sẽ dừng ở thẻ </div> ĐẦU TIÊN gặp phải, mà
-                // ảnh trong chương thường được bọc trong 1 <div> con riêng
-                // (vd <div class="img-wrapper"><img .../></div>), khiến toàn bộ
-                // nội dung từ sau ảnh trở đi bị cắt mất. Parse bằng HtmlAgilityPack
-                // (dựng cây DOM thật) để bắt đúng thẻ đóng tương ứng, xử lý được
-                // div lồng nhau.
                 var htmlDoc =
                     new HtmlDocument();
 

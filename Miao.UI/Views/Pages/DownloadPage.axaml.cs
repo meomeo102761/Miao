@@ -9,6 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.LogicalTree;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -35,6 +36,9 @@ namespace Miao.UI.Views.Pages
         private string _novelDescription = "";
         private string? _lastErrorLogPath;
 
+        private bool _hideDownloaded;
+        private string? _activeTagFilter;
+
         public DownloadPage()
         {
             InitializeComponent();
@@ -52,28 +56,75 @@ namespace Miao.UI.Views.Pages
                 new LofterDownloadSource(),
                 new WikidichDownloadSource(_browser),
                 new NvrenshuDownloadSource(_browser),
-                //new Novel543DownloadSource(_browser)
+                new Novel543DownloadSource(_browser),
+                new CzbooksDownloadSource(_browser),
             };
 
             ChaptersList.ItemsSource = _chapterItems;
         }
 
-        // ================== Fetch danh sách chương ==================
-
         private void OnUrlTextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)
         {
             var url = UrlTextBox.Text?.Trim() ?? "";
 
-            var isLofter = url.Contains(
-                "lofter.com",
-                StringComparison.OrdinalIgnoreCase);
+            var isLofter = url.Contains("lofter.com", StringComparison.OrdinalIgnoreCase);
 
             LofterOptionsPanel.IsVisible = isLofter;
+            HideDownloadedButton.IsVisible = isLofter;  
 
             if (!isLofter)
             {
                 LofterNewTitleBox.Text = "";
+                _hideDownloaded = false;
+                _activeTagFilter = null;
+                HideDownloadedButton.Content = "Ẩn đã tải";
+                LofterTagsList.ItemsSource = null;
+                LofterTagsList.IsVisible = false;
+                ApplyChapterFilter();
             }
+        }
+
+        private void OnToggleHideDownloadedClick(object? sender, RoutedEventArgs e)
+        {
+            _hideDownloaded = !_hideDownloaded;
+            HideDownloadedButton.Content = _hideDownloaded ? "Hiện đã tải" : "Ẩn đã tải";
+            ApplyChapterFilter();
+        }
+
+        private void OnTagClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not string tag) return;
+
+            if (_activeTagFilter == tag)
+                _activeTagFilter = null;
+            else
+            {
+                _activeTagFilter = tag;
+                foreach (var item in _chapterItems)
+                    item.IsSelected = !item.IsAlreadyDownloaded && item.Tags.Contains(tag);
+            }
+
+            foreach (var child in LofterTagsList.GetLogicalDescendants().OfType<Button>())
+            {
+                var isActive = child.Tag as string == _activeTagFilter;
+                child.Classes.Set("tagChip", !isActive);
+                child.Classes.Set("tagChipActive", isActive);
+            }
+
+            ApplyChapterFilter();
+        }
+
+        private void ApplyChapterFilter()
+        {
+            IEnumerable<ChapterCheckItem> filtered = _chapterItems;
+
+            if (_hideDownloaded)
+                filtered = filtered.Where(c => !c.IsAlreadyDownloaded);
+
+            if (_activeTagFilter != null)
+                filtered = filtered.Where(c => c.Tags.Contains(_activeTagFilter));
+
+            ChaptersList.ItemsSource = filtered.ToList();
         }
 
         private async void OnFetchClick(object? sender, RoutedEventArgs e)
@@ -127,7 +178,7 @@ namespace Miao.UI.Views.Pages
                     }
                     catch
                     {
-                        // Dịch lỗi thì tạm hiện tên gốc, không chặn việc tải danh sách chương.
+                        
                     }
                 }
 
@@ -135,6 +186,8 @@ namespace Miao.UI.Views.Pages
 
                 var list = await _activeSource.GetChapterListAsync(url);
                 var index = 0;
+
+                var lofterTags = _activeSource is LofterDownloadSource lofterSrc ? lofterSrc.ChapterTags : null;
 
                 foreach (var (number, title, chapterUrl) in list)
                 {
@@ -144,7 +197,8 @@ namespace Miao.UI.Views.Pages
                         Number = number,
                         Title = title,
                         ChapterUrl = chapterUrl,
-                        TranslatedTitle = "Đang dịch..."
+                        TranslatedTitle = "Đang dịch...",
+                        Tags = lofterTags != null && lofterTags.TryGetValue(chapterUrl, out var tags) ? tags : new List<string>()
                     });
                 }
 
@@ -154,6 +208,19 @@ namespace Miao.UI.Views.Pages
 
                 MarkAlreadyDownloadedChapters();
                 SetupLofterOptionsIfNeeded(url);
+
+                _activeTagFilter = null;
+                if (_activeSource is LofterDownloadSource)
+                {
+                    var allTags = _chapterItems.SelectMany(c => c.Tags).Distinct().OrderBy(t => t).ToList();
+                    LofterTagsList.ItemsSource = allTags;
+                    LofterTagsList.IsVisible = allTags.Count > 0;
+                }
+                else
+                {
+                    LofterTagsList.ItemsSource = null;
+                    LofterTagsList.IsVisible = false;
+                }
 
                 _ = TranslateTitlesInBackgroundAsync(_chapterItems.ToList());
             }
@@ -183,7 +250,6 @@ namespace Miao.UI.Views.Pages
                 try
                 {
                     var translated = await _titleTranslator.TranslateChapterAsync(item.Title);
-                    // Dispatcher.UIThread.InvokeAsync thay cho Dispatcher.InvokeAsync của WPF
                     await Dispatcher.UIThread.InvokeAsync(() =>
                         item.TranslatedTitle = string.IsNullOrWhiteSpace(translated) ? item.Title : translated.Trim());
                 }
@@ -222,6 +288,7 @@ namespace Miao.UI.Views.Pages
                     ? $"Đã có trong: {t}"
                     : "Đã tải trước đó";
             }
+            ApplyChapterFilter();
         }
 
         private void SetupLofterOptionsIfNeeded(string blogUrl)
@@ -242,8 +309,6 @@ namespace Miao.UI.Views.Pages
             if (existingNovels.Count == 0)
                 LofterNewNovelRadio.IsChecked = true;
         }
-
-        // ================== Chọn / lọc chương ==================
 
         private void OnApplyRangeClick(object? sender, RoutedEventArgs e)
         {
@@ -291,8 +356,6 @@ namespace Miao.UI.Views.Pages
             scrollViewer.Offset = scrollViewer.Offset.WithY(scrollViewer.Offset.Y - delta * 40);
             e.Handled = true;
         }
-
-        // ================== Tải chương ==================
 
         private async void OnDownloadClick(object? sender, RoutedEventArgs e)
         {
@@ -350,9 +413,6 @@ namespace Miao.UI.Views.Pages
                 }
                 else
                 {
-                    // Kiểm tra trùng lặp TRƯỚC, không mở DbContext trong lúc chờ dialog xác nhận
-                    // (khác code WPF gốc — MessageBox.Show cũ chặn cả luồng UI nên giữ DB mở không sao,
-                    // còn dialog bất đồng bộ ở đây có thể chờ lâu, giữ DB mở lâu dễ gây lỗi "database locked").
                     var normalizedNewTitle = NormalizeTitle(_novelTitle);
                     Novel? exactUrlMatch;
                     Novel? possibleDuplicate;
@@ -434,8 +494,6 @@ namespace Miao.UI.Views.Pages
                     db.Novels.Add(novel);
                     db.SaveChanges();
 
-                    GlossarySetService.CreateDefaultForNovel(db, novel);
-
                     db.NovelSources.Add(new NovelSource
                     {
                         NovelId = novel.Id,
@@ -451,6 +509,12 @@ namespace Miao.UI.Views.Pages
 
                 if (isNewNovel && !_activeSource.ProvidesTranslatedContent)
                     await TranslateNovelTitleAndAuthorAsync(novel);
+
+                if (isNewNovel)
+                {
+                    using var glossaryDb = new MiaoDbContext(AppPaths.DbFilePath);
+                    GlossarySetService.CreateDefaultForNovel(glossaryDb, novel);
+                }
 
                 var (added, updated, translated, translationFailed, failed) =
                     await DownloadChaptersAsync(novel, selected);
@@ -488,7 +552,7 @@ namespace Miao.UI.Views.Pages
             }
             catch
             {
-                // Không để lỗi dịch tiêu đề làm hỏng việc tải truyện.
+                
             }
 
             if (!string.IsNullOrWhiteSpace(novel.Author))
@@ -499,7 +563,7 @@ namespace Miao.UI.Views.Pages
                 }
                 catch
                 {
-                    // Không để lỗi dịch tác giả làm hỏng việc tải truyện.
+                    
                 }
             }
 
@@ -555,10 +619,6 @@ namespace Miao.UI.Views.Pages
                     continue;
                 }
 
-                // Tải ảnh nhúng trong chương (nếu có [[IMG:url]]) về máy, thay link
-                // CDN gốc bằng đường dẫn file cục bộ — ReaderPage chỉ hiển thị được
-                // ảnh từ file cục bộ (xem CoverImageConverter), link http trực tiếp
-                // sẽ không hiện được.
                 content = await DownloadChapterImagesAsync(
                     novel.Id,
                     item.Number,
@@ -576,7 +636,7 @@ namespace Miao.UI.Views.Pages
                     }
                     catch
                     {
-                        // Giữ nguyên tiêu đề gốc nếu dịch lỗi.
+                        
                     }
                 }
 
@@ -623,6 +683,7 @@ namespace Miao.UI.Views.Pages
                 }
 
                 using var chapterDb = new MiaoDbContext(AppPaths.DbFilePath);
+                displayContent = GlossaryApplicationService.Apply(chapterDb, novel.Id, displayContent);
                 var existingChapter = chapterDb.Chapters.FirstOrDefault(c => c.NovelId == novel.Id && c.Number == item.Number);
 
                 if (existingChapter != null)
@@ -676,11 +737,6 @@ namespace Miao.UI.Views.Pages
             return (added, updated, translated, translationFailed, failed);
         }
 
-        // ================== Bìa truyện ==================
-
-        // Tải từng ảnh trong nội dung chương (dạng [[IMG:https://...]]) về máy và
-        // thay bằng đường dẫn file cục bộ. Áp dụng chung cho mọi nguồn (Fanqie,
-        // Lofter, ...) vì tất cả đều dùng chung quy ước [[IMG:url]].
         private static readonly HttpClient ChapterImageHttp = new HttpClient();
 
         private static readonly System.Text.RegularExpressions.Regex ImagePlaceholderPattern =
@@ -720,7 +776,6 @@ namespace Miao.UI.Views.Pages
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
-                    // Vài CDN (kể cả Fanqie) chặn hotlink nếu thiếu Referer hợp lệ.
                     if (!string.IsNullOrWhiteSpace(refererUrl) &&
                         Uri.TryCreate(refererUrl, UriKind.Absolute, out var refererUri))
                     {
@@ -749,8 +804,6 @@ namespace Miao.UI.Views.Pages
                 }
                 catch (Exception ex)
                 {
-                    // Tải ảnh lỗi (mạng, hotlink protection, ảnh đã gỡ...) — giữ
-                    // nguyên placeholder link gốc, không làm hỏng cả chương.
                     System.Diagnostics.Debug.WriteLine(
                         $"[CHAPTER IMAGE] Lỗi tải ảnh chương {chapterNumber} ({remoteUrl}): {ex.Message}");
                 }
@@ -790,14 +843,12 @@ namespace Miao.UI.Views.Pages
                 }
                 catch
                 {
-                    // Tải bìa thất bại → dùng bìa mặc định.
+                    
                 }
             }
 
             return Path.Combine(AppContext.BaseDirectory, "Assets", "default-cover.jpg");
         }
-
-        // ================== Helpers ==================
 
         private Novel CreateNovelEntity(string sourceUrl, string? title = null) => new()
         {
@@ -856,6 +907,7 @@ namespace Miao.UI.Views.Pages
         public int Number { get; set; }
         public string Title { get; set; } = string.Empty;
         public string ChapterUrl { get; set; } = string.Empty;
+        public List<string> Tags { get; set; } = new();
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         private void OnChanged(string name) => PropertyChanged?.Invoke(this, new(name));

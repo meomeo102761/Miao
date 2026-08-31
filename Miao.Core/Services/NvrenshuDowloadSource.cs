@@ -11,10 +11,7 @@ namespace Miao.Core.Services
     {
         public string SourceName => "nvrenshu";
 
-        private static readonly string[] KnownDomains =
-        {
-            "nvrenshu.com"
-        };
+        private static readonly string[] KnownDomains = { "nvrenshu.com" };
 
         public bool ProvidesTranslatedContent => false;
 
@@ -27,9 +24,8 @@ namespace Miao.Core.Services
             _fetcher = fetcher;
         }
 
-        public bool CanHandle(string url) =>
-            KnownDomains.Any(d =>
-                url.Contains(d, StringComparison.OrdinalIgnoreCase));
+        public bool CanHandle(string url) 
+            => KnownDomains.Any(d => url.Contains(d, StringComparison.OrdinalIgnoreCase));
 
         private static readonly string[] BoilerplatePatterns =
         {
@@ -50,10 +46,7 @@ namespace Miao.Core.Services
             return doc;
         }
 
-        private static string FirstNonEmpty(
-            HtmlDocument doc,
-            IEnumerable<string> xpaths,
-            string attribute = "")
+        private static string FirstNonEmpty(HtmlDocument doc, IEnumerable<string> xpaths, string attribute = "")
         {
             foreach (var xpath in xpaths)
             {
@@ -66,8 +59,7 @@ namespace Miao.Core.Services
                     ? node.InnerText
                     : node.GetAttributeValue(attribute, "");
 
-                var value =
-                    HtmlEntity.DeEntitize(raw ?? "").Trim();
+                var value = HtmlEntity.DeEntitize(raw ?? "").Trim();
 
                 if (!string.IsNullOrWhiteSpace(value))
                     return value;
@@ -76,247 +68,105 @@ namespace Miao.Core.Services
             return "";
         }
 
-        public async Task<(
-            string Title,
-            string Author,
-            string CoverImageUrl,
-            string Description)> GetNovelInfoAsync(string url)
+        public async Task<(string Title, string Author, string CoverImageUrl, string Description)> GetNovelInfoAsync(string url)
         {
             var doc = await LoadAsync(url);
 
-            var title = FirstNonEmpty(
-                doc,
-                new[]
-                {
-                    "//div[@class='bookinfo']//h1[@class='booktitle']"
-                });
+            var title = FirstNonEmpty(doc, new[]
+            {
+                "//div[@class='bookinfo']//h1[@class='booktitle']"
+            });
 
-            var author = FirstNonEmpty(
-                doc,
-                new[]
-                {
-                    "//div[@class='bookinfo']//p[@class='booktag']//a"
-                });
+            var author = FirstNonEmpty(doc, new[]
+            {
+                "//div[@class='bookinfo']//p[@class='booktag']//a"
+            });
 
-            var cover = FirstNonEmpty(
-                doc,
-                new[]
-                {
-                    "//div[@class='bookinfo']//img[@src]",
-                    "//meta[@property='og:image']"
-                },
-                attribute: "src");
+            var cover = FirstNonEmpty(doc, new[]
+            {
+                "//div[@class='bookinfo']//img[@src]",
+                "//meta[@property='og:image']"
+            },
+            attribute: "src");
 
             if (string.IsNullOrWhiteSpace(cover))
             {
-                cover = FirstNonEmpty(
-                    doc,
-                    new[]
-                    {
-                        "//meta[@property='og:image']"
-                    },
-                    attribute: "content");
+                cover = FirstNonEmpty(doc, new[]
+                {
+                    "//meta[@property='og:image']"
+                },
+                attribute: "content");
             }
 
             if (!string.IsNullOrWhiteSpace(cover))
                 cover = MakeAbsolute(url, cover);
 
-            var description = FirstNonEmpty(
-                doc,
-                new[]
-                {
-                    "//div[@class='bookinfo']//p[@class='bookintro']"
-                });
+            var description = FirstNonEmpty(doc,new[]
+            {
+                "//div[@class='bookinfo']//p[@class='bookintro']"
+            });
 
-
-            return (
-                title,
-                author,
-                cover,
-                description
-            );
+            return (title, author, cover, description);
         }
 
-        public async Task<List<(
-            int Number,
-            string Title,
-            string ChapterUrl)>> GetChapterListAsync(string url)
+        public async Task<List<(int Number, string Title, string ChapterUrl)>> GetChapterListAsync(string url)
         {
-            var result =
-                new List<(int Number, string Title, string ChapterUrl)>();
+            var result = new List<(int Number, string Title, string ChapterUrl)>();
+            var seenUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var seenUrls =
-                new HashSet<string>(
-                    StringComparer.OrdinalIgnoreCase);
+            const string chapterLinkXPath = "//div[@id='list-chapterAll']//a[@href]";
 
-            const string chapterLinkXPath =
-                "//div[@id='list-chapterAll']//dd/a[@href]";
+            var doc = await LoadAsync(url);
+            var linkNodes = doc.DocumentNode.SelectNodes(chapterLinkXPath);
 
-            var chapterNumberRegex =
-                new Regex(
-                    @"^\s*(\d+)\s*[、．.。]",
-                    RegexOptions.Compiled);
+            if (linkNodes == null)
+                return result;
 
-            const string? nextPageXPath = null;
-
-
-            var pageUrl = url;
-
-            const int maxPages = 50;
-
-
-            for (var page = 0; page < maxPages; page++)
+            foreach (var node in linkNodes)
             {
-                var doc = await LoadAsync(pageUrl);
+                var href = node.GetAttributeValue("href", "");
 
-                var linkNodes =
-                    doc.DocumentNode.SelectNodes(
-                        chapterLinkXPath);
+                if (string.IsNullOrWhiteSpace(href))
+                    continue;
 
+                var chapterUrl = MakeAbsolute(url, href);
 
-                if (linkNodes != null)
-                {
-                    foreach (var node in linkNodes)
-                    {
-                        var href =
-                            node.GetAttributeValue(
-                                "href",
-                                "");
+                if (!seenUrls.Add(chapterUrl))
+                    continue;
 
+                var title = HtmlEntity.DeEntitize(node.InnerText ?? "").Trim();
 
-                        if (string.IsNullOrWhiteSpace(href))
-                            continue;
+                if (string.IsNullOrWhiteSpace(title))
+                    continue;
 
-
-                        var chapterUrl =
-                            MakeAbsolute(
-                                pageUrl,
-                                href);
-
-                        if (!seenUrls.Add(chapterUrl))
-                            continue;
-
-
-                        var title =
-                            HtmlEntity.DeEntitize(
-                                node.InnerText ?? "")
-                            .Trim();
-
-
-                        if (string.IsNullOrWhiteSpace(title))
-                            continue;
-
-                        var match =
-                            chapterNumberRegex.Match(title);
-
-
-                        if (!match.Success)
-                            continue;
-
-
-                        if (!int.TryParse(
-                                match.Groups[1].Value,
-                                out var number))
-                        {
-                            continue;
-                        }
-
-
-                        result.Add(
-                            (
-                                number,
-                                title,
-                                chapterUrl
-                            ));
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(nextPageXPath))
-                    break;
-
-
-                var nextNode =
-                    doc.DocumentNode.SelectSingleNode(
-                        nextPageXPath);
-
-
-                var nextHref =
-                    nextNode?.GetAttributeValue(
-                        "href",
-                        "") ?? "";
-
-
-                if (string.IsNullOrWhiteSpace(nextHref))
-                    break;
-
-
-                var nextUrl =
-                    MakeAbsolute(
-                        pageUrl,
-                        nextHref);
-
-
-                if (string.Equals(
-                        nextUrl,
-                        pageUrl,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    break;
-                }
-
-
-                pageUrl = nextUrl;
+                result.Add((result.Count + 1, title, chapterUrl));
             }
-
-            result = result
-                .OrderBy(x => x.Number)
-                .ToList();
-
-
             return result;
         }
 
-        public async Task<string> GetChapterContentAsync(
-            string chapterUrl)
+        public async Task<string> GetChapterContentAsync(string chapterUrl)
         {
-            var doc =
-                await LoadAsync(chapterUrl);
+            var doc = await LoadAsync(chapterUrl);
 
-            var node =
-                doc.DocumentNode.SelectSingleNode(
-                    "//div[@class='readcontent']");
-
+            var node = doc.DocumentNode.SelectSingleNode("//div[@class='readcontent']");
 
             if (node == null)
                 return "";
 
-
-            return HtmlContentExtractor.ExtractTextWithImages(
-                node,
-                BoilerplatePatterns);
+            return HtmlContentExtractor.ExtractTextWithImages(node, BoilerplatePatterns);
         }
 
-        private static string MakeAbsolute(
-            string baseUrl,
-            string href)
+        private static string MakeAbsolute(string baseUrl, string href)
         {
-            if (Uri.TryCreate(
-                    href,
-                    UriKind.Absolute,
-                    out var abs))
+            if (Uri.TryCreate(href, UriKind.Absolute, out var abs))
             {
                 return abs.ToString();
             }
 
-
-            if (Uri.TryCreate(
-                    new Uri(baseUrl),
-                    href,
-                    out var combined))
+            if (Uri.TryCreate(new Uri(baseUrl), href, out var combined))
             {
                 return combined.ToString();
             }
-
 
             return href;
         }

@@ -1,4 +1,3 @@
-// Thay bằng
 using System.Linq;
 using Miao.Core.Data;
 using Miao.Core.Models;
@@ -26,8 +25,6 @@ namespace Miao.Core.Services
             db.SaveChanges();
         }
 
-        // Gọi 1 lần lúc app khởi động — tạo bù bộ riêng mặc định cho các truyện đã có
-        // từ TRƯỚC khi tính năng bộ tên này tồn tại.
         public static void BackfillMissingDefaults(MiaoDbContext db)
         {
             var novelIdsWithDefault = db.GlossarySets

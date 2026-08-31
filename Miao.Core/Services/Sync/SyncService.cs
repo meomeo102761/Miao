@@ -45,8 +45,6 @@ namespace Miao.Core.Services.Sync
                 PullFailed: pullResult.Failed);
         }
 
-        // ----- ĐẨY LÊN: an toàn theo từng entity -----
-
         private async Task<(int Succeeded, int Failed)> PushPendingAsync(CancellationToken ct)
         {
             var pending = await _db.Set<PendingSync>()
@@ -62,8 +60,6 @@ namespace Miao.Core.Services.Sync
                 var envelope = await BuildEnvelopeAsync(item, ct);
                 if (envelope is null)
                 {
-                    // Entity đã bị xoá khỏi DB local trước khi kịp sync (hiếm, nhưng
-                    // vẫn cần dọn PendingSync tương ứng để không kẹt vòng lặp mãi mãi)
                     _db.Set<PendingSync>().Remove(item);
                     continue;
                 }
@@ -75,16 +71,12 @@ namespace Miao.Core.Services.Sync
 
                 if (ok)
                 {
-                    // Chỉ xoá PendingSync SAU KHI Drive xác nhận thành công
                     _db.Set<PendingSync>().Remove(item);
                     await _db.SaveChangesAsync(ct);
                     succeeded++;
                 }
                 else
                 {
-                    // Hết retry vẫn lỗi -> GIỮ NGUYÊN, không đánh dấu xong
-                    // Dừng cả batch tại đây: nếu mạng đã rớt, các item sau nhiều
-                    // khả năng cũng lỗi tương tự -> đỡ tốn thời gian retry vô ích
                     failed++;
                     break;
                 }
@@ -104,11 +96,11 @@ namespace Miao.Core.Services.Sync
                 }
                 catch (OperationCanceledException)
                 {
-                    throw; // người dùng huỷ thao tác — không retry
+                    throw;
                 }
                 catch
                 {
-                    // lỗi mạng/API tạm thời -> thử lại theo backoff, không throw ra ngoài
+                    
                 }
 
                 if (attempt < RetryDelays.Length)
@@ -117,8 +109,6 @@ namespace Miao.Core.Services.Sync
 
             return false;
         }
-
-        // ----- TẢI VỀ: áp dụng theo transaction, không để DB nửa vời -----
 
         private async Task<(int Applied, int Failed)> PullRemoteChangesAsync(CancellationToken ct)
         {
@@ -137,7 +127,7 @@ namespace Miao.Core.Services.Sync
                 catch
                 {
                     failed++;
-                    continue; // 1 file lỗi tải không chặn các file khác
+                    continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(json)) continue;
@@ -150,11 +140,11 @@ namespace Miao.Core.Services.Sync
                 catch
                 {
                     failed++;
-                    continue; // file hỏng/không parse được -> bỏ qua, không phá cả batch
+                    continue;
                 }
 
                 if (envelope is null || envelope.DeviceId == _deviceId)
-                    continue; // bỏ qua chính thay đổi do máy mình vừa đẩy lên
+                    continue;
 
                 await using var transaction = await _db.Database.BeginTransactionAsync(ct);
                 try
@@ -181,7 +171,6 @@ namespace Miao.Core.Services.Sync
             return (applied, failed);
         }
 
-        // So sánh timestamp — bản mới hơn thắng (last-write-wins theo từng entity)
         private async Task<bool> ApplyEnvelopeAsync(SyncEnvelope envelope, CancellationToken ct)
         {
             switch (envelope.EntityType)
@@ -200,7 +189,6 @@ namespace Miao.Core.Services.Sync
                     return await ApplyEntityAsync<CharacterGroup>(envelope, ct);
                 case nameof(CharacterAlias):
                     return await ApplyEntityAsync<CharacterAlias>(envelope, ct);
-                // Thêm case cho các entity còn lại (Volume, Tag, NoteEntry...) theo cùng pattern
                 default:
                     return false;
             }
@@ -227,10 +215,9 @@ namespace Miao.Core.Services.Sync
                 return true;
             }
 
-            // Chỉ ghi đè nếu bản trên Drive MỚI HƠN bản local hiện tại
             var localUpdatedAt = GetUpdatedAtUtc(existing);
             if (localUpdatedAt != null && localUpdatedAt >= envelope.UpdatedAtUtc)
-                return false; // bản local mới hơn hoặc bằng -> giữ nguyên, không ghi đè
+                return false;
 
             _db.Entry(existing).CurrentValues.SetValues(incoming);
             return true;
@@ -240,7 +227,7 @@ namespace Miao.Core.Services.Sync
         {
             Chapter c => c.LastEditedAt ?? c.DownloadedAt,
             Novel n => n.LastUpdatedAt ?? n.AddedAt,
-            _ => null // entity không có timestamp riêng -> luôn ghi đè khi có bản mới
+            _ => null
         };
 
         private static string BuildPath(string entityType, Guid id) =>
@@ -248,14 +235,11 @@ namespace Miao.Core.Services.Sync
 
         private async Task<SyncEnvelope?> BuildEnvelopeAsync(PendingSync item, CancellationToken ct)
         {
-            // Tra lại entity thật hiện tại theo EntityType để đóng gói payload mới nhất
-            // (không dùng dữ liệu cũ lưu sẵn trong PendingSync, tránh gửi bản lỗi thời)
             object? entity = item.EntityType switch
             {
                 SyncEntityType.Novel => await _db.Novels.FindAsync(new object[] { item.EntityId }, ct),
                 SyncEntityType.Chapter => await _db.Chapters.FindAsync(new object[] { item.EntityId }, ct),
                 SyncEntityType.GlossarySet => await _db.GlossarySets.FindAsync(new object[] { item.EntityId }, ct),
-                // ... các case còn lại theo cùng pattern
                 _ => null
             };
 

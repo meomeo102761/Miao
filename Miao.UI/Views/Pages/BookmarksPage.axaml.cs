@@ -36,11 +36,10 @@ namespace Miao.UI.Views.Pages
         private const int PageSize = 50;
 
         private bool _showingReading = true;
+        private bool _suppressSelectAllEvent;
         private List<BookmarkRow> _allRows = new();
         private int _currentPage = 1;
 
-        // BookmarksPage không dùng modal xác nhận, nhưng vẫn phải override
-        // vì kế thừa ConfirmablePage. Trả về null! an toàn vì không bao giờ được gọi tới.
         protected override Control ConfirmCardElement => null!;
         protected override TextBlock ConfirmMessageTextElement => null!;
 
@@ -49,8 +48,6 @@ namespace Miao.UI.Views.Pages
             InitializeComponent();
             LoadReading();
         }
-
-        // ================= TAB ĐANG ĐỌC / YÊU THÍCH =================
 
         private void OnReadingTabClick(object? sender, RoutedEventArgs e) => LoadReading();
 
@@ -70,7 +67,7 @@ namespace Miao.UI.Views.Pages
                             NovelId = n.Id,
                             ChapterNumber = c.Number,
                             NovelTitle = n.DisplayTitle,
-                            AuthorLabel = $"Tác giả: {n.Author}",
+                            AuthorLabel = $"Tác giả: {n.DisplayAuthor}",
                             ChapterLabel = $"Chương {c.Number}: {c.DisplayTitle}",
                             CoverPath = n.CoverImagePath
                         }).ToList();
@@ -89,7 +86,7 @@ namespace Miao.UI.Views.Pages
                 NovelId = n.Id,
                 ChapterNumber = n.LastReadChapterNumber > 0 ? n.LastReadChapterNumber : (int?)null,
                 NovelTitle = n.DisplayTitle,
-                AuthorLabel = $"Tác giả: {n.Author}",
+                AuthorLabel = $"Tác giả: {n.DisplayAuthor}",
                 ChapterLabel = n.LastReadChapterNumber > 0 ? $"Đang đọc chương {n.LastReadChapterNumber}" : "Chưa đọc",
                 CoverPath = n.CoverImagePath
             }).ToList();
@@ -106,29 +103,33 @@ namespace Miao.UI.Views.Pages
             ReadingTabButton.Content = $"Đang đọc ({readingCount})";
             FavoriteTabButton.Content = $"Yêu thích ({favCount})";
 
-            var activeBrush = GetAccentBrush();
+            if (_showingReading) ReadingTabButton.Classes.Add("active");
+            else ReadingTabButton.Classes.Remove("active");
 
-            ReadingTabButton.Background = _showingReading ? activeBrush : Brushes.White;
-            FavoriteTabButton.Background = !_showingReading ? activeBrush : Brushes.White;
+            if (!_showingReading) FavoriteTabButton.Classes.Add("active");
+            else FavoriteTabButton.Classes.Remove("active");
         }
-
-        private IBrush GetAccentBrush()
-        {
-            if (this.TryFindResource("AccentJadeHover", out var value) && value is IBrush brush)
-                return brush;
-
-            // Fallback khi resource chưa resolve được (ví dụ control chưa attach vào visual tree)
-            return new SolidColorBrush(Color.Parse("#2E7D32"));
-        }
-
-        // ================= DANH SÁCH + PHÂN TRANG (50 dòng/trang) =================
 
         private void SetRows(List<BookmarkRow> rows, string emptyMessage)
         {
             _allRows = rows;
+            foreach (var row in _allRows)
+                row.PropertyChanged += OnRowSelectionChanged;
+
             _currentPage = 1;
             EmptyText.Text = rows.Count == 0 ? emptyMessage : "";
             RenderPage();
+        }
+
+        private void OnRowSelectionChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(BookmarkRow.IsSelected)) return;
+
+            _suppressSelectAllEvent = true;
+            SelectAllCheckBox.IsChecked = _allRows.Count > 0 && _allRows.All(r => r.IsSelected);
+            _suppressSelectAllEvent = false;
+
+            UpdateSelectedCount();
         }
 
         private void RenderPage()
@@ -212,10 +213,10 @@ namespace Miao.UI.Views.Pages
             return pages.Distinct();
         }
 
-        // ================= CHỌN / XOÁ =================
-
         private void OnSelectAllChanged(object? sender, RoutedEventArgs e)
         {
+            if (_suppressSelectAllEvent) return;
+
             var isChecked = SelectAllCheckBox.IsChecked == true;
             foreach (var item in _allRows)
                 item.IsSelected = isChecked;

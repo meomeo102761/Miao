@@ -4,12 +4,16 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Microsoft.EntityFrameworkCore;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -19,19 +23,23 @@ namespace Miao.UI.Views.Pages
 {
     public partial class GlossaryPage : UserControl
     {
-        // Ngưỡng tối thiểu để tính là "đang kéo" thay vì chỉ nhấp chuột — Avalonia
-        // không có SystemParameters.MinimumHorizontalDragDistance như WPF.
         private const double DragThreshold = 5.0;
 
         private readonly SinoVietnameseConverter _sinoVietnamese;
 
         private List<GlossarySet> _allSets = new();
+        private List<GlossaryGroup> _allGroups = new();
+        private List<GlossarySetRowViewModel> _sharedSetVms = new();
+        private List<GlossarySetRowViewModel> _privateSetVms = new();
+        private readonly Dictionary<Guid, bool> _groupExpandState = new();
         private Dictionary<Guid, string> _novelTitles = new();
         private GlossarySetEntry? _editingEntry;
 
         private bool _isEditMode;
         private Point _dragStartPoint;
         private GlossarySetRowViewModel? _draggedSet;
+        private Guid? _draggedSetGroupId;
+        private GlossaryGroupRowViewModel? _draggedGroup;
         private PointerPressedEventArgs? _dragPressedEvent;
 
         private ObservableCollection<PagerItemVm> BuildPageItems(int currentPage, int totalPages)
@@ -86,7 +94,7 @@ namespace Miao.UI.Views.Pages
         {
             InitializeComponent();
 
-            var handataPath = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "handata");
+            var handataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "handata");
             var hanVietDictionaryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "translate", "zh_to_vi", "HanViet.json");
             _sinoVietnamese = new SinoVietnameseConverter(handataPath, hanVietDictionaryPath);
 
@@ -106,12 +114,13 @@ namespace Miao.UI.Views.Pages
         private void LoadSets()
         {
             using var db = OpenDb();
-            _allSets = db.GlossarySets.OrderBy(s => s.SortOrder).ThenBy(s => s.Name).ToList();
+           _allSets = db.GlossarySets.OrderBy(s => s.SortOrder).ThenBy(s => s.Name).ToList();
+            _allGroups = db.GlossaryGroups.Include(g => g.Sets)
+                .OrderBy(g => g.SortOrder).ThenBy(g => g.Name).ToList();
             _novelTitles = db.Novels.ToDictionary(n => n.Id, n => n.DisplayTitle);
 
             ApplyFilter();
 
-            // Avalonia: Dispatcher.UIThread.Post thay cho Dispatcher.BeginInvoke của WPF
             Dispatcher.UIThread.Post(UpdateSetEditControlsVisibility, DispatcherPriority.Loaded);
         }
 
@@ -122,38 +131,79 @@ namespace Miao.UI.Views.Pages
             var nameKeyword = SetNameSearchBox.Text?.Trim() ?? "";
             var novelKeyword = NovelSearchBox.Text?.Trim() ?? "";
 
-            var shared = _allSets.Where(s => s.IsShared);
-            var priv = _allSets.Where(s => !s.IsShared);
+            bool NameOk(GlossarySet s) =>
+                string.IsNullOrEmpty(nameKeyword) || s.Name.Contains(nameKeyword, StringComparison.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrEmpty(nameKeyword))
-            {
-                shared = shared.Where(s => s.Name.Contains(nameKeyword, StringComparison.OrdinalIgnoreCase));
-                priv = priv.Where(s => s.Name.Contains(nameKeyword, StringComparison.OrdinalIgnoreCase));
-            }
+            bool NovelOk(GlossarySet s) =>
+                s.IsShared || string.IsNullOrEmpty(novelKeyword) ||
+                (s.OwnerNovelId.HasValue && _novelTitles.TryGetValue(s.OwnerNovelId.Value, out var title) &&
+                    title.Contains(novelKeyword, StringComparison.OrdinalIgnoreCase));
 
-            if (!string.IsNullOrEmpty(novelKeyword))
-            {
-                priv = priv.Where(s => s.OwnerNovelId.HasValue
-                    && _novelTitles.TryGetValue(s.OwnerNovelId.Value, out var title)
-                    && title.Contains(novelKeyword, StringComparison.OrdinalIgnoreCase));
-            }
+            var setVmLookup = _allSets.ToDictionary(s => s.Id, ToRowViewModel);
 
-            var sharedVms = shared.Select(ToRowViewModel).ToList();
-            var privVms = priv.Select(ToRowViewModel).ToList();
+            var sharedMatchedIds = _allSets.Where(s => s.IsShared && NameOk(s) && NovelOk(s)).Select(s => s.Id).ToHashSet();
+            var privMatchedIds = _allSets.Where(s => !s.IsShared && NameOk(s) && NovelOk(s)).Select(s => s.Id).ToHashSet();
+
+            bool GroupMatches(GlossaryGroup g, HashSet<Guid> matchedIds) =>
+                string.IsNullOrEmpty(nameKeyword) ||
+                g.Name.Contains(nameKeyword, StringComparison.OrdinalIgnoreCase) ||
+                g.Sets.Any(s => matchedIds.Contains(s.Id));
+
+            var sharedGroupVms = _allGroups.Where(g => g.IsShared && GroupMatches(g, sharedMatchedIds))
+                .Select(g => ToGroupRowViewModel(g, setVmLookup, sharedMatchedIds)).ToList();
+            var privGroupVms = _allGroups.Where(g => !g.IsShared && GroupMatches(g, privMatchedIds))
+                .Select(g => ToGroupRowViewModel(g, setVmLookup, privMatchedIds)).ToList();
+
+            var groupedIdsShared = _allGroups.Where(g => g.IsShared).SelectMany(g => g.Sets.Select(s => s.Id)).ToHashSet();
+            var groupedIdsPriv = _allGroups.Where(g => !g.IsShared).SelectMany(g => g.Sets.Select(s => s.Id)).ToHashSet();
+
+            var sharedVms = _allSets.Where(s => s.IsShared && !groupedIdsShared.Contains(s.Id) && sharedMatchedIds.Contains(s.Id))
+                .Select(s => setVmLookup[s.Id]).ToList();
+            var privVms = _allSets.Where(s => !s.IsShared && !groupedIdsPriv.Contains(s.Id) && privMatchedIds.Contains(s.Id))
+                .Select(s => setVmLookup[s.Id]).ToList();
+
+            _sharedSetVms = setVmLookup.Values.Where(v => v.IsShared).ToList();
+            _privateSetVms = setVmLookup.Values.Where(v => !v.IsShared).ToList();
 
             SharedList.ItemsSource = sharedVms;
             PrivateList.ItemsSource = privVms;
+            SharedGroupsList.ItemsSource = sharedGroupVms;
+            PrivateGroupsList.ItemsSource = privGroupVms;
 
-            SharedSection.IsVisible = sharedVms.Count > 0;
-            PrivateSection.IsVisible = privVms.Count > 0;
+            SharedSection.IsVisible = sharedVms.Count > 0 || sharedGroupVms.Count > 0;
+            PrivateSection.IsVisible = privVms.Count > 0 || privGroupVms.Count > 0;
+        }
+
+        private GlossaryGroupRowViewModel ToGroupRowViewModel(
+            GlossaryGroup group, Dictionary<Guid, GlossarySetRowViewModel> lookup, HashSet<Guid> matchedIds)
+        {
+            _groupExpandState.TryGetValue(group.Id, out var expanded);
+            return new GlossaryGroupRowViewModel
+            {
+                Id = group.Id,
+                Name = group.Name,
+                IsShared = group.IsShared,
+                SortOrder = group.SortOrder,
+                IsExpanded = expanded,
+                Sets = group.Sets.Where(s => matchedIds.Contains(s.Id))
+                    .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
+                    .Select(s => lookup[s.Id]).ToList()
+            };
+        }
+
+        private void OnToggleGroupClick(object? sender, PointerPressedEventArgs e)
+        {
+            if (sender is not Control fe || fe.Tag is not GlossaryGroupRowViewModel vm) return;
+
+            vm.IsExpanded = !vm.IsExpanded;
+            _groupExpandState[vm.Id] = vm.IsExpanded;
         }
 
         private GlossarySetRowViewModel ToRowViewModel(GlossarySet set)
         {
             string badge = set.IsShared
                 ? ""
-                : (set.OwnerNovelId.HasValue && _novelTitles.TryGetValue(set.OwnerNovelId.Value, out var t) ? t : "");
-
+                : (set.OwnerNovelId.HasValue && _novelTitles.TryGetValue(set.OwnerNovelId.Value, out var t) && t != set.Name ? t : "");
             return new GlossarySetRowViewModel
             {
                 Id = set.Id,
@@ -188,12 +238,14 @@ namespace Miao.UI.Views.Pages
         }
 
         private Guid? _renamingSetId;
+        private Guid? _renamingGroupId;
 
         private void OnRenameSetClick(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
 
             _renamingSetId = vm.Id;
+            _renamingGroupId = null;
             RenameNameBox.Text = vm.Name;
 
             RenameCard.IsVisible = true;
@@ -203,21 +255,52 @@ namespace Miao.UI.Views.Pages
 
         private void OnRenameSaveClick(object? sender, RoutedEventArgs e)
         {
-            if (_renamingSetId == null) return;
-
             var newName = RenameNameBox.Text?.Trim() ?? "";
             if (string.IsNullOrWhiteSpace(newName)) return;
 
             using var db = OpenDb();
-            var set = db.GlossarySets.Find(_renamingSetId.Value);
-            if (set != null)
+
+            if (_renamingGroupId != null)
             {
-                set.Name = newName;
-                db.SaveChanges();
+                var group = db.GlossaryGroups.Find(_renamingGroupId.Value);
+                if (group != null) { group.Name = newName; db.SaveChanges(); }
+                _renamingGroupId = null;
+            }
+            else if (_renamingSetId != null)
+            {
+                var set = db.GlossarySets.Find(_renamingSetId.Value);
+                if (set != null) { set.Name = newName; db.SaveChanges(); }
+                _renamingSetId = null;
             }
 
             ModalService.Close();
             LoadSets();
+        }
+
+        private void OnRenameGroupClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not GlossaryGroupRowViewModel vm) return;
+
+            _renamingGroupId = vm.Id;
+            _renamingSetId = null;
+            RenameNameBox.Text = vm.Name;
+
+            RenameCard.IsVisible = true;
+            if (RenameCard.Parent is Panel panel) panel.Children.Remove(RenameCard);
+            ModalService.Show(RenameCard);
+        }
+
+        private void OnDeleteGroupClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not GlossaryGroupRowViewModel vm) return;
+
+            ShowConfirm($"Xóa nhóm \"{vm.Name}\"? Các bộ tên trong nhóm sẽ KHÔNG bị xóa, chỉ gỡ khỏi nhóm.", () =>
+            {
+                using var db = OpenDb();
+                var toRemove = db.GlossaryGroups.Find(vm.Id);
+                if (toRemove != null) { db.GlossaryGroups.Remove(toRemove); db.SaveChanges(); }
+                LoadSets();
+            });
         }
 
         private void OnRenameCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
@@ -249,6 +332,20 @@ namespace Miao.UI.Views.Pages
             vm.CanGoNext = vm.CurrentPage < totalPages;
 
             vm.RaiseEmptyChanged();
+
+            if (_isEditMode)
+                Dispatcher.UIThread.Post(UpdateSetEditControlsVisibility, DispatcherPriority.Loaded);
+        }
+
+        private void OnQuickAddToSetClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
+
+            if (!vm.IsExpanded)
+            {
+                vm.IsExpanded = true;
+                if (vm.AllEntries.Count == 0) LoadEntriesForSet(vm);
+            }
         }
 
         private void OnPageSizeChanged(object? sender, SelectionChangedEventArgs e)
@@ -293,8 +390,6 @@ namespace Miao.UI.Views.Pages
             RenderPage(vm);
         }
 
-        // ================= THÊM TÊN MỚI (Gốc / Hán Việt / Dịch) =================
-
         private async void OnNewOriginalTextChanged(object? sender, TextChangedEventArgs e)
         {
             if (sender is not TextBox originalBox || originalBox.Parent is not Grid grid) return;
@@ -302,17 +397,12 @@ namespace Miao.UI.Views.Pages
 
             var original = originalBox.Text ?? "";
 
-            // Điền tạm ngay bằng cách ghép từng chữ (nhanh, luôn sẵn có) để ô
-            // không bị trống trong lúc chờ, rồi nâng cấp lên bản khớp cụm tên
-            // riêng chính xác hơn (Name.json) ngay khi có kết quả.
             var quickGuess = _sinoVietnamese.ToHanViet(original);
             hanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? original : quickGuess;
             pinYinBox.Text = _sinoVietnamese.ToPinYin(original);
 
             var accurate = await NameHanVietLookup.ToHanVietAsync(original);
 
-            // Original có thể đã đổi trong lúc chờ (người dùng gõ tiếp) — chỉ
-            // áp kết quả nếu vẫn đang khớp với nội dung hiện tại của ô Gốc.
             if (!string.IsNullOrWhiteSpace(accurate) && originalBox.Text == original)
                 hanVietBox.Text = accurate;
         }
@@ -397,8 +487,6 @@ namespace Miao.UI.Views.Pages
             });
         }
 
-        // ================= XÁC NHẬN DÙNG CHUNG =================
-
         private Action? _pendingConfirmAction;
 
         private void ShowConfirm(string message, Action onConfirm)
@@ -425,8 +513,6 @@ namespace Miao.UI.Views.Pages
             ModalService.Close();
         }
 
-        // ================= SỬA 1 TÊN (Hán Việt / Dịch) =================
-
         private void OnEditEntryClick(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not GlossarySetEntry entry) return;
@@ -444,8 +530,6 @@ namespace Miao.UI.Views.Pages
 
         private async void OnEditOriginalTextChanged(object? sender, TextChangedEventArgs e)
         {
-            // Chỉ auto-fill khi popup đang thật sự mở để sửa 1 entry (tránh
-            // chạy nhầm lúc control mới khởi tạo / chưa gán _editingEntry).
             if (_editingEntry == null) return;
 
             var original = EditOriginalText.Text ?? "";
@@ -464,15 +548,18 @@ namespace Miao.UI.Views.Pages
         {
             if (sender is not Button btn || btn.Tag is not GlossarySetEntry entry) return;
 
-            ShowConfirm($"Xóa tên \"{entry.OriginalTerm} → {entry.TranslatedTerm}\"?", () =>
-            {
-                using var db = OpenDb();
-                var toRemove = db.GlossarySetEntries.Find(entry.Id);
-                if (toRemove != null) { db.GlossarySetEntries.Remove(toRemove); db.SaveChanges(); }
+            ShowConfirm(
+                $"Xóa tên \"{entry.OriginalTerm} → {entry.TranslatedTerm}\"? Máy sẽ dịch lại \"{entry.OriginalTerm}\" và thay thế trong TOÀN BỘ truyện đang dùng bộ tên này.",
+                () => _ = DeleteEntryAndRevertAsync(entry));
+        }
 
-                var vm = FindVmContaining(entry.GlossarySetId);
-                if (vm != null) LoadEntriesForSet(vm);
-            });
+        private async Task DeleteEntryAndRevertAsync(GlossarySetEntry entry)
+        {
+            using var db = OpenDb();
+            await GlossaryApplicationService.DeleteEntryAndRevertAsync(db, entry.Id);
+
+            var vm = FindVmContaining(entry.GlossarySetId);
+            if (vm != null) LoadEntriesForSet(vm);
         }
 
         private void OnEntryCheckChanged(object? sender, RoutedEventArgs e)
@@ -559,17 +646,17 @@ namespace Miao.UI.Views.Pages
 
         private GlossarySetRowViewModel? FindVmContaining(Guid setId)
         {
-            return (SharedList.ItemsSource as IEnumerable<GlossarySetRowViewModel>)?.FirstOrDefault(x => x.Id == setId)
-                ?? (PrivateList.ItemsSource as IEnumerable<GlossarySetRowViewModel>)?.FirstOrDefault(x => x.Id == setId);
+            return _sharedSetVms.FirstOrDefault(x => x.Id == setId)
+                ?? _privateSetVms.FirstOrDefault(x => x.Id == setId);
         }
-
-        // ================= CHẾ ĐỘ SỬA CHO DANH SÁCH BỘ TÊN =================
 
         private void OnEditModeClick(object? sender, RoutedEventArgs e)
         {
             _isEditMode = !_isEditMode;
             EditModeButton.Content = _isEditMode ? "Xong" : "Sửa";
             BulkActionsBar.IsVisible = _isEditMode;
+            CreateSharedGroupButton.IsVisible = _isEditMode;
+            CreatePrivateGroupButton.IsVisible = _isEditMode;
 
             if (!_isEditMode)
             {
@@ -580,22 +667,15 @@ namespace Miao.UI.Views.Pages
             UpdateSetEditControlsVisibility();
         }
 
-        private IEnumerable<GlossarySetRowViewModel> AllRowViewModels()
-        {
-            var shared = SharedList.ItemsSource as IEnumerable<GlossarySetRowViewModel> ?? Enumerable.Empty<GlossarySetRowViewModel>();
-            var priv = PrivateList.ItemsSource as IEnumerable<GlossarySetRowViewModel> ?? Enumerable.Empty<GlossarySetRowViewModel>();
-            return shared.Concat(priv);
-        }
+        private IEnumerable<GlossarySetRowViewModel> AllRowViewModels() => _sharedSetVms.Concat(_privateSetVms);
 
         private void UpdateSetEditControlsVisibility()
         {
-            foreach (var list in new ItemsControl[] { SharedList, PrivateList })
+            foreach (var list in new ItemsControl[] { SharedList, PrivateList, SharedGroupsList, PrivateGroupsList })
             {
-                // Avalonia: GetVisualDescendants() (Avalonia.VisualTree) thay cho
-                // VisualTreeHelper.GetChild(...) đệ quy thủ công của WPF
                 foreach (var el in list.GetVisualDescendants().OfType<Control>())
                 {
-                    if (el.Name is "SetDragHandleIcon" or "SetSelectCheckBox" or "EntrySelectCheckBox" or "EntryBulkActionsBar" or "EntryActionsPanel")
+                    if (el.Name is "SetDragHandleIcon" or "SetSelectCheckBox" or "EntrySelectCheckBox" or "EntryBulkActionsBar" or "EntryActionsPanel" or "SetActionsPanel" or "GroupActionsPanel" or "GroupDragHandleIcon")
                         el.IsVisible = _isEditMode;
 
                     if (el is CheckBox cb && el.Name == "EntrySelectCheckBox")
@@ -603,8 +683,6 @@ namespace Miao.UI.Views.Pages
                 }
             }
         }
-
-        // ----- Kéo-thả đổi thứ tự bộ tên -----
 
         private void OnSetDragHandleMouseDown(object? sender, PointerPressedEventArgs e)
         {
@@ -629,6 +707,7 @@ namespace Miao.UI.Views.Pages
                 return;
 
             _draggedSet = vm;
+            _draggedSetGroupId = FindOwningGroup(vm.Id, vm.IsShared)?.Id;
 
             var data = new DataTransfer();
             data.Add(DataTransferItem.CreateText(vm.Id.ToString()));
@@ -642,26 +721,53 @@ namespace Miao.UI.Views.Pages
                 DragDropEffects.Move);
         }
 
+        private GlossaryGroupRowViewModel? FindOwningGroup(Guid setId, bool isShared)
+        {
+            var groupList = (isShared ? SharedGroupsList : PrivateGroupsList).ItemsSource as List<GlossaryGroupRowViewModel>;
+            return groupList?.FirstOrDefault(g => g.Sets.Any(s => s.Id == setId));
+        }
+
         private void OnSetItemDrop(object? sender, DragEventArgs e)
         {
             if (_draggedSet == null) return;
             if (sender is not StyledElement fe || fe.DataContext is not GlossarySetRowViewModel target)
             {
                 _draggedSet = null;
+                _draggedSetGroupId = null;
                 return;
             }
 
-            // Chỉ cho kéo-thả trong cùng khu (Bộ tên chung hoặc Bộ tên riêng)
             if (target.Id == _draggedSet.Id || target.IsShared != _draggedSet.IsShared)
             {
                 _draggedSet = null;
+                _draggedSetGroupId = null;
                 return;
             }
 
-            var listControl = _draggedSet.IsShared ? SharedList : PrivateList;
-            if (listControl.ItemsSource is not List<GlossarySetRowViewModel> items)
+            var targetGroupId = FindOwningGroup(target.Id, target.IsShared)?.Id;
+            if (targetGroupId != _draggedSetGroupId)
             {
                 _draggedSet = null;
+                _draggedSetGroupId = null;
+                return;
+            }
+
+            List<GlossarySetRowViewModel>? items;
+            if (_draggedSetGroupId is Guid groupId)
+            {
+                var groupList = (_draggedSet.IsShared ? SharedGroupsList : PrivateGroupsList).ItemsSource as List<GlossaryGroupRowViewModel>;
+                items = groupList?.FirstOrDefault(g => g.Id == groupId)?.Sets;
+            }
+            else
+            {
+                var listControl = _draggedSet.IsShared ? SharedList : PrivateList;
+                items = listControl.ItemsSource as List<GlossarySetRowViewModel>;
+            }
+
+            if (items == null)
+            {
+                _draggedSet = null;
+                _draggedSetGroupId = null;
                 return;
             }
 
@@ -670,6 +776,7 @@ namespace Miao.UI.Views.Pages
             if (oldIndex < 0 || newIndex < 0)
             {
                 _draggedSet = null;
+                _draggedSetGroupId = null;
                 return;
             }
 
@@ -688,17 +795,95 @@ namespace Miao.UI.Views.Pages
             }
 
             _draggedSet = null;
+            _draggedSetGroupId = null;
             LoadSets();
         }
 
-        // ----- Chọn nhiều để xóa bộ tên -----
+        private void OnGroupDragHandleMouseDown(object? sender, PointerPressedEventArgs e)
+        {
+            _dragStartPoint = e.GetPosition(this);
+            _dragPressedEvent = e;
+        }
+
+        private async void OnGroupDragHandleMouseMove(object? sender, PointerEventArgs e)
+        {
+            if (!_isEditMode ||
+                _dragPressedEvent == null ||
+                !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                return;
+
+            if (sender is not Control control || control.DataContext is not GlossaryGroupRowViewModel vm)
+                return;
+
+            var pos = e.GetPosition(this);
+            var diff = _dragStartPoint - pos;
+
+            if (Math.Abs(diff.X) <= DragThreshold && Math.Abs(diff.Y) <= DragThreshold)
+                return;
+
+            _draggedGroup = vm;
+
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText(vm.Id.ToString()));
+
+            var pressedEvent = _dragPressedEvent;
+            _dragPressedEvent = null;
+
+            await DragDrop.DoDragDropAsync(pressedEvent, data, DragDropEffects.Move);
+        }
+
+        private void OnGroupItemDrop(object? sender, DragEventArgs e)
+        {
+            if (_draggedGroup == null) return;
+            if (sender is not StyledElement fe || fe.DataContext is not GlossaryGroupRowViewModel target)
+            {
+                _draggedGroup = null;
+                return;
+            }
+
+            if (target.Id == _draggedGroup.Id || target.IsShared != _draggedGroup.IsShared)
+            {
+                _draggedGroup = null;
+                return;
+            }
+
+            var listControl = _draggedGroup.IsShared ? SharedGroupsList : PrivateGroupsList;
+            if (listControl.ItemsSource is not List<GlossaryGroupRowViewModel> items)
+            {
+                _draggedGroup = null;
+                return;
+            }
+
+            var oldIndex = items.FindIndex(x => x.Id == _draggedGroup.Id);
+            var newIndex = items.FindIndex(x => x.Id == target.Id);
+            if (oldIndex < 0 || newIndex < 0)
+            {
+                _draggedGroup = null;
+                return;
+            }
+
+            var moved = _draggedGroup;
+            items.RemoveAt(oldIndex);
+            items.Insert(newIndex, moved);
+
+            using (var db = OpenDb())
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var entity = db.GlossaryGroups.Find(items[i].Id);
+                    if (entity != null) entity.SortOrder = i;
+                }
+                db.SaveChanges();
+            }
+
+            _draggedGroup = null;
+            LoadSets();
+        }
 
         private void OnDeleteSelectedSetsClick(object? sender, RoutedEventArgs e)
         {
-            var selectedShared = (SharedList.ItemsSource as List<GlossarySetRowViewModel>)?.Where(x => x.IsSelected)
-                ?? Enumerable.Empty<GlossarySetRowViewModel>();
-            var selectedPrivate = (PrivateList.ItemsSource as List<GlossarySetRowViewModel>)?.Where(x => x.IsSelected)
-                ?? Enumerable.Empty<GlossarySetRowViewModel>();
+            var selectedShared = _sharedSetVms.Where(x => x.IsSelected);
+            var selectedPrivate = _privateSetVms.Where(x => x.IsSelected);
 
             var selectedIds = selectedShared.Concat(selectedPrivate).Select(x => x.Id).ToList();
             if (selectedIds.Count == 0) return;
@@ -716,6 +901,110 @@ namespace Miao.UI.Views.Pages
                 LoadSets();
             });
         }
+
+        private bool _newGroupIsShared;
+
+        private void OnCreateGroupClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn) return;
+            _newGroupIsShared = btn.Tag is "True";
+
+            NewGroupNameBox.Text = "";
+            NewGroupCard.IsVisible = true;
+            if (NewGroupCard.Parent is Panel panel) panel.Children.Remove(NewGroupCard);
+            ModalService.Show(NewGroupCard);
+        }
+
+        private void OnNewGroupSaveClick(object? sender, RoutedEventArgs e)
+        {
+            var name = NewGroupNameBox.Text?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(name)) return;
+
+            using var db = OpenDb();
+            GlossaryGroupService.CreateGroup(db, name, _newGroupIsShared);
+            ModalService.Close();
+            LoadSets();
+        }
+
+        private void OnNewGroupCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
+
+        private Guid _pickerSetId;
+        private bool _pickerIsShared;
+        private List<GlossaryGroup> _pickerAllGroups = new();
+        private HashSet<Guid> _pickerSelectedGroupIds = new();
+
+        private void OnAddSetToGroupClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
+
+            using var db = OpenDb();
+            _pickerSetId = vm.Id;
+            _pickerIsShared = vm.IsShared;
+            _pickerAllGroups = GlossaryGroupService.GetGroups(db, vm.IsShared);
+            _pickerSelectedGroupIds = db.GlossaryGroups
+                .Where(g => g.IsShared == vm.IsShared && g.Sets.Any(s => s.Id == vm.Id))
+                .Select(g => g.Id).ToHashSet();
+
+            GroupPickerSearchBox.Text = "";
+            RenderGroupPickerList("");
+
+            GroupPickerCard.IsVisible = true;
+            if (GroupPickerCard.Parent is Panel panel) panel.Children.Remove(GroupPickerCard);
+            ModalService.Show(GroupPickerCard);
+        }
+
+        private void OnGroupPickerSearchChanged(object? sender, TextChangedEventArgs e) =>
+            RenderGroupPickerList(GroupPickerSearchBox.Text?.Trim() ?? "");
+
+        private void RenderGroupPickerList(string keyword)
+        {
+            GroupPickerList.Children.Clear();
+
+            var groups = string.IsNullOrEmpty(keyword)
+                ? _pickerAllGroups
+                : _pickerAllGroups.Where(g => g.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (groups.Count == 0)
+            {
+                GroupPickerList.Children.Add(new TextBlock
+                {
+                    Text = "Chưa có nhóm nào khớp.", FontStyle = FontStyle.Italic, FontSize = 14,
+                    Foreground = Application.Current?.FindResource("TextMuted") as IBrush
+                });
+                return;
+            }
+
+            foreach (var group in groups)
+            {
+                var cb = new CheckBox { Content = group.Name, IsChecked = _pickerSelectedGroupIds.Contains(group.Id), Tag = group.Id };
+                cb.IsCheckedChanged += (_, _) =>
+                {
+                    if (cb.Tag is not Guid gid) return;
+                    if (cb.IsChecked == true) _pickerSelectedGroupIds.Add(gid);
+                    else _pickerSelectedGroupIds.Remove(gid);
+                };
+                GroupPickerList.Children.Add(cb);
+            }
+        }
+
+        private void OnGroupPickerSaveClick(object? sender, RoutedEventArgs e)
+        {
+            using var db = OpenDb();
+            var currentGroupIds = db.GlossaryGroups
+                .Where(g => g.IsShared == _pickerIsShared && g.Sets.Any(s => s.Id == _pickerSetId))
+                .Select(g => g.Id).ToHashSet();
+
+            foreach (var addId in _pickerSelectedGroupIds.Except(currentGroupIds))
+                GlossaryGroupService.AddSetToGroup(db, addId, _pickerSetId);
+
+            foreach (var removeId in currentGroupIds.Except(_pickerSelectedGroupIds))
+                GlossaryGroupService.RemoveSetFromGroup(db, removeId, _pickerSetId);
+
+            ModalService.Close();
+            LoadSets();
+        }
+
+        private void OnGroupPickerCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
     }
 
     public class PagerItemVm
@@ -723,6 +1012,22 @@ namespace Miao.UI.Views.Pages
         public string Label { get; set; } = "";
         public bool IsCurrent { get; set; }
         public bool Clickable { get; set; } = true;
+    }
+
+    public class GlossaryGroupRowViewModel : INotifyPropertyChanged
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public bool IsShared { get; set; }
+        public int SortOrder { get; set; }
+
+        private bool _isExpanded;
+        public bool IsExpanded { get => _isExpanded; set { _isExpanded = value; OnChanged(nameof(IsExpanded)); } }
+
+        public List<GlossarySetRowViewModel> Sets { get; set; } = new();
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public class GlossarySetRowViewModel : INotifyPropertyChanged
@@ -769,7 +1074,6 @@ namespace Miao.UI.Views.Pages
 
         public HashSet<Guid> SelectedEntryIds { get; } = new();
 
-        // Avalonia: bool trực tiếp cho IsVisible, thay cho Visibility + converter của WPF
         public bool IsEmpty => AllEntries.Count == 0;
         public void RaiseEmptyChanged() => OnChanged(nameof(IsEmpty));
 

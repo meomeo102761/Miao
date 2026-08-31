@@ -9,13 +9,6 @@ namespace Miao.UI.Services
 {
     public enum DialogResult { Yes, No, Cancel }
 
-    /// <summary>
-    /// Thay thế MessageBox.Show của WPF (không tồn tại trong Avalonia).
-    /// Khác biệt quan trọng: MessageBox.Show là đồng bộ (block luồng UI),
-    /// còn Avalonia không hỗ trợ dialog blocking kiểu đó — phải dùng
-    /// async/await + TaskCompletionSource, dựa trên ModalService đã có.
-    /// Chỗ gọi cần đổi "var x = MessageBox.Show(...)" thành "var x = await DialogService.Show...Async(...)".
-    /// </summary>
     public static class DialogService
     {
         public static Task<DialogResult> ShowYesNoCancelAsync(string message, string title = "")
@@ -67,48 +60,17 @@ namespace Miao.UI.Services
                 HorizontalAlignment = HorizontalAlignment.Center
             };
 
-            var yesButton = new Button
-            {
-                Content = "Có",
-                Width = 90, Height = 36,
-                Background = accentJade,
-                Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                CornerRadius = new CornerRadius(18),
-                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-            };
+            var yesButton = new Button { Content = "Có", Classes = { "jade" }, Width = 90, Height = 36, CornerRadius = new CornerRadius(18) };
             yesButton.Click += (_, _) => Close(DialogResult.Yes);
             buttonsPanel.Children.Add(yesButton);
 
-            var noButton = new Button
-            {
-                Content = "Không",
-                Width = 90, Height = 36,
-                Background = Brushes.White,
-                Foreground = Brushes.Black,
-                BorderBrush = borderSoft,
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(18),
-                Margin = new Thickness(8, 0, 0, 0),
-                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-            };
+            var noButton = new Button { Content = "Không", Classes = { "outline" }, Width = 90, Height = 36, CornerRadius = new CornerRadius(18), Margin = new Thickness(8, 0, 0, 0) };
             noButton.Click += (_, _) => Close(DialogResult.No);
             buttonsPanel.Children.Add(noButton);
 
             if (showCancel)
             {
-                var cancelButton = new Button
-                {
-                    Content = "Hủy",
-                    Width = 90, Height = 36,
-                    Background = Brushes.White,
-                    Foreground = Brushes.Gray,
-                    BorderBrush = borderSoft,
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(18),
-                    Margin = new Thickness(8, 0, 0, 0),
-                    Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-                };
+                var cancelButton = new Button { Content = "Hủy", Classes = { "outline" }, Width = 90, Height = 36, CornerRadius = new CornerRadius(18), Margin = new Thickness(8, 0, 0, 0) };
                 cancelButton.Click += (_, _) => Close(DialogResult.Cancel);
                 buttonsPanel.Children.Add(cancelButton);
             }

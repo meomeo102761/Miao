@@ -6,13 +6,13 @@
 
     <UserControl.Styles>
         <Style Selector="Button.pillAction">
-            <Setter Property="Background" Value="#EFF4F3"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="Padding" Value="6,4"/>
             <Setter Property="Margin" Value="6,0,0,0"/>
             <Setter Property="Template">
                 <ControlTemplate>
@@ -23,11 +23,8 @@
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="Button.pillAction:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="#EFF4F3"/>
-        </Style>
         <Style Selector="Button.pillAction:pointerover">
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Opacity" Value="0.6"/>
         </Style>
         <Style Selector="Button.pillAction TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
@@ -46,7 +43,7 @@
             <Setter Property="Height" Value="36"/>
             <Setter Property="Background" Value="#E4574C"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -75,7 +72,7 @@
             <Setter Property="Height" Value="36"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
@@ -117,13 +114,13 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" BorderBrush="#BBBBBB" BorderThickness="1" CornerRadius="5" Height="30"
-                    Width="280" HorizontalAlignment="Left">
+            <Border Grid.Column="0" BorderBrush="#BBBBBB" BorderThickness="1" CornerRadius="5" Height="36"
+                    Width="280" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <TextBox x:Name="NewNameBox" Padding="11,0" BorderThickness="0" VerticalContentAlignment="Center"
-                         FontFamily="Arial" FontSize="15" PlaceholderText="Tên bộ sưu tập mới"/>
+                         FontFamily="Inter" FontSize="15" PlaceholderText="Tên bộ sưu tập mới"/>
             </Border>
 
-            <Button Grid.Column="1" Content="+ Tạo mới" Width="90" Margin="8,0,0,0"
+            <Button Grid.Column="1" Content="+ Tạo mới" Margin="8,0,0,0"
                     Classes="jade" Click="OnCreateClick"/>
 
             <Button x:Name="EditModeButton" Grid.Column="3" Content="Sửa" Width="70"
@@ -144,15 +141,16 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="0" Orientation="Vertical" IsVisible="False" x:Name="MoveButtonsPanel" Margin="0,0,14,0">
-                                    <Button Content="▲" FontSize="10" Padding="4,2" Click="OnMoveUpClick" Tag="{Binding}"/>
-                                    <Button Content="▼" FontSize="10" Padding="4,2" Click="OnMoveDownClick" Tag="{Binding}"/>
-                                </StackPanel>
+                                <TextBlock Grid.Column="0" x:Name="DragHandleIcon" Text="⋮⋮" FontSize="18"
+                                        Foreground="#999999" Cursor="SizeAll" IsVisible="False"
+                                        VerticalAlignment="Center" Margin="0,0,14,0"
+                                        PointerPressed="OnDragHandleMouseDown"
+                                        PointerMoved="OnDragHandleMouseMove"/>
 
                                 <StackPanel Grid.Column="1" Cursor="Hand" PointerPressed="OnLibraryClick" Tag="{Binding}">
-                                    <TextBlock Text="{Binding Name}" FontFamily="Roboto" FontSize="17.6" Foreground="#555555"/>
+                                    <TextBlock Text="{Binding Name}" FontFamily="Roboto" FontSize="18" Foreground="#555555"/>
                                     <TextBlock Text="{Binding Count, StringFormat={}{0} truyện}" FontFamily="Roboto"
-                                               FontSize="14.4" Foreground="#999999" Margin="0,3,0,0"/>
+                                               FontSize="15" Foreground="#999999" Margin="0,3,0,0"/>
                                 </StackPanel>
 
                                 <StackPanel x:Name="LibraryEditControls" Grid.Column="2" Orientation="Horizontal"
@@ -171,14 +169,13 @@
 
         <Border x:Name="RenameCard" IsVisible="False" Background="White" CornerRadius="12" Width="360" Padding="24">
             <StackPanel>
-                <TextBlock Text="Đổi tên bộ sưu tập" FontFamily="Arial" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,14"/>
+                <TextBlock Text="Đổi tên bộ sưu tập" FontFamily="Inter" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,14"/>
                 <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6" Height="36" Padding="10,0" Margin="0,0,0,18">
                     <TextBox x:Name="RenameBox" FontSize="15" BorderThickness="0" VerticalContentAlignment="Center"/>
                 </Border>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button Content="Lưu" Classes="dialogPrimary jade" Click="OnRenameSaveClick"/>
-                    <Button Content="Hủy" Classes="dialogSecondary" Click="OnRenameCancelClick"/>
-                </StackPanel>
+                    <Button Content="Hủy" Classes="dialogSecondary" Margin="10,0,0,0" Click="OnRenameCancelClick"/>                </StackPanel>
             </StackPanel>
         </Border>
 
@@ -187,7 +184,7 @@
                 <TextBlock x:Name="ConfirmMessageText" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,20"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button Content="Xóa" Classes="dialogDanger" Click="OnConfirmYesClick"/>
-                    <Button Content="Hủy" Classes="dialogSecondary" Click="OnConfirmNoClick"/>
+                    <Button Content="Hủy" Classes="dialogSecondary" Margin="10,0,0,0" Click="OnConfirmNoClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>

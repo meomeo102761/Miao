@@ -19,6 +19,8 @@ namespace Miao.Core.Models
         public string DisplayTitle =>
             !string.IsNullOrWhiteSpace(CustomTitle) ? CustomTitle :
             !string.IsNullOrWhiteSpace(TranslatedTitle) ? TranslatedTitle : Title;
+        
+        public int PreferredEditTarget { get; set; } = 0;
 
         public string Author { get; set; } = string.Empty;
         public string TranslatedAuthor { get; set; } = string.Empty;
@@ -27,7 +29,7 @@ namespace Miao.Core.Models
         public string SourceUrl { get; set; } = string.Empty;
         public string SourceDescription { get; set; } = string.Empty;
         public string CoverImagePath { get; set; } = string.Empty;
-
+        
         [NotMapped]
         public string CoverImageSource
         {

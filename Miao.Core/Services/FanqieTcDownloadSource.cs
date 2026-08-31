@@ -25,12 +25,6 @@ namespace Miao.Core.Services
                    uri.Host.Equals(Domain, StringComparison.OrdinalIgnoreCase);
         }
 
-        // ============================================================
-        // Lấy bookId từ URL
-        // Ví dụ:
-        // https://fanqietc.com/catalog?bookId=7279292199060114444
-        // ============================================================
-
         private static string GetBookId(string url)
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
@@ -51,10 +45,6 @@ namespace Miao.Core.Services
 
             return "";
         }
-
-        // ============================================================
-        // GET API
-        // ============================================================
 
         private const string ApiToken = "fqtc_7nKp2mQ8xR4vL6wT1yZ3bC5dF0hJ8aE9uI3kM7";
 
@@ -103,10 +93,6 @@ namespace Miao.Core.Services
             return content;
         }
 
-        // ============================================================
-        // Thông tin truyện
-        // ============================================================
-
         public async Task<(string Title, string Author, string CoverImageUrl, string Description)>
             GetNovelInfoAsync(string url)
         {
@@ -143,10 +129,6 @@ namespace Miao.Core.Services
                 description
             );
         }
-
-        // ============================================================
-        // Danh sách chương
-        // ============================================================
 
         public async Task<List<(int Number, string Title, string ChapterUrl)>>
             GetChapterListAsync(string url)
@@ -185,9 +167,6 @@ namespace Miao.Core.Services
 
                 index++;
 
-                // Không dùng link web thật của chương.
-                // Dùng URL API làm ChapterUrl để IDownloadSource
-                // có thể nhận lại item_id khi tải nội dung.
                 var chapterUrl =
                     $"https://fanqietc.com/chapter?itemId={itemId}";
 
@@ -200,10 +179,6 @@ namespace Miao.Core.Services
 
             return result;
         }
-
-        // ============================================================
-        // Nội dung chương
-        // ============================================================
 
         public async Task<string> GetChapterContentAsync(string chapterUrl)
         {
@@ -224,10 +199,6 @@ namespace Miao.Core.Services
 
             return GetString(data, "content");
         }
-
-        // ============================================================
-        // Helpers
-        // ============================================================
 
         private static string GetItemId(string url)
         {

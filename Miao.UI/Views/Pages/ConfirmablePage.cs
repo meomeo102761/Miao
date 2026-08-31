@@ -9,15 +9,6 @@ using Miao.UI.Services;
 
 namespace Miao.UI.Views.Pages
 {
-    /// <summary>
-    /// Base cho các trang có sẵn hộp thoại xác nhận (Xóa/Hủy) kiểu modal.
-    /// Gom logic ShowModal/ShowConfirm/FindVisualChildren từng bị copy-paste
-    /// giống hệt nhau ở CustomLibrariesPage và CustomLibraryDetailPage.
-    ///
-    /// Trang con cần có sẵn trong XAML: 1 Border/Control tên "ConfirmCard"
-    /// và 1 TextBlock tên "ConfirmMessageText", rồi override 2 property bên dưới
-    /// để trỏ tới đúng field được XAML sinh ra.
-    /// </summary>
     public abstract class ConfirmablePage : UserControl
     {
         protected abstract Control ConfirmCardElement { get; }
@@ -55,8 +46,6 @@ namespace Miao.UI.Views.Pages
             ModalService.Close();
         }
 
-        // Avalonia đã có sẵn GetVisualDescendants() trong Avalonia.VisualTree,
-        // không cần tự viết đệ quy như WPF (VisualTreeHelper).
         protected static IEnumerable<T> FindVisualChildren<T>(Visual root) where T : Visual
         {
             if (root is null) yield break;

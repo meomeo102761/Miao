@@ -28,7 +28,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="ui:TagCategoryGroup">
                             <StackPanel Margin="0,0,0,12">
-                                <TextBlock Text="{Binding Category}" FontWeight="Bold" FontSize="12"
+                                <TextBlock Text="{Binding Category}" FontWeight="Bold" FontSize="13"
                                            Foreground="{StaticResource AccentJade}" Margin="0,0,0,4"/>
                                 <ItemsControl ItemsSource="{Binding Tags}">
                                     <ItemsControl.ItemsPanel>
@@ -39,7 +39,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="ui:TagCheckItem">
                                             <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}"
-                                                      Margin="0,0,10,6" FontSize="12"/>
+                                                      Margin="0,0,10,6" FontSize="13"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

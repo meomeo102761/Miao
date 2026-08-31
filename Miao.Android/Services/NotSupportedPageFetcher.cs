@@ -4,10 +4,6 @@ using Miao.Core.Services;
 
 namespace Miao.Android.Services
 {
-    /// <summary>
-    /// WebView2 chỉ chạy trên Windows. Trên Android, các nguồn crawl cần render JS
-    /// tạm thời chưa hỗ trợ — ném lỗi rõ ràng thay vì crash mù mờ.
-    /// </summary>
     public class NotSupportedPageFetcher : IPageFetcher, IScreenshotFetcher
     {
         public Task<string> FetchHtmlAsync(string url)

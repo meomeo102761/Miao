@@ -11,11 +11,13 @@ namespace Miao.Core.Models
         public CharacterGroup? CharacterGroup { get; set; }
 
         public string Name { get; set; } = string.Empty;
+
         public string ImagePath { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int SortOrder { get; set; }
+        public Guid? FactionId { get; set; }
+        public CharacterFaction? Faction { get; set; }
 
-        // Các cách viết tên khác nhau để nhận diện trong văn bản khi đọc
         public List<CharacterAlias> Aliases { get; set; } = new();
     }
 }

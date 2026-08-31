@@ -21,7 +21,6 @@ namespace Miao.Core.Services
         {
             var result = new Dictionary<string, string[]>();
 
-            // Nguồn 1 (ưu tiên): HanViet.json của bộ dịch dictionary — phủ nhiều ký tự hơn.
             if (!string.IsNullOrWhiteSpace(hanVietDictionaryPath) && File.Exists(hanVietDictionaryPath))
             {
                 try
@@ -48,11 +47,10 @@ namespace Miao.Core.Services
                 }
                 catch (JsonException)
                 {
-                    // File hỏng/không đúng format thì bỏ qua, dùng kVietnamese.json bên dưới.
+                    
                 }
             }
 
-            // Nguồn 2 (bù thêm): kVietnamese.json — chỉ bù ký tự HanViet.json chưa có.
             var kvPath = Path.Combine(handataPath, "kVietnamese.json");
             if (File.Exists(kvPath))
             {
@@ -80,12 +78,8 @@ namespace Miao.Core.Services
                 ?? new Dictionary<string, string[]>();
         }
 
-        // Chuyển từng ký tự Hán trong chuỗi sang âm Hán Việt, cách nhau bằng khoảng trắng.
-        // VD: "硝子" -> "Tiêu Tử"
         public string ToHanViet(string hanText) => Convert(hanText, _hanViet, capitalize: true);
 
-        // Chuyển từng ký tự Hán trong chuỗi sang bính âm, cách nhau bằng khoảng trắng.
-        // VD: "硝子" -> "xiāo zǐ"
         public string ToPinYin(string hanText) => Convert(hanText, _pinyin, capitalize: false);
 
         private static string Convert(string hanText, Dictionary<string, string[]> map, bool capitalize)
@@ -98,9 +92,9 @@ namespace Miao.Core.Services
             {
                 var key = ch.ToString();
                 if (!map.TryGetValue(key, out var readings) || readings.Length == 0)
-                    continue; // ký tự không tra được (dấu câu, chữ Latin lẫn vào...) thì bỏ qua
+                    continue;
 
-                var reading = readings[0]; // ký tự đa âm: tạm lấy âm đầu tiên trong danh sách
+                var reading = readings[0];
                 if (capitalize && reading.Length > 0)
                     reading = char.ToUpperInvariant(reading[0]) + reading[1..];
 

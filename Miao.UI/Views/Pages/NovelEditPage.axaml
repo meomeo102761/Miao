@@ -3,7 +3,7 @@
              xmlns:ui="clr-namespace:Miao.UI.Models;assembly=Miao.UI"
              x:Class="Miao.UI.Views.Pages.NovelEditPage"
              Background="{StaticResource BgMain}"
-             FontFamily="Arial"
+             FontFamily="Inter"
              FontSize="15">
 
     <UserControl.Styles>
@@ -11,7 +11,7 @@
         <Style Selector="TextBox.EditTextBox">
             <Setter Property="Height" Value="38"/>
             <Setter Property="Padding" Value="8,0"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
@@ -33,7 +33,7 @@
         <Style Selector="TextBlock.FieldChipText">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
         </Style>
 
@@ -46,7 +46,7 @@
         <Style Selector="Button.SmallOutlineButton">
             <Setter Property="Height" Value="34"/>
             <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="White"/>
@@ -67,7 +67,7 @@
         <Style Selector="Button.BigRoundButton">
             <Setter Property="Height" Value="44"/>
             <Setter Property="Width" Value="150"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -91,7 +91,7 @@
     <UserControl.Resources>
         <DataTemplate x:Key="TagGroupItemTemplate">
             <StackPanel Margin="0,0,0,14">
-                <TextBlock Text="{Binding Category}" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                <TextBlock Text="{Binding Category}" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
                 <ItemsControl ItemsSource="{Binding Tags}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -100,7 +100,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,0,16,6" FontFamily="Arial" FontSize="15"/>
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,0,16,6" FontFamily="Inter" FontSize="15"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -135,7 +135,7 @@
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Tên truyện:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBlock Grid.Column="0" Text="Tên truyện:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15"/>
                             <TextBox Grid.Column="1" x:Name="CustomTitleBox" Classes="EditTextBox"
                                      ToolTip.Tip="Tên tự đặt — ưu tiên hiển thị nếu có, để trống sẽ dùng tên dịch/gốc"/>
                         </Grid>
@@ -145,7 +145,7 @@
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Tên gốc:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBlock Grid.Column="0" Text="Tên gốc:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15"/>
                             <TextBox Grid.Column="1" x:Name="OriginalTitleBox" Classes="EditTextBox"/>
                         </Grid>
 
@@ -154,7 +154,7 @@
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Tên dịch:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBlock Grid.Column="0" Text="Tên dịch:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15"/>
                             <TextBox Grid.Column="1" x:Name="TranslatedTitleBox" Classes="EditTextBox"/>
                         </Grid>
 
@@ -163,7 +163,7 @@
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Tên tác giả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBlock Grid.Column="0" Text="Tên tác giả:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15"/>
                             <TextBox Grid.Column="1" x:Name="AuthorBox" Classes="EditTextBox"/>
                         </Grid>
 
@@ -172,20 +172,20 @@
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Tác giả (dịch):" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15"/>
+                            <TextBlock Grid.Column="0" Text="Tác giả (dịch):" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15"/>
                             <TextBox Grid.Column="1" x:Name="TranslatedAuthorBox" Classes="EditTextBox"
                                      ToolTip.Tip="Tên tác giả sau khi dịch — sửa tay nếu tự động dịch bị sai. Trang Thư viện ưu tiên hiển thị ô này, để trống sẽ dùng tên gốc."/>
                         </Grid>
 
-                        <TextBlock Text="Tác phẩm tóm tắt (gốc):" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBlock Text="Tác phẩm tóm tắt (gốc):" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
                         <TextBox x:Name="DescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" Height="NaN"
-                                 Padding="10,8" FontFamily="Arial" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
+                                 Padding="10,8" FontFamily="Inter" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
                                  CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
                                  BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top" Margin="0,0,0,14"/>
 
-                        <TextBlock Text="Tác phẩm tóm tắt (dịch):" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBlock Text="Tác phẩm tóm tắt (dịch):" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
                         <TextBox x:Name="TranslatedDescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" Height="NaN"
-                                 Padding="10,8" FontFamily="Arial" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
+                                 Padding="10,8" FontFamily="Inter" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
                                  CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
                                  BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top"
                                  ToolTip.Tip="Mô tả sau khi dịch — trang Chi tiết truyện ưu tiên hiển thị ô này, để trống sẽ dùng mô tả gốc."/>
@@ -198,14 +198,14 @@
                             <Image x:Name="CoverImage" Stretch="UniformToFill"/>
                         </Border>
                         <Button Content="📁 Chọn ảnh từ máy" Classes="SmallOutlineButton" Click="OnPickCoverClick" Margin="0,0,0,10" Width="180"/>
-                        <TextBlock x:Name="CoverStatusText" FontFamily="Arial" FontSize="10.5" Foreground="{StaticResource TextMuted}"
+                        <TextBlock x:Name="CoverStatusText" FontFamily="Inter" FontSize="10.5" Foreground="{StaticResource TextMuted}"
                                    Width="180" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
                     </StackPanel>
                 </Grid>
 
                 <Border Classes="sectionLine"/>
 
-                <TextBlock Text="Thể loại / Tag" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                <TextBlock Text="Thể loại / Tag" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                 <ItemsControl x:Name="TagCategoriesList" Margin="0,10,0,0" ItemTemplate="{StaticResource TagGroupItemTemplate}">
                     <ItemsControl.ItemsPanel>
@@ -215,7 +215,7 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
 
-                <TextBlock Text="Tag" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,4,0,6"/>
+                <TextBlock Text="Tag" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,4,0,6"/>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBox x:Name="TagSuggestBox" Width="260" Classes="EditTextBox"
@@ -235,7 +235,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="ui:TagCheckItem">
                             <Border MinWidth="180" Padding="0,0,12,6">
-                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" FontFamily="Arial" FontSize="15"/>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" FontFamily="Inter" FontSize="15"/>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -251,7 +251,7 @@
 
                 <Border Classes="sectionLine"/>
 
-                <TextBlock Text="Liên kết chính (link gốc)" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                <TextBlock Text="Liên kết chính (link gốc)" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                 <Grid Margin="0,8,0,18">
                     <Grid.ColumnDefinitions>
@@ -261,19 +261,19 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Mô tả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="0" Text="Mô tả:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
                     <Border Grid.Column="1" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Margin="0,0,16,0">
-                        <TextBox x:Name="SourceDescriptionBox" Height="38" Padding="8,0" BorderThickness="0" FontFamily="Arial" FontSize="15"
+                        <TextBox x:Name="SourceDescriptionBox" Height="38" Padding="8,0" BorderThickness="0" FontFamily="Inter" FontSize="15"
                                  VerticalContentAlignment="Center" Watermark="VD: Link gốc, JJ, Bilibili..."/>
                     </Border>
-                    <TextBlock Grid.Column="2" Text="Link:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="2" Text="Link:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
                     <Border Grid.Column="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4">
-                        <TextBox x:Name="SourceUrlBox" Height="38" Padding="8,0" BorderThickness="0" FontFamily="Arial" FontSize="15"
+                        <TextBox x:Name="SourceUrlBox" Height="38" Padding="8,0" BorderThickness="0" FontFamily="Inter" FontSize="15"
                                  VerticalContentAlignment="Center" ToolTip.Tip="Dùng để cập nhật chương mới"/>
                     </Border>
                 </Grid>
 
-                <TextBlock Text="Liên kết bổ sung" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                <TextBlock Text="Liên kết bổ sung" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                 <ItemsControl x:Name="LinksList" Margin="0,8,0,8">
                     <ItemsControl.ItemTemplate>
@@ -286,15 +286,15 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Mô tả:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="0" Text="Mô tả:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
                                 <Border Grid.Column="1" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4" Margin="0,0,16,0">
                                     <TextBox Text="{Binding Description, Mode=TwoWay}" Height="38" Padding="8,0"
-                                            BorderThickness="0" FontFamily="Arial" FontSize="15" VerticalContentAlignment="Center" Watermark="VD: JJ, Bilibili..."/>
+                                            BorderThickness="0" FontFamily="Inter" FontSize="15" VerticalContentAlignment="Center" Watermark="VD: JJ, Bilibili..."/>
                                 </Border>
-                                <TextBlock Grid.Column="2" Text="Link:" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="2" Text="Link:" VerticalAlignment="Center" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,8,0"/>
                                 <Border Grid.Column="3" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="4">
                                     <TextBox Text="{Binding Url, Mode=TwoWay}" Height="38" Padding="8,0"
-                                            BorderThickness="0" FontFamily="Arial" FontSize="15" VerticalContentAlignment="Center" Watermark="https://..."/>
+                                            BorderThickness="0" FontFamily="Inter" FontSize="15" VerticalContentAlignment="Center" Watermark="https://..."/>
                                 </Border>
                                 <Button Grid.Column="4" Content="✕" Width="34" Height="34" Margin="8,0,0,0"
                                         Classes="SmallOutlineButton" Click="OnRemoveLinkClick"
@@ -316,7 +316,7 @@
                     Foreground="White" Click="OnCancelClick"/>
         </StackPanel>
 
-        <TextBlock x:Name="StatusText" FontFamily="Arial" FontSize="12" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+        <TextBlock x:Name="StatusText" FontFamily="Inter" FontSize="13" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
 
     </StackPanel>
     </ScrollViewer>

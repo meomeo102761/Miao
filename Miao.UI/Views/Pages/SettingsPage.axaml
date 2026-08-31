@@ -13,11 +13,11 @@
                             Classes="jade" Margin="8,0,0,0" Click="OnBrowse"/>
                     <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="6">
                         <TextBox x:Name="FolderTextBox" IsReadOnly="True" Padding="8,0" VerticalContentAlignment="Center"
-                                 BorderThickness="0" Background="#F0F7F6" FontFamily="Arial" FontSize="13"/>
+                                 BorderThickness="0" Background="#F0F7F6" FontFamily="Inter" FontSize="13"/>
                     </Border>
                 </DockPanel>
                 <TextBlock Text="⚠ Đổi thư mục sẽ tự động chuyển toàn bộ dữ liệu sang chỗ mới và xoá thư mục cũ — không thể hoàn tác."
-                           Classes="bodyText" FontSize="11.2" Foreground="#B94A48" TextWrapping="Wrap"
+                           Classes="bodyText" FontSize="11" Foreground="#B94A48" TextWrapping="Wrap"
                            Margin="0,8,0,20" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <TextBlock Text="Chế độ dịch" Classes="bodyText"
                            Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
@@ -27,10 +27,10 @@
                     <ComboBoxItem Content="Dictionary (Name/VP/HanViet)" Tag="Dictionary"/>
                 </ComboBox>
                 <TextBlock Text="Dịch Ngay: dùng dịch vụ trực tuyến dichngay.com, cần kết nối mạng."
-                           Classes="bodyText" FontSize="11.2" Foreground="{StaticResource TextMuted}"
+                           Classes="bodyText" FontSize="11" Foreground="{StaticResource TextMuted}"
                            TextWrapping="Wrap" Margin="0,0,0,4" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <TextBlock Text="Dictionary: dịch offline bằng bộ từ điển Name.json/VP.json/HanViet.json, không cần mạng."
-                           Classes="bodyText" FontSize="11.2" Foreground="{StaticResource TextMuted}"
+                           Classes="bodyText" FontSize="11" Foreground="{StaticResource TextMuted}"
                            TextWrapping="Wrap" Margin="0,0,0,20" MaxWidth="500" HorizontalAlignment="Stretch"/>
                 <Button x:Name="SaveButton" Content="Lưu" Width="80" Classes="jade"
                         HorizontalAlignment="Left" Click="OnSave"/>

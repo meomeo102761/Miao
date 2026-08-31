@@ -48,31 +48,21 @@
             <Setter Property="Width" Value="26"/>
             <Setter Property="Height" Value="26"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#555555"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                    <Border Name="Bg" Background="{TemplateBinding Background}">
                         <ContentPresenter Content="{TemplateBinding Content}"
-                                        Foreground="{TemplateBinding Foreground}"
-                                        FontSize="{TemplateBinding FontSize}"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="Button.RowEntryButton:pointerover /template/ Border#Bg">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
-        </Style>
         <Style Selector="Button.RowEntryButton:pointerover">
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-        </Style>
-
-        <Style Selector="Button.RowEntryButton:pointerover">
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Opacity" Value="0.6"/>
         </Style>
 
         <Style Selector="Button.SecondaryButton">
@@ -145,7 +135,7 @@
             <Setter Property="Padding" Value="10,0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
@@ -184,16 +174,57 @@
                 <CheckBox x:Name="EntrySelectCheckBox" Grid.Column="0" VerticalAlignment="Center"
                           Margin="0,0,8,0" IsVisible="False" Click="OnEntryCheckChanged" Tag="{Binding}"/>
 
-                <TextBlock Grid.Column="1" Text="{Binding OriginalTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
-                <TextBlock Grid.Column="2" Text="{Binding HanViet}" FontFamily="Arial" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
-                <TextBlock Grid.Column="3" Text="{Binding PinYin}" FontFamily="Arial" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
-                <TextBlock Grid.Column="4" Text="{Binding TranslatedTerm}" FontFamily="Arial" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="1" Text="{Binding OriginalTerm}" FontFamily="Inter" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="2" Text="{Binding HanViet}" FontFamily="Inter" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="3" Text="{Binding PinYin}" FontFamily="Inter" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" TextWrapping="Wrap"/>
+                <TextBlock Grid.Column="4" Text="{Binding TranslatedTerm}" FontFamily="Inter" FontSize="15" Margin="0,0,6,0" TextWrapping="Wrap"/>
 
-                <StackPanel x:Name="EntryActionsPanel" Grid.Column="5" Orientation="Horizontal" IsVisible="False">
-                    <Button Content="✎" Classes="RowEntryButton" Click="OnEditEntryClick" Tag="{Binding}"/>
-                    <Button Content="✕" Classes="RowEntryButton" Foreground="#B94A48" Click="OnDeleteEntryClick" Tag="{Binding}"/>
+                <StackPanel x:Name="EntryActionsPanel" Grid.Column="5" Orientation="Horizontal" Spacing="6" IsVisible="False">
+                    <Button Classes="RowEntryButton" Click="OnEditEntryClick" Tag="{Binding}">
+                        <Path Data="{StaticResource PencilGeometry}" Fill="{StaticResource AccentJade}" Stretch="Uniform" Width="12" Height="12"/>
+                    </Button>
+                    <Button Classes="RowEntryButton" Click="OnDeleteEntryClick" Tag="{Binding}">
+                        <Path Data="{StaticResource XGeometry}" Stroke="{StaticResource AccentJade}" StrokeThickness="2" Stretch="Uniform" Width="12" Height="12"/>
+                    </Button>
                 </StackPanel>
             </Grid>
+        </DataTemplate>
+
+         <DataTemplate x:Key="GroupRowTemplate">
+            <StackPanel Margin="0,0,0,14">
+                <Grid Tag="{Binding}" DragDrop.AllowDrop="True" DragDrop.Drop="OnGroupItemDrop">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="GroupDragHandleIcon" Grid.Column="0" Text="::" FontSize="18"
+                            Foreground="#999999" Cursor="SizeAll" IsVisible="False"
+                            VerticalAlignment="Center" Margin="0,0,10,0"
+                            PointerPressed="OnGroupDragHandleMouseDown"
+                            PointerMoved="OnGroupDragHandleMouseMove"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Cursor="Hand"
+                                PointerPressed="OnToggleGroupClick" Tag="{Binding}">
+                        <TextBlock Text="{Binding Name}" FontFamily="Inter" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="GroupActionsPanel" Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="False">
+                        <Button Classes="RowEntryButton" ToolTip.Tip="Đổi tên nhóm" Click="OnRenameGroupClick" Tag="{Binding}">
+                            <Path Data="{StaticResource PencilGeometry}" Fill="{StaticResource AccentJade}" Stretch="Uniform" Width="12" Height="12"/>
+                        </Button>
+                        <Button Classes="RowEntryButton" ToolTip.Tip="Xóa nhóm" Click="OnDeleteGroupClick" Tag="{Binding}">
+                            <Path Data="{StaticResource XGeometry}" Stroke="{StaticResource AccentJade}" StrokeThickness="2" Stretch="Uniform" Width="12" Height="12"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <ItemsControl x:Name="GroupSetsList" ItemsSource="{Binding Sets}" ItemTemplate="{StaticResource SetRowTemplate}"
+                              IsVisible="{Binding IsExpanded}" Margin="0,10,0,0"/>
+
+                <Border Height="1" Background="{StaticResource BorderSoft}" Opacity="0.5" Margin="0,14,0,0"/>
+            </StackPanel>
         </DataTemplate>
 
         <DataTemplate x:Key="SetRowTemplate">
@@ -210,7 +241,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock x:Name="SetDragHandleIcon" Grid.Column="0" Text="⋮⋮" FontSize="18"
+                            <TextBlock x:Name="SetDragHandleIcon" Grid.Column="0" Text="::" FontSize="18"
                                     Foreground="#999999" Cursor="SizeAll" IsVisible="False"
                                     VerticalAlignment="Center" Margin="0,0,10,0"
                                     PointerPressed="OnSetDragHandleMouseDown"
@@ -221,16 +252,21 @@
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Cursor="Hand"
                                         PointerPressed="OnToggleSetClick" Tag="{Binding}">
-                                <TextBlock Text="{Binding Name}" FontFamily="Arial" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Name}" FontFamily="Inter" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding BadgeText}" Foreground="{StaticResource TextMuted}" FontSize="15"
                                         VerticalAlignment="Center" Margin="12,0,0,0"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="3" Orientation="Horizontal">
-                                <Button Content="✎" Classes="RowEntryButton"
-                                        ToolTip.Tip="Đổi tên bộ" Click="OnRenameSetClick" Tag="{Binding}"/>
-                                <Button Content="✕" Classes="RowEntryButton" Foreground="#B94A48"
-                                        ToolTip.Tip="Xóa bộ tên" Click="OnDeleteSetClick" Tag="{Binding}"/>
+                            <StackPanel x:Name="SetActionsPanel" Grid.Column="3" Orientation="Horizontal" Spacing="6" IsVisible="False">
+                                <Button Classes="RowEntryButton" ToolTip.Tip="Đổi tên bộ" Click="OnRenameSetClick" Tag="{Binding}">
+                                    <Path Data="{StaticResource PencilGeometry}" Fill="{StaticResource AccentJade}" Stretch="Uniform" Width="12" Height="12"/>
+                                </Button>
+                                <Button Classes="RowEntryButton" ToolTip.Tip="Xóa bộ tên" Click="OnDeleteSetClick" Tag="{Binding}">
+                                    <Path Data="{StaticResource XGeometry}" Stroke="{StaticResource AccentJade}" StrokeThickness="2" Stretch="Uniform" Width="12" Height="12"/>
+                                </Button>
+                                <Button Classes="RowEntryButton" ToolTip.Tip="Thêm vào nhóm" Click="OnAddSetToGroupClick" Tag="{Binding}">
+                                    <Path Data="{StaticResource PlusGeometry}" Stroke="{StaticResource AccentJade}" StrokeThickness="2" Stretch="Uniform" Width="12" Height="12"/>
+                                </Button>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -266,7 +302,7 @@
 
                             <StackPanel x:Name="EntryBulkActionsBar" Orientation="Horizontal" Margin="0,0,0,10" IsVisible="False">
                                 <TextBlock Text="Tick chọn để xóa nhiều tên." FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <Button Content="Xóa đã chọn" Classes="DangerButton" FontSize="13" Height="28" Padding="10,0"
+                                <Button Content="Xóa đã chọn" Classes="outline" FontSize="13" Height="28" Padding="10,0"
                                         Click="OnDeleteSelectedEntriesClick" Tag="{Binding}"/>
                             </StackPanel>
 
@@ -348,7 +384,7 @@
         <TextBlock Grid.Row="0" Text="Bộ tên" Classes="PageTitle"/>
 
         <StackPanel Grid.Row="1" Margin="0,10,0,10">
-            <TextBlock Text="Tên bộ tên mới:" FontFamily="Arial" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBlock Text="Tên bộ tên mới:" FontFamily="Inter" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"/>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -358,7 +394,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBox x:Name="NewSetNameBox" Grid.Column="0" Height="36" Margin="0,0,10,0" Padding="8,0"
-                        VerticalContentAlignment="Center" FontFamily="Arial" FontSize="15"/>
+                        VerticalContentAlignment="Center" FontFamily="Inter" FontSize="15"/>
 
                 <Button Grid.Column="1" Content="+ Thêm" Classes="JadeButton"
                         FontSize="15" Padding="18,0" Click="OnCreateSetClick"/>
@@ -368,9 +404,9 @@
             </Grid>
 
             <StackPanel x:Name="BulkActionsBar" Orientation="Horizontal" Margin="0,10,0,0" IsVisible="False">
-                <TextBlock Text="Đang ở chế độ sửa: kéo ⋮⋮ để đổi thứ tự, tick chọn để xóa nhiều bộ tên."
+                <TextBlock Text="Đang ở chế độ sửa: kéo :: để đổi thứ tự, tick chọn để xóa nhiều bộ tên."
                         FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <Button Content="Xóa đã chọn" Classes="DangerButton" FontSize="13" Height="28" Padding="10,0"
+                <Button Content="Xóa đã chọn" Classes="outline" FontSize="13" Height="28" Padding="10,0"
                         Click="OnDeleteSelectedSetsClick"/>
             </StackPanel>
         </StackPanel>
@@ -381,28 +417,50 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                <TextBlock Text="Tìm tên bộ tên:" FontFamily="Arial" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Text="Tìm tên bộ tên:" FontFamily="Inter" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"/>
                 <TextBox x:Name="SetNameSearchBox" Height="36" Padding="8,0" VerticalContentAlignment="Center"
-                         FontFamily="Arial" FontSize="15" TextChanged="OnFilterChanged"/>
+                         FontFamily="Inter" FontSize="15" TextChanged="OnFilterChanged"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                <TextBlock Text="Tìm theo tên truyện:" FontFamily="Arial" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Text="Tìm theo tên truyện:" FontFamily="Inter" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"/>
                 <TextBox x:Name="NovelSearchBox" Height="36" Padding="8,0" VerticalContentAlignment="Center"
-                         FontFamily="Arial" FontSize="15" TextChanged="OnFilterChanged"/>
+                         FontFamily="Inter" FontSize="15" TextChanged="OnFilterChanged"/>
             </StackPanel>
         </Grid>
 
         <Border Grid.Row="3" Height="1" Background="{StaticResource BorderSoft}" Margin="0,0,0,20"/>
 
         <StackPanel Grid.Row="4" x:Name="SharedSection" Margin="0,0,0,20">
-            <TextBlock Text="Bộ tên chung" FontFamily="Arial" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Bộ tên chung" FontFamily="Inter" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" x:Name="CreateSharedGroupButton" Classes="RowEntryButton" IsVisible="False"
+                        ToolTip.Tip="Tạo nhóm mới" Click="OnCreateGroupClick" Tag="True">
+                    <Path Data="{StaticResource PlusGeometry}" Stroke="{StaticResource AccentJade}" StrokeThickness="2" Stretch="Uniform" Width="12" Height="12"/>
+                </Button>
+            </Grid>
+            <ItemsControl x:Name="SharedGroupsList" ItemTemplate="{StaticResource GroupRowTemplate}"/>
             <ItemsControl x:Name="SharedList" ItemTemplate="{StaticResource SetRowTemplate}"/>
         </StackPanel>
 
         <Border Grid.Row="5" Height="1" Background="{StaticResource BorderSoft}" Margin="0,0,0,20"/>
 
         <StackPanel Grid.Row="6" x:Name="PrivateSection">
-            <TextBlock Text="Bộ tên riêng" FontFamily="Arial" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Bộ tên riêng" FontFamily="Inter" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" x:Name="CreatePrivateGroupButton" Classes="RowEntryButton" IsVisible="False"
+                        ToolTip.Tip="Tạo nhóm mới" Click="OnCreateGroupClick" Tag="False">
+                    <Path Data="{StaticResource PlusGeometry}" Stroke="{StaticResource AccentJade}" StrokeThickness="2" Stretch="Uniform" Width="12" Height="12"/>
+                </Button>
+            </Grid>
+            <ItemsControl x:Name="PrivateGroupsList" ItemTemplate="{StaticResource GroupRowTemplate}"/>
             <ItemsControl x:Name="PrivateList" ItemTemplate="{StaticResource SetRowTemplate}"/>
         </StackPanel>
 
@@ -431,6 +489,41 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button Content="Lưu" Width="90" Classes="JadeButton" FontSize="15" Click="OnEditSaveClick"/>
                     <Button Content="Hủy" Width="90" Margin="8,0,0,0" Classes="SecondaryButton" Click="OnEditCancelClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Card chọn nhóm cho 1 bộ tên -->
+        <Border x:Name="GroupPickerCard" IsVisible="False"
+                Background="White" CornerRadius="12" Width="320" Padding="20">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Thêm vào nhóm:" FontWeight="Bold" FontSize="15"/>
+
+                <TextBox x:Name="GroupPickerSearchBox" Height="34" Padding="8,0"
+                         VerticalContentAlignment="Center" FontFamily="Inter" FontSize="13"
+                         Watermark="Tìm nhóm..." TextChanged="OnGroupPickerSearchChanged"/>
+
+                <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="GroupPickerList" Spacing="8"/>
+                </ScrollViewer>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                    <Button Content="Lưu" Width="90" Classes="JadeButton" FontSize="15" Click="OnGroupPickerSaveClick"/>
+                    <Button Content="Hủy" Width="90" Margin="8,0,0,0" Classes="SecondaryButton" Click="OnGroupPickerCancelClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Card tạo nhóm mới — hiện qua ModalService -->
+        <Border x:Name="NewGroupCard" IsVisible="False"
+                Background="White" CornerRadius="12" Width="340" Padding="24">
+            <StackPanel>
+                <TextBlock Text="Tên nhóm:" Foreground="{StaticResource TextMuted}" FontSize="15" Margin="0,0,0,4"/>
+                <TextBox x:Name="NewGroupNameBox" FontSize="15" Padding="10,8" Margin="0,0,0,18"
+                         BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Tạo" Width="90" Classes="JadeButton" FontSize="15" Click="OnNewGroupSaveClick"/>
+                    <Button Content="Hủy" Width="90" Margin="8,0,0,0" Classes="SecondaryButton" Click="OnNewGroupCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>

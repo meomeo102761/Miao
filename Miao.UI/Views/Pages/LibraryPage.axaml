@@ -6,7 +6,7 @@
     <UserControl.Styles>
 
         <Style Selector="TextBlock.sectionLinkText">
-            <Setter Property="FontFamily" Value="Arial"/>
+            <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -40,27 +40,27 @@
                         </Grid>
                     </Border>
 
-                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Arial" FontSize="17"
+                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="17"
                                FontWeight="Bold" Foreground="#444" Margin="0,8,0,0"
-                               TextAlignment="Left" HorizontalAlignment="Stretch"
+                               TextAlignment="Center" HorizontalAlignment="Stretch"
                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
 
-                    <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding DisplayAuthor}" FontFamily="Inter" FontSize="15"
                                Foreground="#333" Margin="0,2,0,0" MaxWidth="200"
-                               HorizontalAlignment="Center" TextAlignment="Center"
-                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                               HorizontalAlignment="Stretch" TextAlignment="Center"
+                               TextWrapping="Wrap"/>
 
-                    <TextBlock Text="{Binding DirectionTag}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding DirectionTag}" FontFamily="Inter" FontSize="15"
                                Foreground="#999" Margin="0,2,0,0" MaxWidth="200"
                                HorizontalAlignment="Center" TextAlignment="Center"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
 
-                    <TextBlock Text="{Binding Status}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding Status}" FontFamily="Inter" FontSize="15"
                                Foreground="#999" Margin="0,2,0,0" MaxWidth="200"
                                HorizontalAlignment="Center" TextAlignment="Center"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
 
-                    <TextBlock Text="{Binding ReadProgress}" FontFamily="Arial" FontSize="15"
+                    <TextBlock Text="{Binding ReadProgress}" FontFamily="Inter" FontSize="15"
                                Foreground="#999" Margin="0,2,0,8" MaxWidth="200"
                                HorizontalAlignment="Center" TextAlignment="Center"/>
                 </StackPanel>
@@ -94,7 +94,7 @@
                         BorderThickness="1">
                     <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" FocusAdorner="{x:Null}"
                              Padding="8,0" VerticalContentAlignment="Center"
-                             FontFamily="Arial" FontSize="15" KeyDown="SearchBox_KeyDown"/>
+                             FontFamily="Inter" FontSize="15" KeyDown="SearchBox_KeyDown"/>
                 </Border>
                 <Button Content="Tìm" Width="65" Height="38" Margin="8,0,0,0"
                         Classes="jade" Click="OnSearchClick"/>
@@ -102,7 +102,7 @@
         </Grid>
 
         <StackPanel x:Name="LatestSection" Grid.Row="1" Margin="0,0,0,24">
-            <TextBlock Text="Mới nhất" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
+            <TextBlock Text="Mới nhất" FontFamily="Inter" FontSize="20" FontWeight="Bold" Foreground="#444"/>
             <TextBlock Text="Xem tất cả »" Classes="sectionLinkText" PointerPressed="OnShowAllLatestClick"/>
             <ItemsControl x:Name="LatestPreviewList" ItemTemplate="{StaticResource NovelCardTemplate}" Margin="-15,10,-15,0">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -111,7 +111,7 @@
         </StackPanel>
 
         <StackPanel x:Name="CompletedSection" Grid.Row="2" Margin="0,0,0,24">
-            <TextBlock Text="Hoàn thành" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
+            <TextBlock Text="Hoàn thành" FontFamily="Inter" FontSize="20" FontWeight="Bold" Foreground="#444"/>
             <TextBlock Text="Xem tất cả »" Classes="sectionLinkText" PointerPressed="OnShowAllCompletedClick"/>
             <ItemsControl x:Name="CompletedPreviewList" ItemTemplate="{StaticResource NovelCardTemplate}" Margin="-15,10,-15,0">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -122,7 +122,7 @@
         <Border Grid.Row="3" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1" Margin="0,0,0,16" Padding="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <TextBlock x:Name="ListSectionTitleText" Grid.Column="0" Text="Tất cả truyện" FontFamily="Arial" FontSize="20" FontWeight="Bold" Foreground="#444"/>
+                <TextBlock x:Name="ListSectionTitleText" Grid.Column="0" Text="Tất cả truyện" FontFamily="Inter" FontSize="20" FontWeight="Bold" Foreground="#444"/>
                 <TextBlock x:Name="BackToFullListLink" Grid.Column="1" Text="‹ Quay lại danh sách đầy đủ" Classes="sectionLinkText" Margin="0" IsVisible="False" PointerPressed="OnBackToFullListClick"/>
             </Grid>
         </Border>

@@ -2,11 +2,6 @@ using System.Text;
 
 namespace Miao.Core.Services
 {
-    /// <summary>
-    /// Giải mã text bị Fanqie che bằng vùng Private Use Area (PUA), dùng cho
-    /// đường fallback không cần REG_KEY trong <see cref="FanqieDownloadSource"/>.
-    /// Xem thêm giải thích cơ chế trong <see cref="FanqieCharset"/>.
-    /// </summary>
     public static class FanqiePuaDecoder
     {
         public static string Decode(string rawText)

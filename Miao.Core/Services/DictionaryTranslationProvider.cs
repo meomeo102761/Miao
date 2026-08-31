@@ -86,15 +86,6 @@ namespace Miao.Core.Services
         }
     }
 
-    /// <summary>
-    /// Engine dịch dựa trên cơ chế dictionary của
-    /// Novel Downloader 5:
-    ///
-    /// Name.json
-    /// VP.json
-    /// HanViet.json
-    /// Longest Match
-    /// </summary>
     public sealed class DictionaryTranslationProvider
         : ITranslationProvider
     {
@@ -281,12 +272,6 @@ namespace Miao.Core.Services
             };
         }
 
-        // Tra Hán Việt "bám theo từ gốc": ưu tiên khớp NGUYÊN CỤM trong từ điển
-        // Name.json (tên riêng đã được biên soạn sẵn, vd "萧炎" -> "Tiêu Viêm"
-        // thay vì ghép rời "Tiêu" + "Diễm"/"Viêm" theo từng chữ), phần còn lại
-        // không khớp cụm nào thì fallback đọc Hán Việt từng chữ qua HanViet.json.
-        // Dùng cho các màn hình nhập/sửa tên (Glossary, chi tiết truyện, Reader)
-        // để gợi ý Hán Việt chính xác hơn SinoVietnameseConverter thuần ký tự.
         public async Task<string> ToHanVietPhraseAsync(string text)
         {
             await EnsureInitializedAsync();
@@ -407,8 +392,6 @@ namespace Miao.Core.Services
                     var reading =
                         hanViet.Value;
 
-                    // Viết hoa chữ cái đầu mỗi âm tiết, đúng quy ước tên riêng
-                    // tiếng Việt (giống cách SinoVietnameseConverter đang làm).
                     reading =
                         char.ToUpperInvariant(reading[0]) +
                         reading[1..];

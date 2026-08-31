@@ -9,8 +9,8 @@ namespace Miao.Core.Models
         public Guid NovelId { get; set; }
         public Novel? Novel { get; set; }
 
-        public string SourceName { get; set; } = string.Empty; // VD: "69shuba", "Qidian"
+        public string SourceName { get; set; } = string.Empty;
         public string Url { get; set; } = string.Empty;
-        public bool IsPrimary { get; set; } = false; // nguồn chính, dùng khi tải lại/cập nhật
+        public bool IsPrimary { get; set; } = false;
     }
 }

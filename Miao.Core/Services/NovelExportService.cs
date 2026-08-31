@@ -30,12 +30,6 @@ namespace Miao.Core.Services
             }
         }
 
-        // ---------------------------------------------------------------
-        // EPUB — tự dựng bằng System.IO.Compression, không cần thư viện
-        // ghi epub riêng (VersOne.Epub trong project chỉ dùng để ĐỌC epub).
-        // Cấu trúc tối thiểu hợp lệ: mimetype (lưu thô, không nén) +
-        // META-INF/container.xml + OEBPS/content.opf + toc.ncx + các .xhtml.
-        // ---------------------------------------------------------------
         private static void ExportEpub(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
         {
             if (File.Exists(outputPath)) File.Delete(outputPath);
@@ -43,7 +37,6 @@ namespace Miao.Core.Services
             using var zipStream = new FileStream(outputPath, FileMode.Create);
             using var archive = new ZipArchive(zipStream, ZipArchiveMode.Create);
 
-            // mimetype PHẢI là entry đầu tiên và KHÔNG nén — chuẩn epub yêu cầu vậy.
             var mimetypeEntry = archive.CreateEntry("mimetype", CompressionLevel.NoCompression);
             using (var w = new StreamWriter(mimetypeEntry.Open())) w.Write("application/epub+zip");
 
@@ -136,9 +129,6 @@ namespace Miao.Core.Services
         private static string GetContent(Chapter ch, bool useOriginal) =>
             useOriginal ? (ch.OriginalContent ?? "") : (ch.DisplayContent ?? "");
 
-        // ---------------------------------------------------------------
-        // DOCX — dùng DocumentFormat.OpenXml (đã có sẵn trong project).
-        // ---------------------------------------------------------------
         private static void ExportDocx(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
         {
             if (File.Exists(outputPath)) File.Delete(outputPath);
@@ -183,9 +173,6 @@ namespace Miao.Core.Services
             return p;
         }
 
-        // ---------------------------------------------------------------
-        // PDF — dùng QuestPDF (đã có sẵn trong project, license Community).
-        // ---------------------------------------------------------------
         private static void ExportPdf(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
         {
             QuestPDF.Settings.License = LicenseType.Community;
@@ -196,12 +183,12 @@ namespace Miao.Core.Services
                 {
                     page.Size(PageSizes.A5);
                     page.Margin(30);
-                    page.DefaultTextStyle(x => x.FontSize(12));
+                    page.DefaultTextStyle(x => x.FontSize(13));
 
                     page.Content().Column(col =>
                     {
                         col.Item().Text(novel.DisplayTitle).FontSize(20).Bold();
-                        col.Item().Text($"Tác giả: {novel.Author}").FontSize(12).Italic();
+                        col.Item().Text($"Tác giả: {novel.Author}").FontSize(13).Italic();
                         col.Item().PaddingVertical(10);
 
                         foreach (var ch in chapters)

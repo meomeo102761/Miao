@@ -80,11 +80,8 @@ namespace Miao.UI.Views.Pages
             _isReady = true;
             DoSearch();
 
-            // Bắt PointerPressed ở pha Tunnel để không bị CheckBox (tên tag) nuốt mất sự kiện
             AddHandler(PointerPressedEvent, OnTunnelDragStartPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
         }
-
-        // ================= NẠP DỮ LIỆU / BỐ CỤC BỘ LỌC =================
 
         private void LoadTagFilters()
         {
@@ -126,7 +123,6 @@ namespace Miao.UI.Views.Pages
 
             TagGroupsShowAllButton.IsVisible = !isSearching && extra.Count > 0 && !_groupsExpanded;
 
-            // Đợi Avalonia dựng xong container mới rồi mới dò nút, tránh bị bỏ sót
             Dispatcher.UIThread.Post(UpdateEditButtons, DispatcherPriority.Loaded);
         }
 
@@ -149,8 +145,6 @@ namespace Miao.UI.Views.Pages
         }
 
         private void OnEditClick(object? sender, RoutedEventArgs e) => IsEditMode = !IsEditMode;
-
-        // ================= LƯU / NẠP BỐ CỤC =================
 
         private class SearchFilterLayout
         {
@@ -193,7 +187,7 @@ namespace Miao.UI.Views.Pages
             }
             catch
             {
-                // Không để lỗi lưu layout làm hỏng SearchPage
+                
             }
         }
 
@@ -245,8 +239,6 @@ namespace Miao.UI.Views.Pages
             }
         }
 
-                // ================= BẮT ĐẦU KÉO (Tunnel — chạy trước khi CheckBox đánh dấu Handled) =================
-
         private void OnTunnelDragStartPressed(object? sender, PointerPressedEventArgs e)
         {
             if (!IsEditMode) return;
@@ -294,8 +286,6 @@ namespace Miao.UI.Views.Pages
             data = null;
             return null;
         }
-
-        // ================= KÉO-THẢ SẮP XẾP NHÓM / TAG =================
 
         private void GroupPointerPressed(object? sender, PointerPressedEventArgs e)
         {
@@ -379,7 +369,7 @@ namespace Miao.UI.Views.Pages
                     _dragPressedEventArgs = e;
                     _dragTag = tag;
                     _dragGroup = group;
-                    e.Handled = true; // chặn không cho bubble lên GroupPointerPressed  
+                    e.Handled = true;  
                 }
             }
         }
@@ -389,7 +379,7 @@ namespace Miao.UI.Views.Pages
             if (!IsEditMode || _dragTag == null || _dragGroup == null || !e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
                 return;
 
-            e.Handled = true; // chặn không cho bubble lên GroupPointerMoved
+            e.Handled = true;
 
             var diff = _dragStartPoint - e.GetPosition(null);
             if (Math.Abs(diff.X) < 6 && Math.Abs(diff.Y) < 6)
@@ -479,8 +469,6 @@ namespace Miao.UI.Views.Pages
                     yield return descendant;
             }
         }
-
-        // ================= SỬA / XOÁ NHÓM & TAG =================
 
         private void OnEditCategoryClick(object? sender, RoutedEventArgs e)
         {
@@ -594,8 +582,6 @@ namespace Miao.UI.Views.Pages
             });
         }
 
-        // ================= GỢI Ý TAG =================
-
         private static string NormalizeForSearch(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
@@ -647,8 +633,6 @@ namespace Miao.UI.Views.Pages
             _tagSuggestShowAll = true;
             RefreshTagSuggestList();
         }
-
-        // ================= CHẶN TAG =================
 
         private void OnBlockTagSuggestChanged(object? sender, TextChangedEventArgs e)
         {
@@ -715,8 +699,6 @@ namespace Miao.UI.Views.Pages
             }
         }
 
-        // ================= THỜI GIAN =================
-
         private void SetupTimeDropdowns()
         {
             for (int m = 1; m <= 12; m++)
@@ -729,8 +711,6 @@ namespace Miao.UI.Views.Pages
 
             TimeYearBox.SelectedIndex = TimeYearBox.Items.Count - 1;
         }
-
-        // ================= TÌM KIẾM =================
 
         private void OnFilterChanged(object? sender, RoutedEventArgs e)
         {
@@ -825,6 +805,8 @@ namespace Miao.UI.Views.Pages
                 }
             }
 
+            NovelEnrichmentService.ApplyDisplayInfo(db, results);
+
             ResultsList.ItemsSource = results;
             ResultCountText.Text = results.Count == 0
                 ? "Không tìm thấy truyện nào khớp bộ lọc."
@@ -850,8 +832,6 @@ namespace Miao.UI.Views.Pages
             if (sender is Control fe && fe.Tag is Novel novel)
                 AppNavigator.NavigateTo(new NovelDetailPage(novel.Id));
         }
-
-        // ================= DIALOG DÙNG CHUNG (qua ModalService, thay cho Window.ShowDialog) =================
 
         private void ShowInputDialog(string title, string label, string defaultValue, Action<string?> onResult)
         {

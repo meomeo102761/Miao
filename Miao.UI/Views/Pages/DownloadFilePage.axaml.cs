@@ -27,9 +27,6 @@ namespace Miao.UI.Views.Pages
             FilesList.ItemsSource = _files;
         }
 
-        // Avalonia: IStorageProvider thay cho Microsoft.Win32.OpenFileDialog.
-        // Cùng 1 API này tự chạy đúng trên Desktop (dialog hệ điều hành) lẫn
-        // Android (Storage Access Framework) — không cần code riêng theo platform.
         private async void OnBrowseClick(object? sender, RoutedEventArgs e)
         {
             var topLevel = TopLevel.GetTopLevel(this);
@@ -58,7 +55,6 @@ namespace Miao.UI.Views.Pages
             {
                 var filePath = file.Path.LocalPath;
 
-                // Bỏ qua nếu file này đã có trong danh sách
                 if (_files.Any(f => f.FilePath == filePath)) continue;
 
                 var row = new ImportFileRow { FilePath = filePath };
@@ -192,7 +188,7 @@ namespace Miao.UI.Views.Pages
                         }
                         catch
                         {
-                            // Giữ nguyên tiêu đề gốc nếu dịch lỗi.
+                            
                         }
                     }
 
@@ -256,7 +252,7 @@ namespace Miao.UI.Views.Pages
                 }
                 catch
                 {
-                    // Không để lỗi dịch tiêu đề làm hỏng việc nhập truyện.
+                    
                 }
             }
 
@@ -270,7 +266,7 @@ namespace Miao.UI.Views.Pages
                 }
                 catch
                 {
-                    // Không để lỗi dịch tác giả làm hỏng việc nhập truyện.
+                    
                 }
             }
 
@@ -333,8 +329,6 @@ namespace Miao.UI.Views.Pages
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
-        // Avalonia không hỗ trợ "!Binding" trực tiếp trong DataTemplate ở mọi trường hợp
-        // nên thêm property tính sẵn thay vì converter (rõ ràng hơn khi maintain)
         public bool ShowFields => !HasError;
 
         public ImportedNovel? Imported { get; set; }

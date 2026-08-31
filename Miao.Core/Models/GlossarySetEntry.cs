@@ -9,9 +9,9 @@ namespace Miao.Core.Models
         public Guid GlossarySetId { get; set; }
         public GlossarySet? GlossarySet { get; set; }
 
-        public string OriginalTerm { get; set; } = string.Empty;   // Gốc
-        public string? HanViet { get; set; }                        // Hán Việt
-        public string? PinYin { get; set; }                          // Bính Âm
-        public string TranslatedTerm { get; set; } = string.Empty; // Name
+        public string OriginalTerm { get; set; } = string.Empty;   
+        public string? HanViet { get; set; }                        
+        public string? PinYin { get; set; }                         
+        public string TranslatedTerm { get; set; } = string.Empty;
     }
 }

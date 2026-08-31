@@ -1,6 +1,7 @@
 using System;
 using Avalonia;  
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;  
@@ -17,12 +18,17 @@ namespace Miao.UI.Views
 
         public static ScrollViewer? Current;
 
+        private bool _readerModeActive;
+
         public MainView()
         {
             InitializeComponent();
             Current = MainScrollViewer;
 
             SizeChanged += OnSizeChanged;
+            MainScrollViewer.PropertyChanged += OnMainScrollViewerPropertyChanged;
+
+            ReaderHost.SetOuterScrollEnabled = SetOuterScrollEnabled;
 
             LegacyDatabaseMigrator.MigrateIfNeeded(AppPaths.DbFilePath);
 
@@ -35,6 +41,28 @@ namespace Miao.UI.Views
             AppNavigator.MainContent = ContentHost;
             ModalService.Register(ModalOverlay, ModalContent);
             AppNavigator.NavigateTo(new LibraryPage());
+        }
+
+        private void SetOuterScrollEnabled(bool enabled)
+        {
+            _readerModeActive = !enabled;
+
+            if (_readerModeActive)
+            {
+                MainScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                ContentHost.Height = MainScrollViewer.Bounds.Height;
+            }
+            else
+            {
+                MainScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+                ContentHost.Height = double.NaN;
+            }
+        }
+
+        private void OnMainScrollViewerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (_readerModeActive && e.Property == BoundsProperty)
+                ContentHost.Height = MainScrollViewer.Bounds.Height;
         }
 
         private void OnModalOverlayClick(object? sender, PointerPressedEventArgs e) => ModalService.Close();
@@ -62,33 +90,35 @@ namespace Miao.UI.Views
             MobileNavPopup.IsOpen = !MobileNavPopup.IsOpen;
         }
 
-        private DispatcherTimer? _downloadCheckTimer;
+        private DispatcherTimer? _downloadCloseTimer;
 
         private void OnDownloadMenuEnter(object? sender, PointerEventArgs e)
         {
+            _downloadCloseTimer?.Stop();
+            _downloadCloseTimer = null;
+
             if (!DownloadPopup.IsOpen)
                 DownloadPopup.IsOpen = true;
-
-            // Bắt đầu polling để theo dõi khi nào chuột thực sự rời khỏi cả nút lẫn popup
-            if (_downloadCheckTimer == null)
-            {
-                _downloadCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-                _downloadCheckTimer.Tick += (s, args) =>
-                {
-                    bool overButton = DownloadMenuArea.IsPointerOver;
-                    bool overPopup = DownloadPopup.Child is Control c && c.IsPointerOver;
-
-                    if (!overButton && !overPopup)
-                    {
-                        DownloadPopup.IsOpen = false;
-                        _downloadCheckTimer!.Stop();
-                        _downloadCheckTimer = null;
-                    }
-                };
-            }
-            _downloadCheckTimer.Start();
         }
-        private void OnMobileGoSearch(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoSearch(s, e); }
+
+        private void OnDownloadMenuLeave(object? sender, PointerEventArgs e)
+        {
+            _downloadCloseTimer?.Stop();
+
+            _downloadCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+            _downloadCloseTimer.Tick += (s, args) =>
+            {
+                _downloadCloseTimer!.Stop();
+                _downloadCloseTimer = null;
+
+                bool overButton = DownloadMenuArea.IsPointerOver;
+                bool overPopup = DownloadPopup.Child is Control c && c.IsPointerOver;
+
+                if (!overButton && !overPopup)
+                    DownloadPopup.IsOpen = false;
+            };
+            _downloadCloseTimer.Start();
+        }        private void OnMobileGoSearch(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoSearch(s, e); }
         private void OnMobileGoAuthorList(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoAuthorList(s, e); }
         private void OnDownloadMenuToggleClick(object? sender, RoutedEventArgs e) { DownloadPopup.IsOpen = !DownloadPopup.IsOpen; }
         private void OnMobileGoDownloadLink(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoDownloadLink(s, e); }
@@ -101,6 +131,19 @@ namespace Miao.UI.Views
         private void OnMobileGoSettings(object? s, Avalonia.Interactivity.RoutedEventArgs e) { MobileNavPopup.IsOpen = false; GoSettings(s, e); }
 
         private void OnLogoClick(object? sender, PointerPressedEventArgs e) => AppNavigator.NavigateTo(new LibraryPage());
+
+        protected override void OnPointerPressed(PointerPressedEventArgs e)
+        {
+            base.OnPointerPressed(e);
+
+            if (!DownloadPopup.IsOpen) return;
+
+            var overButton = DownloadMenuArea.IsPointerOver;
+            var overPopup = DownloadPopup.Child is Control c && c.IsPointerOver;
+
+            if (!overButton && !overPopup)
+                DownloadPopup.IsOpen = false;
+        }
 
         private void GoCustomLibraries(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => AppNavigator.NavigateTo(new CustomLibrariesPage());
         private void GoSearch(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => AppNavigator.NavigateTo(new SearchPage());

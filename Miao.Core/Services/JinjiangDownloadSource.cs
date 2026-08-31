@@ -60,16 +60,12 @@ namespace Miao.Core.Services
                 ).Trim();
             }
 
-            // ================== Tác giả ==================
-
             var authorNode = doc.DocumentNode.SelectSingleNode(
                 "//a[contains(@href,'oneauthor.php')]");
 
             var author = HtmlEntity.DeEntitize(
                 authorNode?.InnerText ?? ""
             ).Trim();
-
-            // ================== Bìa ==================
 
             var coverNode = doc.DocumentNode.SelectSingleNode(
                 "//img[contains(@class,'noveldefaultimage')]"
@@ -79,10 +75,8 @@ namespace Miao.Core.Services
 
             if (coverNode != null)
             {
-                // src là ảnh bìa thực tế đang được trang hiển thị
                 cover = coverNode.GetAttributeValue("src", "");
 
-                // Chỉ fallback sang _src nếu src không có
                 if (string.IsNullOrWhiteSpace(cover))
                     cover = coverNode.GetAttributeValue("_src", "");
 
@@ -92,8 +86,6 @@ namespace Miao.Core.Services
                         HtmlEntity.DeEntitize(cover).Trim()
                     );
             }
-
-            // ================== Mô tả ==================
 
             var descriptionNode = doc.DocumentNode.SelectSingleNode(
                 "//div[@id='novelintro']");

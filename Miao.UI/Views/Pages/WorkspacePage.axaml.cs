@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Controls.Primitives;
 using Miao.Core.Data;
 using Miao.Core.Models;
 using Miao.Core.Services;
@@ -17,6 +18,8 @@ namespace Miao.UI.Views.Pages
     public partial class WorkspacePage : UserControl
     {
         private const int ChaptersPerPage = 100;
+        private static readonly DataFormat<ChapterRow> ChapterDragFormat =
+            DataFormat.CreateInProcessFormat<ChapterRow>("Miao.ChapterRow");
 
         private readonly Guid _novelId;
 
@@ -31,8 +34,6 @@ namespace Miao.UI.Views.Pages
             _novelId = novelId;
             LoadWorkspace();
         }
-
-        // ================= NẠP DỮ LIỆU =================
 
         private void LoadWorkspace()
         {
@@ -80,7 +81,7 @@ namespace Miao.UI.Views.Pages
 
             foreach (var vol in volumes)
             {
-                groups.Add(new VolumeGroup(ChaptersPerPage)
+                var group = new VolumeGroup(ChaptersPerPage)
                 {
                     VolumeId = vol.Id,
                     Name = vol.Name,
@@ -89,10 +90,12 @@ namespace Miao.UI.Views.Pages
                         .OrderBy(c => c.Number)
                         .Select(ToRow)
                         .ToList()
-                });
+                };
+                foreach (var row in group.AllChapters) row.ParentGroup = group;
+                groups.Add(group);
             }
 
-            groups.Add(new VolumeGroup(ChaptersPerPage)
+            var unassignedGroup = new VolumeGroup(ChaptersPerPage)
             {
                 VolumeId = null,
                 Name = "Chưa phân quyển",
@@ -101,7 +104,9 @@ namespace Miao.UI.Views.Pages
                     .OrderBy(c => c.Number)
                     .Select(ToRow)
                     .ToList()
-            });
+            };
+            foreach (var row in unassignedGroup.AllChapters) row.ParentGroup = unassignedGroup;
+            groups.Add(unassignedGroup);
 
             VolumesList.ItemsSource = groups;
             UpdateBulkDeleteButton();
@@ -116,6 +121,8 @@ namespace Miao.UI.Views.Pages
                 _selectedChapterIds.Add(row.Id);
             else
                 _selectedChapterIds.Remove(row.Id);
+
+            row.ParentGroup?.NotifySelectionChanged();
 
             UpdateBulkDeleteButton();
         }
@@ -134,14 +141,70 @@ namespace Miao.UI.Views.Pages
             }
 
             UpdateBulkDeleteButton();
-            LoadWorkspace();
+
+            group.NotifySelectionChanged();
         }
 
         private void UpdateBulkDeleteButton()
         {
             var count = _selectedChapterIds.Count;
-            BulkDeleteButton.Content = $"🗑 Xóa đã chọn ({count})";
+            BulkDeleteButton.Content = $"✕ Xóa đã chọn ({count})";
             BulkDeleteButton.IsVisible = count > 0;
+            AddToVolumeButton.Content = $"→ Thêm vào quyển ({count})";
+            AddToVolumeButton.IsVisible = count > 0;
+        }
+
+        private void OnApplyRangeClick(object? sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(RangeFromBox.Text?.Trim(), out var from)) from = int.MinValue;
+            if (!int.TryParse(RangeToBox.Text?.Trim(), out var to)) to = int.MaxValue;
+
+            if (VolumesList.ItemsSource is not IEnumerable<VolumeGroup> groups) return;
+
+            foreach (var group in groups)
+            {
+                foreach (var row in group.AllChapters)
+                {
+                    row.IsSelected = row.Number >= from && row.Number <= to;
+                    if (row.IsSelected) _selectedChapterIds.Add(row.Id);
+                    else _selectedChapterIds.Remove(row.Id);
+                }
+                group.NotifySelectionChanged();
+            }
+
+            UpdateBulkDeleteButton();
+        }
+
+        private void OnSelectAllChaptersClick(object? sender, RoutedEventArgs e)
+        {
+            if (VolumesList.ItemsSource is not IEnumerable<VolumeGroup> groups) return;
+
+            foreach (var group in groups)
+            {
+                foreach (var row in group.AllChapters)
+                {
+                    row.IsSelected = true;
+                    _selectedChapterIds.Add(row.Id);
+                }
+                group.NotifySelectionChanged();
+            }
+
+            UpdateBulkDeleteButton();
+        }
+
+        private void OnDeselectAllChaptersClick(object? sender, RoutedEventArgs e)
+        {
+            if (VolumesList.ItemsSource is not IEnumerable<VolumeGroup> groups) return;
+
+            foreach (var group in groups)
+            {
+                foreach (var row in group.AllChapters)
+                    row.IsSelected = false;
+                group.NotifySelectionChanged();
+            }
+
+            _selectedChapterIds.Clear();
+            UpdateBulkDeleteButton();
         }
 
         private void OnBulkDeleteChaptersClick(object? sender, RoutedEventArgs e)
@@ -167,12 +230,10 @@ namespace Miao.UI.Views.Pages
             });
         }
 
-        // ================= LỚP DỮ LIỆU DÙNG RIÊNG CHO TRANG =================
-
         private static readonly IBrush MarkerHasContentBrush = new SolidColorBrush(Color.FromRgb(0x2E, 0x9E, 0x4F));
         private static readonly IBrush MarkerEmptyBrush = new SolidColorBrush(Color.FromRgb(0xCC, 0xCC, 0xCC));
 
-        public class ChapterRow
+        public class ChapterRow : INotifyPropertyChanged
         {
             public Guid Id { get; set; }
             public int Number { get; set; }
@@ -181,9 +242,19 @@ namespace Miao.UI.Views.Pages
             public bool HasContent { get; set; }
             public int GlobalIndex { get; set; }
             public bool ShowGlobalIndex { get; set; }
-            public bool IsSelected { get; set; }
+
+            private bool _isSelected;
+            public bool IsSelected
+            {
+                get => _isSelected;
+                set { _isSelected = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected))); }
+            }
+
+            public VolumeGroup? ParentGroup { get; set; }
 
             public IBrush MarkerBrush => HasContent ? MarkerHasContentBrush : MarkerEmptyBrush;
+
+            public event PropertyChangedEventHandler? PropertyChanged;
         }
 
         public class PagerItem
@@ -263,30 +334,21 @@ namespace Miao.UI.Views.Pages
                 OnPropertyChanged(nameof(PagerItems));
             }
 
+            public void NotifySelectionChanged() => OnPropertyChanged(nameof(IsAllSelected));
+
+            public void RefreshChapterRows()
+            {
+                OnPropertyChanged(nameof(PagedChapters));
+                OnPropertyChanged(nameof(IsAllSelected));
+            }
+
             public event PropertyChangedEventHandler? PropertyChanged;
             private void OnPropertyChanged(string name)
                 => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        public class PickItem
-        {
-            public Guid ChapterId { get; set; }
-            public string Label { get; set; } = "";
-            public bool IsSelected { get; set; }
-        }
-
-        // ================= ĐIỀU HƯỚNG =================
-
         private void OnBackToNovelClick(object? sender, PointerPressedEventArgs e)
             => AppNavigator.NavigateTo(new NovelDetailPage(_novelId));
-
-        private void OnChapterClick(object? sender, PointerPressedEventArgs e)
-        {
-            if (sender is Control fe && fe.Tag is ChapterRow row)
-                AppNavigator.NavigateTo(new ReaderPage(_novelId, row.Number, startInEditMode: true));
-        }
-
-        // ================= PHÂN TRANG THEO TỪNG QUYỂN =================
 
         private void OnGroupPrevPageClick(object? sender, RoutedEventArgs e)
         {
@@ -306,7 +368,60 @@ namespace Miao.UI.Views.Pages
                 item.Group.GoToPage(item.Page);
         }
 
-        // ================= XÓA CHƯƠNG =================
+        private async void OnChapterDragHandlePressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (sender is not Control fe || fe.Tag is not ChapterRow row) return;
+
+            var item = new DataTransferItem();
+            item.Set(ChapterDragFormat, row);
+
+            var data = new DataTransfer();
+            data.Add(item);
+
+            await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Move);
+        }
+
+        private void OnChapterRowDragOver(object? sender, DragEventArgs e)
+        {
+            e.DragEffects = e.DataTransfer.Contains(ChapterDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+        }
+
+        private void OnChapterRowDrop(object? sender, DragEventArgs e)
+        {
+            if (sender is not Control targetControl || targetControl.Tag is not ChapterRow targetRow) return;
+
+            var sourceRow = e.DataTransfer.TryGetValue(ChapterDragFormat);
+            if (sourceRow == null || sourceRow.Id == targetRow.Id) return;
+
+            ReorderChapters(sourceRow, targetRow);
+        }
+
+        private void ReorderChapters(ChapterRow sourceRow, ChapterRow targetRow)
+        {
+            var group = sourceRow.ParentGroup;
+            if (group == null || !ReferenceEquals(group, targetRow.ParentGroup))
+                return;
+
+            var list = group.AllChapters;
+            var sourceIndex = list.FindIndex(c => c.Id == sourceRow.Id);
+            var targetIndex = list.FindIndex(c => c.Id == targetRow.Id);
+            if (sourceIndex < 0 || targetIndex < 0)
+                return;
+
+            list.RemoveAt(sourceIndex);
+            list.Insert(targetIndex, sourceRow);
+
+            using var db = new MiaoDbContext(AppPaths.DbFilePath);
+            for (int i = 0; i < list.Count; i++)
+            {
+                var chapter = db.Chapters.Find(list[i].Id);
+                if (chapter != null)
+                    chapter.Number = i + 1;
+            }
+            db.SaveChanges();
+
+            LoadWorkspace();
+        }
 
         private void OnDeleteChapterClick(object? sender, RoutedEventArgs e)
         {
@@ -362,40 +477,11 @@ namespace Miao.UI.Views.Pages
             db.SaveChanges();
         }
 
-        // ================= TẠO QUYỂN =================
-
         private void OnCreateVolumeClick(object? sender, RoutedEventArgs e)
         {
             NewVolumeNameBox.Text = "";
-            RangeFromBox.Text = "";
-            RangeToBox.Text = "";
-            RangeModeRadio.IsChecked = true;
-            RangePanel.IsVisible = true;
-            ManualPanel.IsVisible = false;
             CreateVolumeErrorText.IsVisible = false;
-
-            var unassigned = _allChapters
-                .Where(c => c.VolumeId == null)
-                .OrderBy(c => c.Number)
-                .ToList();
-
-            ManualPickList.ItemsSource = unassigned
-                .Select(c => new PickItem { ChapterId = c.Id, Label = $"Chương {c.Number}: {c.DisplayTitle}" })
-                .ToList();
-
-            if (unassigned.Count == 0)
-                ShowError(CreateVolumeErrorText, "Không còn chương nào chưa được phân quyển.");
-
             ShowModal(CreateVolumeCard);
-        }
-
-        private void OnAssignModeChanged(object? sender, RoutedEventArgs e)
-        {
-            if (RangePanel == null || ManualPanel == null) return;
-
-            bool isRange = RangeModeRadio.IsChecked == true;
-            RangePanel.IsVisible = isRange;
-            ManualPanel.IsVisible = !isRange;
         }
 
         private void OnCreateVolumeSaveClick(object? sender, RoutedEventArgs e)
@@ -407,37 +493,6 @@ namespace Miao.UI.Views.Pages
                 return;
             }
 
-            List<Guid> chapterIdsToAssign;
-
-            if (RangeModeRadio.IsChecked == true)
-            {
-                if (!int.TryParse(RangeFromBox.Text?.Trim(), out var from) ||
-                    !int.TryParse(RangeToBox.Text?.Trim(), out var to) ||
-                    from > to)
-                {
-                    ShowError(CreateVolumeErrorText, "Phạm vi chương không hợp lệ.");
-                    return;
-                }
-
-                chapterIdsToAssign = _allChapters
-                    .Where(c => c.VolumeId == null && c.Number >= from && c.Number <= to)
-                    .Select(c => c.Id)
-                    .ToList();
-            }
-            else
-            {
-                chapterIdsToAssign = (ManualPickList.ItemsSource as IEnumerable<PickItem>)?
-                    .Where(p => p.IsSelected)
-                    .Select(p => p.ChapterId)
-                    .ToList() ?? new List<Guid>();
-            }
-
-            if (chapterIdsToAssign.Count == 0)
-            {
-                ShowError(CreateVolumeErrorText, "Chưa chọn chương nào cho quyển này.");
-                return;
-            }
-
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
 
             var maxOrder = db.Volumes
@@ -445,18 +500,7 @@ namespace Miao.UI.Views.Pages
                 .Select(v => (int?)v.SortOrder)
                 .Max() ?? 0;
 
-            var volume = new Volume
-            {
-                NovelId = _novelId,
-                Name = name,
-                SortOrder = maxOrder + 1
-            };
-            db.Volumes.Add(volume);
-            db.SaveChanges();
-
-            var chapters = db.Chapters.Where(c => chapterIdsToAssign.Contains(c.Id)).ToList();
-            foreach (var c in chapters)
-                c.VolumeId = volume.Id;
+            db.Volumes.Add(new Volume { NovelId = _novelId, Name = name, SortOrder = maxOrder + 1 });
             db.SaveChanges();
 
             ModalService.Close();
@@ -466,7 +510,102 @@ namespace Miao.UI.Views.Pages
         private void OnCreateVolumeCancelClick(object? sender, RoutedEventArgs e)
             => ModalService.Close();
 
-        // ================= SỬA / XÓA QUYỂN =================
+        private Popup? _addToVolumePopup;
+
+        private void OnAddToVolumeClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button addButton) return;
+            if (_addToVolumePopup != null) _addToVolumePopup.IsOpen = false;
+
+            var panel = new StackPanel();
+
+            using (var db = new MiaoDbContext(AppPaths.DbFilePath))
+            {
+                var volumes = db.Volumes.Where(v => v.NovelId == _novelId).OrderBy(v => v.SortOrder).ToList();
+
+                if (volumes.Count == 0)
+                {
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "Chưa có quyển nào. Bấm \"Tạo quyển\" trước.",
+                        Foreground = (IBrush)(Application.Current?.FindResource("TextMuted") ?? Brushes.Gray),
+                        TextWrapping = TextWrapping.Wrap, MaxWidth = 220, Margin = new Thickness(10)
+                    });
+                }
+
+                foreach (var vol in volumes)
+                {
+                    var volumeId = vol.Id;
+                    var btn = new Button
+                    {
+                        Classes = { "VolumeMenuItem" },
+                        Content = new TextBlock { Text = vol.Name, TextWrapping = TextWrapping.Wrap, MaxWidth = 230 }
+                    };
+                    btn.Click += (_, _) =>
+                    {
+                        AssignSelectedChaptersToVolume(volumeId);
+                        if (_addToVolumePopup != null) _addToVolumePopup.IsOpen = false;
+                    };
+                    panel.Children.Add(btn);
+                }
+
+                panel.Children.Add(new Separator { Margin = new Thickness(4, 3, 4, 3) });
+
+                var unassignBtn = new Button
+                {
+                    Classes = { "VolumeMenuItem" },
+                    Content = new TextBlock { Text = "Chưa phân quyển", TextWrapping = TextWrapping.Wrap, MaxWidth = 230 }
+                };
+                panel.Children.Add(unassignBtn);
+            }
+
+            var card = new Border
+            {
+                Background = Brushes.White,
+                BorderBrush = (IBrush)(Application.Current?.FindResource("BorderSoft") ?? Brushes.LightGray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(4),
+                Width = 280,
+                Child = panel
+            };
+
+            _addToVolumePopup = new Popup
+            {
+                PlacementTarget = addButton,
+                Placement = PlacementMode.Bottom,
+                IsLightDismissEnabled = true,
+                Child = card,
+                IsOpen = true
+            };
+
+            ((ISetLogicalParent)_addToVolumePopup).SetParent(this);
+        }
+
+        private void AssignSelectedChaptersToVolume(Guid? volumeId)
+        {
+            if (_selectedChapterIds.Count == 0) return;
+
+            using var db = new MiaoDbContext(AppPaths.DbFilePath);
+            var chapters = db.Chapters.Where(c => _selectedChapterIds.Contains(c.Id)).ToList();
+            if (chapters.Count == 0) return;
+
+            var affectedSourceVolumeIds = chapters.Select(c => c.VolumeId).Distinct().ToList();
+
+            foreach (var c in chapters)
+                c.VolumeId = volumeId;
+
+            db.SaveChanges();
+
+            foreach (var sourceId in affectedSourceVolumeIds)
+                if (sourceId != volumeId)
+                    RenumberScope(db, sourceId);
+
+            RenumberScope(db, volumeId);
+
+            _selectedChapterIds.Clear();
+            LoadWorkspace();
+        }
 
         private void OnEditVolumeClick(object? sender, RoutedEventArgs e)
         {
@@ -532,8 +671,6 @@ namespace Miao.UI.Views.Pages
         private void OnEditVolumeCancelClick(object? sender, RoutedEventArgs e)
             => ModalService.Close();
 
-        // ================= POPUP XÁC NHẬN =================
-
         private void ShowConfirm(string message, Action onConfirmed)
         {
             ConfirmMessageText.Text = message;
@@ -555,8 +692,6 @@ namespace Miao.UI.Views.Pages
             ModalService.Close();
         }
 
-        // ================= HELPERS =================
-
         private void ShowModal(Control card)
         {
             if (card.Parent is Panel panel)
@@ -571,8 +706,6 @@ namespace Miao.UI.Views.Pages
             errorText.Text = message;
             errorText.IsVisible = true;
         }
-
-        // ================= SỬA TÊN CHƯƠNG =================
 
         private Guid? _editingChapterId;
         private string _editingChapterNewTitle = "";

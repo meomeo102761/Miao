@@ -23,8 +23,6 @@ namespace Miao.Core.Models
         public string Title { get; set; } = string.Empty;
         public string TranslatedTitle { get; set; } = string.Empty;
 
-        // Giữ nguyên tên chương do tác giả/nguồn cung cấp.
-        // Không tự thêm hoặc tự xoá tiền tố chương ở đây.
         public string DisplayTitle =>
             string.IsNullOrWhiteSpace(TranslatedTitle) ? Title : TranslatedTitle;
 

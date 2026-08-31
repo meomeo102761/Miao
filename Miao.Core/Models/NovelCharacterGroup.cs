@@ -2,8 +2,6 @@ using System;
 
 namespace Miao.Core.Models
 {
-    // Bảng nối = "Dàn nhân vật đang được BẬT cho truyện này khi đọc"
-    // Tương tự NovelGlossarySet — 1 truyện có thể bật nhiều dàn nhân vật cùng lúc
     public class NovelCharacterGroup
     {
         public Guid Id { get; set; } = Guid.NewGuid();

@@ -6,9 +6,6 @@ using HtmlAgilityPack;
 
 namespace Miao.Core.Services
 {
-    // Duyệt cây HTML theo đúng thứ tự xuất hiện, giữ lại text VÀ ảnh (dưới dạng
-    // placeholder [[IMG:url]]) thay vì strip hết tag như InnerText thông thường.
-    // Dùng chung cho các nguồn parse HTML (Lofter, 69shuba, Biquge, Jinjiang...).
     public static class HtmlContentExtractor
     {
         public static string ExtractTextWithImages(HtmlNode root, IEnumerable<string>? boilerplatePatterns = null)

@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Miao.Core.Data;
@@ -20,6 +23,7 @@ namespace Miao.UI.Views.Pages
         private const int PageSize = ItemsPerRow * RowsPerPage;
 
         private readonly List<Novel> _novels;
+        private List<Novel> _filteredNovels;
         private int _currentPage = 1;
 
         public AuthorPage(string authorName)
@@ -36,10 +40,46 @@ namespace Miao.UI.Views.Pages
                 .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t))
                 ?? authorName;
 
+            _filteredNovels = _novels;
             RenderPage();
         }
-        
-        private int TotalPages => Math.Max(1, (int)Math.Ceiling(_novels.Count / (double)PageSize));
+
+        private void OnSearchClick(object? sender, RoutedEventArgs e) => DoSearch();
+
+        private void SearchBox_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter) DoSearch();
+        }
+
+        private void DoSearch()
+        {
+            var keyword = RemoveDiacritics(SearchBox.Text ?? "").Trim();
+
+            _filteredNovels = string.IsNullOrEmpty(keyword)
+                ? _novels
+                : _novels.Where(n => RemoveDiacritics(n.DisplayTitle).Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            _currentPage = 1;
+            RenderPage();
+        }
+
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            var normalized = text.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (var ch in normalized)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                    sb.Append(ch);
+            }
+
+            return sb.ToString().Replace('Đ', 'D').Replace('đ', 'd').Normalize(NormalizationForm.FormC);
+        }
+
+        private int TotalPages => Math.Max(1, (int)Math.Ceiling(_filteredNovels.Count / (double)PageSize));
 
         private void GoToPage(int page)
         {
@@ -51,7 +91,11 @@ namespace Miao.UI.Views.Pages
         {
             _currentPage = Math.Clamp(_currentPage, 1, TotalPages);
 
-            NovelsList.ItemsSource = _novels
+            var isEmpty = _filteredNovels.Count == 0;
+            EmptyStateText.IsVisible = isEmpty;
+            NovelsList.IsVisible = !isEmpty;
+
+            NovelsList.ItemsSource = _filteredNovels
                 .Skip((_currentPage - 1) * PageSize)
                 .Take(PageSize)
                 .ToList();

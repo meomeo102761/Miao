@@ -14,6 +14,7 @@ namespace Miao.Core.Data
         public DbSet<GlossarySet> GlossarySets => Set<GlossarySet>();
         public DbSet<GlossarySetEntry> GlossarySetEntries => Set<GlossarySetEntry>();
         public DbSet<NovelGlossarySet> NovelGlossarySets => Set<NovelGlossarySet>();
+        public DbSet<GlossaryGroup> GlossaryGroups => Set<GlossaryGroup>();
         public DbSet<CustomLibrary> CustomLibraries => Set<CustomLibrary>();
         public DbSet<CustomLibraryNovel> CustomLibraryNovels => Set<CustomLibraryNovel>();
         public DbSet<Tag> Tags => Set<Tag>();
@@ -21,11 +22,15 @@ namespace Miao.Core.Data
         public DbSet<NovelLink> NovelLinks => Set<NovelLink>();
         public DbSet<Volume> Volumes => Set<Volume>();
 
-        // Mới — tính năng dàn nhân vật
         public DbSet<CharacterGroup> CharacterGroups => Set<CharacterGroup>();
         public DbSet<Character> Characters => Set<Character>();
         public DbSet<CharacterAlias> CharacterAliases => Set<CharacterAlias>();
         public DbSet<NovelCharacterGroup> NovelCharacterGroups => Set<NovelCharacterGroup>();
+        public DbSet<CharacterInfoSection> CharacterInfoSections => Set<CharacterInfoSection>();
+        public DbSet<CharacterInfoEntry> CharacterInfoEntries => Set<CharacterInfoEntry>();
+        public DbSet<CharacterDescriptionSection> CharacterDescriptionSections => Set<CharacterDescriptionSection>();
+        public DbSet<CharacterDescriptionBlock> CharacterDescriptionBlocks => Set<CharacterDescriptionBlock>();
+        public DbSet<CharacterFaction> CharacterFactions => Set<CharacterFaction>();
 
         public DbSet<PendingSync> PendingSyncs => Set<PendingSync>();
 
@@ -69,11 +74,11 @@ namespace Miao.Core.Data
                 .HasOne(ns => ns.GlossarySet)
                 .WithMany()
                 .HasForeignKey(ns => ns.GlossarySetId)
-                .OnDelete(DeleteBehavior.Cascade); // xóa bộ tên -> tự gỡ khỏi mọi truyện đang áp dụng
+                .OnDelete(DeleteBehavior.Cascade); 
 
             modelBuilder.Entity<NovelGlossarySet>()
                 .HasIndex(ns => new { ns.NovelId, ns.GlossarySetId })
-                .IsUnique(); // 1 truyện không áp dụng trùng 1 bộ tên 2 lần
+                .IsUnique(); 
 
             modelBuilder.Entity<Chapter>()
                 .HasMany(c => c.Notes)
@@ -117,8 +122,6 @@ namespace Miao.Core.Data
                 .HasForeignKey(l => l.NovelId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ----- Dàn nhân vật (cùng pattern với GlossarySet) -----
-
             modelBuilder.Entity<CharacterGroup>()
                 .HasMany(g => g.Characters)
                 .WithOne(c => c.CharacterGroup)
@@ -147,11 +150,46 @@ namespace Miao.Core.Data
                 .HasOne(nc => nc.CharacterGroup)
                 .WithMany()
                 .HasForeignKey(nc => nc.CharacterGroupId)
-                .OnDelete(DeleteBehavior.Cascade); // xóa dàn nhân vật -> tự gỡ khỏi mọi truyện đang bật
+                .OnDelete(DeleteBehavior.Cascade); 
 
             modelBuilder.Entity<NovelCharacterGroup>()
                 .HasIndex(nc => new { nc.NovelId, nc.CharacterGroupId })
-                .IsUnique(); // 1 truyện không bật trùng 1 dàn nhân vật 2 lần
+                .IsUnique(); 
+                
+            modelBuilder.Entity<CharacterInfoSection>()
+                .HasOne(s => s.Character)
+                .WithMany()
+                .HasForeignKey(s => s.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CharacterInfoEntry>()
+                .HasOne(e => e.Section)
+                .WithMany(s => s.Entries)
+                .HasForeignKey(e => e.CharacterInfoSectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CharacterDescriptionSection>()
+                .HasOne(s => s.Character)
+                .WithMany()
+                .HasForeignKey(s => s.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CharacterDescriptionBlock>()
+                .HasOne(b => b.Section)
+                .WithMany(s => s.Blocks)
+                .HasForeignKey(b => b.CharacterDescriptionSectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<CharacterFaction>()
+                .HasOne(f => f.CharacterGroup)
+                .WithMany()
+                .HasForeignKey(f => f.CharacterGroupId)
+                .OnDelete(DeleteBehavior.Cascade); 
+
+            modelBuilder.Entity<Character>()
+                .HasOne(c => c.Faction)
+                .WithMany()
+                .HasForeignKey(c => c.FactionId)
+                .OnDelete(DeleteBehavior.SetNull); 
         }
     }
 }
