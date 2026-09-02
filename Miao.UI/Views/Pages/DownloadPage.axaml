@@ -17,9 +17,14 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
+        <Style Selector="Button.tagChip TextBlock">
+            <Setter Property="Foreground" Value="#2FBF9A"/>
+        </Style>
+
         <Style Selector="Button.tagChip:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#E8FBF5"/>
         </Style>
+
         <Style Selector="Button.tagChipActive">
             <Setter Property="Background" Value="#2FBF9A"/>
             <Setter Property="BorderBrush" Value="#2FBF9A"/>
@@ -30,6 +35,9 @@
             <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.tagChipActive TextBlock">
+            <Setter Property="Foreground" Value="White"/>
         </Style>
     </UserControl.Styles>
 
@@ -111,8 +119,8 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="x:String">
-                            <Button Content="{Binding}" Tag="{Binding}"
+                        <DataTemplate x:DataType="local:TagChipItem">
+                            <Button Content="{Binding DisplayName}" Tag="{Binding Original}"
                                     Margin="0,0,8,8" Click="OnTagClick"
                                     Classes="tagChip"/>
                         </DataTemplate>

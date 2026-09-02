@@ -301,9 +301,11 @@
                             </StackPanel>
 
                             <StackPanel x:Name="EntryBulkActionsBar" Orientation="Horizontal" Margin="0,0,0,10" IsVisible="False">
-                                <TextBlock Text="Tick chọn để xóa nhiều tên." FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Tick chọn để xóa hoặc thêm sang bộ tên khác." FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                 <Button Content="Xóa đã chọn" Classes="outline" FontSize="13" Height="28" Padding="10,0"
                                         Click="OnDeleteSelectedEntriesClick" Tag="{Binding}"/>
+                                <Button Content="Thêm vào bộ tên" Classes="outline" FontSize="13" Height="28" Padding="10,0"
+                                        Margin="8,0,0,0" Click="OnAddSelectedEntriesToSetClick" Tag="{Binding}"/>
                             </StackPanel>
 
                             <Grid Margin="0,0,0,6">
@@ -404,10 +406,12 @@
             </Grid>
 
             <StackPanel x:Name="BulkActionsBar" Orientation="Horizontal" Margin="0,10,0,0" IsVisible="False">
-                <TextBlock Text="Đang ở chế độ sửa: kéo :: để đổi thứ tự, tick chọn để xóa nhiều bộ tên."
+                <TextBlock Text="Đang ở chế độ sửa: kéo :: để đổi thứ tự, tick chọn để xóa/thêm vào nhóm nhiều bộ tên."
                         FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <Button Content="Xóa đã chọn" Classes="outline" FontSize="13" Height="28" Padding="10,0"
                         Click="OnDeleteSelectedSetsClick"/>
+                <Button Content="Thêm vào nhóm" Classes="outline" FontSize="13" Height="28" Padding="10,0"
+                        Margin="8,0,0,0" Click="OnAddSelectedSetsToGroupClick"/>
             </StackPanel>
         </StackPanel>
 
@@ -510,6 +514,27 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
                     <Button Content="Lưu" Width="90" Classes="JadeButton" FontSize="15" Click="OnGroupPickerSaveClick"/>
                     <Button Content="Hủy" Width="90" Margin="8,0,0,0" Classes="SecondaryButton" Click="OnGroupPickerCancelClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Card chọn bộ tên đích để thêm các tên đã tick vào -->
+        <Border x:Name="EntrySetPickerCard" IsVisible="False"
+                Background="White" CornerRadius="12" Width="320" Padding="20">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Thêm vào bộ tên:" FontWeight="Bold" FontSize="15"/>
+
+                <TextBox x:Name="EntrySetPickerSearchBox" Height="34" Padding="8,0"
+                        VerticalContentAlignment="Center" FontFamily="Inter" FontSize="13"
+                        Watermark="Tìm bộ tên..." TextChanged="OnEntrySetPickerSearchChanged"/>
+
+                <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="EntrySetPickerList" Spacing="8"/>
+                </ScrollViewer>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                    <Button Content="Lưu" Width="90" Classes="JadeButton" FontSize="15" Click="OnEntrySetPickerSaveClick"/>
+                    <Button Content="Hủy" Width="90" Margin="8,0,0,0" Classes="SecondaryButton" Click="OnEntrySetPickerCancelClick"/>
                 </StackPanel>
             </StackPanel>
         </Border>

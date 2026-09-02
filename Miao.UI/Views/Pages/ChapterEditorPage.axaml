@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+             x:Class="Miao.UI.Views.Pages.ChapterEditorPage"
+             Background="{StaticResource BgMain}">
+    <Grid RowDefinitions="Auto,*" Margin="20">
+
+        <DockPanel Margin="0,0,0,12">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock x:Name="WordCountText" Text="0 từ" Classes="bodyText" Foreground="{StaticResource TextMuted}"/>
+                <TextBlock x:Name="SaveStatusText" Text="Đã lưu" Classes="bodyText" Foreground="{StaticResource TextMuted}"/>
+                <CheckBox x:Name="PublishedCheckBox" Content="Đã đăng tải" IsCheckedChanged="OnPublishedChanged"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                <Button Content="←" Width="34" Height="34" Classes="navButton" Click="OnBackClick"/>
+
+                <Button x:Name="NovelDropdownButton" Classes="navButton" Padding="12,6" Click="OnToggleChapterDropdown">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock x:Name="NovelDropdownTitleText" Text="Tên truyện" FontWeight="Bold" FontFamily="Inter" FontSize="15"/>
+                        <TextBlock Text="▾" FontFamily="Inter" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+
+                <Popup x:Name="ChapterDropdownPopup" PlacementTarget="{Binding #NovelDropdownButton}"
+                       Placement="BottomEdgeAlignedLeft" IsLightDismissEnabled="True">
+                    <Border Background="White" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"
+                            CornerRadius="8" Width="280" Padding="8">
+                        <StackPanel>
+                            <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="ChapterDropdownList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:ChapterRowViewModel">
+                                            <Button Content="{Binding DisplayTitle}" HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Left" Classes="navButton"
+                                                    Margin="0,0,0,4" Click="OnChapterDropdownItemClick" Tag="{Binding}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <Button Content="+ Chương Mới" Classes="jade" HorizontalAlignment="Stretch"
+                                    Margin="0,8,0,0" Click="OnAddChapterFromDropdownClick"/>
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" Width="900" HorizontalAlignment="Center">
+            <Border Grid.Row="0" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
+                <TextBox x:Name="ChapterTitleBox" Watermark="Tên chương..." Padding="12,10" BorderThickness="0"
+                         FontFamily="Inter" FontSize="17" FontWeight="Bold" TextChanged="OnContentChanged"/>
+            </Border>
+
+            <Border Grid.Row="1" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Background="White">
+                <TextBox x:Name="ContentBox" AcceptsReturn="True" TextWrapping="Wrap"
+                         BorderThickness="0" Padding="16" FontFamily="Inter" FontSize="16"
+                         VerticalContentAlignment="Top" TextChanged="OnContentChanged"/>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

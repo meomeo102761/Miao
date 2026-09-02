@@ -65,7 +65,6 @@ namespace Miao.UI.Views.Pages
             AuthorBox.Text = novel.Author;
             TranslatedAuthorBox.Text = novel.TranslatedAuthor;
             DescriptionBox.Text = novel.Description;
-            TranslatedDescriptionBox.Text = novel.TranslatedDescription;
             SourceUrlBox.Text = novel.SourceUrl;
             SourceDescriptionBox.Text = novel.SourceDescription;
 
@@ -364,7 +363,6 @@ namespace Miao.UI.Views.Pages
                 novel.Author = AuthorBox.Text?.Trim() ?? "";
                 novel.TranslatedAuthor = TranslatedAuthorBox.Text?.Trim() ?? "";
                 novel.Description = DescriptionBox.Text?.Trim() ?? "";
-                novel.TranslatedDescription = TranslatedDescriptionBox.Text?.Trim() ?? "";
                 novel.SourceUrl = SourceUrlBox.Text?.Trim() ?? "";
                 novel.SourceDescription = SourceDescriptionBox.Text?.Trim() ?? "";
 

@@ -177,18 +177,11 @@
                                      ToolTip.Tip="Tên tác giả sau khi dịch — sửa tay nếu tự động dịch bị sai. Trang Thư viện ưu tiên hiển thị ô này, để trống sẽ dùng tên gốc."/>
                         </Grid>
 
-                        <TextBlock Text="Tác phẩm tóm tắt (gốc):" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBlock Text="Tác phẩm tóm tắt:" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
                         <TextBox x:Name="DescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" Height="NaN"
-                                 Padding="10,8" FontFamily="Inter" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
-                                 CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
-                                 BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top" Margin="0,0,0,14"/>
-
-                        <TextBlock Text="Tác phẩm tóm tắt (dịch):" FontFamily="Inter" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
-                        <TextBox x:Name="TranslatedDescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" Height="NaN"
-                                 Padding="10,8" FontFamily="Inter" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
-                                 CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
-                                 BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top"
-                                 ToolTip.Tip="Mô tả sau khi dịch — trang Chi tiết truyện ưu tiên hiển thị ô này, để trống sẽ dùng mô tả gốc."/>
+                                Padding="10,8" FontFamily="Inter" FontSize="14" Background="White" Foreground="{StaticResource TextPrimary}"
+                                CaretBrush="{StaticResource TextPrimary}" SelectionBrush="{StaticResource AccentJade}"
+                                BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" VerticalContentAlignment="Top"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center">

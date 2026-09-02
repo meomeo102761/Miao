@@ -34,6 +34,9 @@ namespace Miao.Core.Data
 
         public DbSet<PendingSync> PendingSyncs => Set<PendingSync>();
 
+        public DbSet<WrittenNovel> WrittenNovels => Set<WrittenNovel>();
+        public DbSet<WrittenChapter> WrittenChapters => Set<WrittenChapter>();
+
         public MiaoDbContext(string dbPath)
         {
             _dbPath = dbPath;

@@ -32,7 +32,7 @@ namespace Miao.UI.Views.Pages
             _nameBox = new TextBox { Classes = { "editTextBox" }, Text = existingName ?? "", PlaceholderText = "VD: Naruto, One Piece…" };
 
             _cropper = new InlineImageCropper();
-            if (!string.IsNullOrEmpty(existingCover)) _cropper.SetSource(existingCover); // tải sẵn ảnh cũ, kéo được ngay khi Sửa
+            if (!string.IsNullOrEmpty(existingCover)) _cropper.SetSource(existingCover);
 
             var pickButton = new Button { Content = "Chọn ảnh khác", Classes = { "jade" } };
             pickButton.Click += async (_, _) =>

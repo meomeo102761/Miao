@@ -213,8 +213,13 @@ namespace Miao.UI.Views.Pages
                 if (_activeSource is LofterDownloadSource)
                 {
                     var allTags = _chapterItems.SelectMany(c => c.Tags).Distinct().OrderBy(t => t).ToList();
-                    LofterTagsList.ItemsSource = allTags;
-                    LofterTagsList.IsVisible = allTags.Count > 0;
+                    var tagChips = allTags.Select(t => new TagChipItem { Original = t, DisplayName = t }).ToList();
+
+                    LofterTagsList.ItemsSource = tagChips;
+                    LofterTagsList.IsVisible = tagChips.Count > 0;
+
+                    if (!_activeSource.ProvidesTranslatedContent)
+                        _ = TranslateTagsInBackgroundAsync(tagChips);
                 }
                 else
                 {
@@ -270,24 +275,26 @@ namespace Miao.UI.Views.Pages
                 .Select(c => new { c.SourceUrl, c.NovelId })
                 .ToList();
 
-            if (downloaded.Count == 0) return;
-
-            var novelIds = downloaded.Select(d => d.NovelId).Distinct().ToList();
-            var novelTitles = db.Novels
-                .Where(n => novelIds.Contains(n.Id))
-                .ToDictionary(n => n.Id, n => n.DisplayTitle);
-
-            foreach (var item in _chapterItems)
+            if (downloaded.Count > 0)
             {
-                var match = downloaded.FirstOrDefault(d => d.SourceUrl == item.ChapterUrl);
-                if (match == null) continue;
+                var novelIds = downloaded.Select(d => d.NovelId).Distinct().ToList();
+                var novelTitles = db.Novels
+                    .Where(n => novelIds.Contains(n.Id))
+                    .ToDictionary(n => n.Id, n => n.DisplayTitle);
 
-                item.IsAlreadyDownloaded = true;
-                item.IsSelected = false;
-                item.AlreadyDownloadedLabel = novelTitles.TryGetValue(match.NovelId, out var t)
-                    ? $"Đã có trong: {t}"
-                    : "Đã tải trước đó";
+                foreach (var item in _chapterItems)
+                {
+                    var match = downloaded.FirstOrDefault(d => d.SourceUrl == item.ChapterUrl);
+                    if (match == null) continue;
+
+                    item.IsAlreadyDownloaded = true;
+                    item.IsSelected = false;
+                    item.AlreadyDownloadedLabel = novelTitles.TryGetValue(match.NovelId, out var t)
+                        ? $"Đã có trong: {t}"
+                        : "Đã tải trước đó";
+                }
             }
+
             ApplyChapterFilter();
         }
 
@@ -849,7 +856,6 @@ namespace Miao.UI.Views.Pages
 
             return Path.Combine(AppContext.BaseDirectory, "Assets", "default-cover.jpg");
         }
-
         private Novel CreateNovelEntity(string sourceUrl, string? title = null) => new()
         {
             Title = string.IsNullOrWhiteSpace(title) ? _novelTitle : title,
@@ -871,6 +877,27 @@ namespace Miao.UI.Views.Pages
 
             return System.Text.RegularExpressions.Regex.Replace(normalized, @"[\s\-_:,.!?()\[\]""'']+", "");
         }
+
+        private async Task TranslateTagsInBackgroundAsync(List<TagChipItem> chips)
+        {
+            foreach (var chip in chips)
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(chip.Original, @"\p{IsCJKUnifiedIdeographs}"))
+                    continue;
+
+                try
+                {
+                    var translated = await _titleTranslator.TranslateChapterAsync(chip.Original);
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                        chip.DisplayName = string.IsNullOrWhiteSpace(translated) ? chip.Original : translated.Trim());
+                }
+                catch
+                {
+                    
+                }
+            }
+        }
+
     }
 
     public class ChapterCheckItem : System.ComponentModel.INotifyPropertyChanged
@@ -911,5 +938,19 @@ namespace Miao.UI.Views.Pages
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         private void OnChanged(string name) => PropertyChanged?.Invoke(this, new(name));
+    }
+
+    public class TagChipItem : System.ComponentModel.INotifyPropertyChanged
+    {
+        public string Original { get; set; } = "";
+
+        private string _displayName = "";
+        public string DisplayName
+        {
+            get => _displayName;
+            set { _displayName = value; PropertyChanged?.Invoke(this, new(nameof(DisplayName))); }
+        }
+
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     }
 }

@@ -34,6 +34,8 @@ namespace Miao.UI.Views.Pages
         private readonly Dictionary<Guid, bool> _groupExpandState = new();
         private Dictionary<Guid, string> _novelTitles = new();
         private GlossarySetEntry? _editingEntry;
+        private System.Threading.CancellationTokenSource? _newEntryHanVietCts;
+        private System.Threading.CancellationTokenSource? _editEntryHanVietCts;
 
         private bool _isEditMode;
         private Point _dragStartPoint;
@@ -41,6 +43,11 @@ namespace Miao.UI.Views.Pages
         private Guid? _draggedSetGroupId;
         private GlossaryGroupRowViewModel? _draggedGroup;
         private PointerPressedEventArgs? _dragPressedEvent;
+
+        private GlossarySetRowViewModel? _entryPickerSourceVm;
+        private List<GlossarySetEntry> _entryPickerEntries = new();
+        private List<GlossarySet> _entryPickerAllSets = new();
+        private HashSet<Guid> _entryPickerSelectedSetIds = new();
 
         private ObservableCollection<PagerItemVm> BuildPageItems(int currentPage, int totalPages)
         {
@@ -213,6 +220,106 @@ namespace Miao.UI.Views.Pages
                 SortOrder = set.SortOrder
             };
         }
+
+        private void OnAddSelectedEntriesToSetClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
+            if (vm.SelectedEntryIds.Count == 0) return;
+
+            using var db = OpenDb();
+            _entryPickerSourceVm = vm;
+            _entryPickerEntries = db.GlossarySetEntries
+                .Where(x => vm.SelectedEntryIds.Contains(x.Id))
+                .ToList();
+
+            _entryPickerAllSets = db.GlossarySets
+                .Where(s => s.Id != vm.Id)
+                .OrderBy(s => s.Name)
+                .ToList();
+            _entryPickerSelectedSetIds = new HashSet<Guid>();
+
+            EntrySetPickerSearchBox.Text = "";
+            RenderEntrySetPickerList("");
+
+            EntrySetPickerCard.IsVisible = true;
+            if (EntrySetPickerCard.Parent is Panel panel) panel.Children.Remove(EntrySetPickerCard);
+            ModalService.Show(EntrySetPickerCard);
+        }
+
+        private void OnEntrySetPickerSearchChanged(object? sender, TextChangedEventArgs e) =>
+            RenderEntrySetPickerList(EntrySetPickerSearchBox.Text?.Trim() ?? "");
+
+        private void RenderEntrySetPickerList(string keyword)
+        {
+            EntrySetPickerList.Children.Clear();
+
+            var sets = string.IsNullOrEmpty(keyword)
+                ? _entryPickerAllSets
+                : _entryPickerAllSets.Where(s => s.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (sets.Count == 0)
+            {
+                EntrySetPickerList.Children.Add(new TextBlock
+                {
+                    Text = "Chưa có bộ tên nào khớp.", FontStyle = FontStyle.Italic, FontSize = 14,
+                    Foreground = Application.Current?.FindResource("TextMuted") as IBrush
+                });
+                return;
+            }
+
+            foreach (var set in sets)
+            {
+                var label = set.IsShared ? set.Name : $"{set.Name} (riêng)";
+                var cb = new CheckBox { Content = label, IsChecked = _entryPickerSelectedSetIds.Contains(set.Id), Tag = set.Id };
+                cb.IsCheckedChanged += (_, _) =>
+                {
+                    if (cb.Tag is not Guid sid) return;
+                    if (cb.IsChecked == true) _entryPickerSelectedSetIds.Add(sid);
+                    else _entryPickerSelectedSetIds.Remove(sid);
+                };
+                EntrySetPickerList.Children.Add(cb);
+            }
+        }
+
+        private void OnEntrySetPickerSaveClick(object? sender, RoutedEventArgs e)
+        {
+            if (_entryPickerSelectedSetIds.Count == 0 || _entryPickerEntries.Count == 0)
+            {
+                ModalService.Close();
+                return;
+            }
+
+            using var db = OpenDb();
+            foreach (var targetSetId in _entryPickerSelectedSetIds)
+            {
+                var existingTerms = db.GlossarySetEntries
+                    .Where(x => x.GlossarySetId == targetSetId)
+                    .Select(x => x.OriginalTerm)
+                    .ToHashSet();
+
+                foreach (var entry in _entryPickerEntries)
+                {
+                    if (existingTerms.Contains(entry.OriginalTerm)) continue;
+
+                    db.GlossarySetEntries.Add(new GlossarySetEntry
+                    {
+                        GlossarySetId = targetSetId,
+                        OriginalTerm = entry.OriginalTerm,
+                        HanViet = entry.HanViet,
+                        PinYin = entry.PinYin,
+                        TranslatedTerm = entry.TranslatedTerm
+                    });
+                }
+            }
+            db.SaveChanges();
+
+            ModalService.Close();
+
+            _entryPickerSourceVm?.SelectedEntryIds.Clear();
+            if (_entryPickerSourceVm != null) LoadEntriesForSet(_entryPickerSourceVm);
+        }
+
+        private void OnEntrySetPickerCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
 
         private void OnCreateSetClick(object? sender, RoutedEventArgs e)
         {
@@ -401,7 +508,18 @@ namespace Miao.UI.Views.Pages
             hanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? original : quickGuess;
             pinYinBox.Text = _sinoVietnamese.ToPinYin(original);
 
+            _newEntryHanVietCts?.Cancel();
+            var cts = new System.Threading.CancellationTokenSource();
+            _newEntryHanVietCts = cts;
+
+            try { await Task.Delay(250, cts.Token); }
+            catch (TaskCanceledException) { return; }
+
+            if (cts.IsCancellationRequested) return;
+
             var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            if (cts.IsCancellationRequested) return;
 
             if (!string.IsNullOrWhiteSpace(accurate) && originalBox.Text == original)
                 hanVietBox.Text = accurate;
@@ -538,7 +656,18 @@ namespace Miao.UI.Views.Pages
             EditHanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? original : quickGuess;
             EditPinYinBox.Text = _sinoVietnamese.ToPinYin(original);
 
+            _editEntryHanVietCts?.Cancel();
+            var cts = new System.Threading.CancellationTokenSource();
+            _editEntryHanVietCts = cts;
+
+            try { await Task.Delay(250, cts.Token); }
+            catch (TaskCanceledException) { return; }
+
+            if (cts.IsCancellationRequested) return;
+
             var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            if (cts.IsCancellationRequested) return;
 
             if (!string.IsNullOrWhiteSpace(accurate) && EditOriginalText.Text == original)
                 EditHanVietBox.Text = accurate;
@@ -578,19 +707,23 @@ namespace Miao.UI.Views.Pages
             if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
             if (vm.SelectedEntryIds.Count == 0) return;
 
-            ShowConfirm($"Xóa {vm.SelectedEntryIds.Count} tên đã chọn?", () =>
+            ShowConfirm(
+                $"Xóa {vm.SelectedEntryIds.Count} tên đã chọn? Máy sẽ dịch lại các tên gốc tương ứng và thay thế trong TOÀN BỘ truyện đang dùng bộ tên này.",
+                () => _ = DeleteSelectedEntriesAndRevertAsync(vm));
+        }
+
+        private async Task DeleteSelectedEntriesAndRevertAsync(GlossarySetRowViewModel vm)
+        {
+            var ids = vm.SelectedEntryIds.ToList();
+
+            foreach (var id in ids)
             {
                 using var db = OpenDb();
-                var toRemove = db.GlossarySetEntries.Where(x => vm.SelectedEntryIds.Contains(x.Id)).ToList();
-                if (toRemove.Count > 0)
-                {
-                    db.GlossarySetEntries.RemoveRange(toRemove);
-                    db.SaveChanges();
-                }
+                await GlossaryApplicationService.DeleteEntryAndRevertAsync(db, id);
+            }
 
-                vm.SelectedEntryIds.Clear();
-                LoadEntriesForSet(vm);
-            });
+            vm.SelectedEntryIds.Clear();
+            LoadEntriesForSet(vm);
         }
 
         private void OnEditSaveClick(object? sender, RoutedEventArgs e)
@@ -928,22 +1061,40 @@ namespace Miao.UI.Views.Pages
 
         private void OnNewGroupCancelClick(object? sender, RoutedEventArgs e) => ModalService.Close();
 
-        private Guid _pickerSetId;
-        private bool _pickerIsShared;
-        private List<GlossaryGroup> _pickerAllGroups = new();
+        private List<Guid> _pickerSetIds = new();
+        private Dictionary<Guid, bool> _pickerSetScopes = new();
+        private List<(Guid GroupId, string Name, bool IsShared)> _pickerAllGroupsFlat = new();
         private HashSet<Guid> _pickerSelectedGroupIds = new();
 
         private void OnAddSetToGroupClick(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not GlossarySetRowViewModel vm) return;
+            OpenGroupPicker(new List<GlossarySetRowViewModel> { vm });
+        }
 
+        private void OnAddSelectedSetsToGroupClick(object? sender, RoutedEventArgs e)
+        {
+            var selected = _sharedSetVms.Concat(_privateSetVms).Where(x => x.IsSelected).ToList();
+            if (selected.Count == 0) return;
+            OpenGroupPicker(selected);
+        }
+
+        private void OpenGroupPicker(List<GlossarySetRowViewModel> targetSets)
+        {
             using var db = OpenDb();
-            _pickerSetId = vm.Id;
-            _pickerIsShared = vm.IsShared;
-            _pickerAllGroups = GlossaryGroupService.GetGroups(db, vm.IsShared);
-            _pickerSelectedGroupIds = db.GlossaryGroups
-                .Where(g => g.IsShared == vm.IsShared && g.Sets.Any(s => s.Id == vm.Id))
-                .Select(g => g.Id).ToHashSet();
+            _pickerSetIds = targetSets.Select(s => s.Id).ToList();
+            _pickerSetScopes = targetSets.ToDictionary(s => s.Id, s => s.IsShared);
+
+            var scopes = _pickerSetScopes.Values.Distinct().ToList();
+            _pickerAllGroupsFlat = scopes
+                .SelectMany(isShared => GlossaryGroupService.GetGroups(db, isShared).Select(g => (g.Id, g.Name, isShared)))
+                .ToList();
+
+            _pickerSelectedGroupIds = _pickerAllGroupsFlat
+                .Where(g => _pickerSetIds.All(sid =>
+                    db.GlossaryGroups.Any(gr => gr.Id == g.GroupId && gr.Sets.Any(s => s.Id == sid))))
+                .Select(g => g.GroupId)
+                .ToHashSet();
 
             GroupPickerSearchBox.Text = "";
             RenderGroupPickerList("");
@@ -961,8 +1112,8 @@ namespace Miao.UI.Views.Pages
             GroupPickerList.Children.Clear();
 
             var groups = string.IsNullOrEmpty(keyword)
-                ? _pickerAllGroups
-                : _pickerAllGroups.Where(g => g.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+                ? _pickerAllGroupsFlat
+                : _pickerAllGroupsFlat.Where(g => g.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
 
             if (groups.Count == 0)
             {
@@ -974,9 +1125,12 @@ namespace Miao.UI.Views.Pages
                 return;
             }
 
+            var showScopeLabel = _pickerSetScopes.Values.Distinct().Count() > 1;
+
             foreach (var group in groups)
             {
-                var cb = new CheckBox { Content = group.Name, IsChecked = _pickerSelectedGroupIds.Contains(group.Id), Tag = group.Id };
+                var label = showScopeLabel ? $"{group.Name} ({(group.IsShared ? "chung" : "riêng")})" : group.Name;
+                var cb = new CheckBox { Content = label, IsChecked = _pickerSelectedGroupIds.Contains(group.GroupId), Tag = group.GroupId };
                 cb.IsCheckedChanged += (_, _) =>
                 {
                     if (cb.Tag is not Guid gid) return;
@@ -990,15 +1144,24 @@ namespace Miao.UI.Views.Pages
         private void OnGroupPickerSaveClick(object? sender, RoutedEventArgs e)
         {
             using var db = OpenDb();
-            var currentGroupIds = db.GlossaryGroups
-                .Where(g => g.IsShared == _pickerIsShared && g.Sets.Any(s => s.Id == _pickerSetId))
-                .Select(g => g.Id).ToHashSet();
 
-            foreach (var addId in _pickerSelectedGroupIds.Except(currentGroupIds))
-                GlossaryGroupService.AddSetToGroup(db, addId, _pickerSetId);
+            foreach (var setId in _pickerSetIds)
+            {
+                var isShared = _pickerSetScopes[setId];
+                var relevantGroupIds = _pickerAllGroupsFlat.Where(g => g.IsShared == isShared).Select(g => g.GroupId).ToHashSet();
 
-            foreach (var removeId in currentGroupIds.Except(_pickerSelectedGroupIds))
-                GlossaryGroupService.RemoveSetFromGroup(db, removeId, _pickerSetId);
+                var currentGroupIds = db.GlossaryGroups
+                    .Where(g => g.IsShared == isShared && g.Sets.Any(s => s.Id == setId))
+                    .Select(g => g.Id).ToHashSet();
+
+                var desiredGroupIds = _pickerSelectedGroupIds.Intersect(relevantGroupIds).ToHashSet();
+
+                foreach (var addId in desiredGroupIds.Except(currentGroupIds))
+                    GlossaryGroupService.AddSetToGroup(db, addId, setId);
+
+                foreach (var removeId in currentGroupIds.Except(desiredGroupIds))
+                    GlossaryGroupService.RemoveSetFromGroup(db, removeId, setId);
+            }
 
             ModalService.Close();
             LoadSets();

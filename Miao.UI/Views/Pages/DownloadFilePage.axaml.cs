@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -20,6 +21,7 @@ namespace Miao.UI.Views.Pages
         private readonly ObservableCollection<ImportFileRow> _files = new();
         private readonly TranslationService _titleTranslator = TranslationService.CreateFromSettings();
         private readonly TranslationService _contentTranslator = TranslationService.CreateFromSettings();
+        private ImportFileRow? _unmergingRow;
 
         public DownloadFilePage()
         {
@@ -78,10 +80,10 @@ namespace Miao.UI.Views.Pages
             }
 
             StatusText.Text = errorCount == 0
-                ? $"Đã đọc {okCount} file — kiểm tra lại tên truyện/tác giả rồi bấm \"Nhập tất cả\"."
+                ? $"Đã đọc {okCount} file — kiểm tra lại tên truyện/tác giả rồi bấm \"Nhập tất cả\", hoặc tick chọn nhiều file để gộp thành 1 truyện."
                 : $"Đọc {okCount} file thành công, {errorCount} file lỗi (xem chi tiết bên dưới).";
 
-            ImportButton.IsVisible = _files.Any(f => !f.HasError);
+            UpdateActionButtonsVisibility();
         }
 
         private void OnRemoveFileClick(object? sender, RoutedEventArgs e)
@@ -89,7 +91,184 @@ namespace Miao.UI.Views.Pages
             if (sender is not Button btn || btn.Tag is not ImportFileRow row) return;
 
             _files.Remove(row);
+            UpdateActionButtonsVisibility();
+        }
+
+        private void OnFileCheckToggled(object? sender, RoutedEventArgs e) => UpdateActionButtonsVisibility();
+
+        private void OnSelectAllFilesClick(object? sender, RoutedEventArgs e)
+        {
+            var selectable = _files.Where(f => !f.HasError).ToList();
+            var shouldSelectAll = SelectAllCheckBox.IsChecked == true;
+
+            foreach (var f in selectable)
+                f.IsSelected = shouldSelectAll;
+
+            UpdateActionButtonsVisibility();
+        }
+
+        private void UpdateActionButtonsVisibility()
+        {
+            var selectable = _files.Where(f => !f.HasError).ToList();
+
             ImportButton.IsVisible = _files.Any(f => !f.HasError);
+            SelectAllCheckBox.IsVisible = selectable.Count >= 2;
+            MergeButton.IsVisible = selectable.Count(f => f.IsSelected) >= 2;
+
+            if (selectable.Count > 0)
+                SelectAllCheckBox.IsChecked = selectable.All(f => f.IsSelected);
+        }
+
+        private void OnMergeSelectedFilesClick(object? sender, RoutedEventArgs e)
+        {
+            var selected = _files.Where(f => f.IsSelected && !f.HasError && f.Imported != null).ToList();
+
+            if (selected.Count < 2)
+            {
+                StatusText.Text = "Hãy tick chọn ít nhất 2 file hợp lệ để gộp thành 1 truyện.";
+                return;
+            }
+
+            var ordered = selected.OrderBy(f => f.FileName, NaturalStringComparer.Instance).ToList();
+
+            var insertIndex = _files.IndexOf(ordered[0]);
+            var totalChapters = ordered.Sum(f => f.Imported!.Chapters.Count);
+
+            var mergedRow = new ImportFileRow
+            {
+                FilePath = string.Join(" + ", ordered.Select(f => f.FileName)),
+                Title = ordered[0].Title,
+                Author = ordered[0].Author,
+                ChapterCountLabel = $"Đã gộp từ {ordered.Count} file, theo thứ tự: {string.Join(" → ", ordered.Select(f => f.FileName))} — tổng {totalChapters} chương.",
+                Imported = ordered[0].Imported,
+                MergedRows = ordered
+            };
+
+            foreach (var row in ordered)
+                _files.Remove(row);
+
+            _files.Insert(Math.Clamp(insertIndex, 0, _files.Count), mergedRow);
+
+            StatusText.Text = $"Đã gộp {ordered.Count} file thành 1 truyện — kiểm tra lại tên truyện/tác giả và thứ tự file trước khi nhập. Bấm \"Tách\" nếu gộp nhầm.";
+            UpdateActionButtonsVisibility();
+        }
+
+        private void OnOpenUnmergeDialogClick(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not ImportFileRow row || row.MergedRows == null) return;
+
+            _unmergingRow = row;
+
+            UnmergeCandidatesList.ItemsSource = row.MergedRows
+                .Select(r => new UnmergeCandidate { FileName = r.FileName, SourceRow = r, IsSelected = false })
+                .ToList();
+
+            UnmergeCard.IsVisible = true;
+            if (UnmergeCard.Parent is Panel panel) panel.Children.Remove(UnmergeCard);
+            ModalService.Show(UnmergeCard);
+        }
+
+        private void OnCancelUnmergeClick(object? sender, RoutedEventArgs e)
+        {
+            _unmergingRow = null;
+            ModalService.Close();
+        }
+
+        private void OnConfirmUnmergeClick(object? sender, RoutedEventArgs e)
+        {
+            if (_unmergingRow?.MergedRows == null || UnmergeCandidatesList.ItemsSource is not IEnumerable<UnmergeCandidate> candidates)
+            {
+                ModalService.Close();
+                return;
+            }
+
+            var toExtract = candidates.Where(c => c.IsSelected).Select(c => c.SourceRow).ToList();
+            if (toExtract.Count == 0)
+            {
+                StatusText.Text = "Chưa chọn file nào để tách.";
+                return;
+            }
+
+            var mergedRow = _unmergingRow;
+            var remaining = mergedRow.MergedRows!.Except(toExtract).ToList();
+            var index = _files.IndexOf(mergedRow);
+
+            _files.Remove(mergedRow);
+
+            var insertAt = index;
+
+            if (remaining.Count <= 1)
+            {
+                var all = toExtract.Concat(remaining).ToList();
+                foreach (var child in all)
+                {
+                    child.IsSelected = false;
+                    _files.Insert(insertAt, child);
+                    insertAt++;
+                }
+
+                StatusText.Text = remaining.Count == 0
+                    ? $"Đã tách {toExtract.Count} file khỏi nhóm — nhóm gộp không còn file nào."
+                    : $"Đã tách {toExtract.Count} file — chỉ còn 1 file nên nhóm gộp được giải tán.";
+            }
+            else
+            {
+                foreach (var child in toExtract)
+                {
+                    child.IsSelected = false;
+                    _files.Insert(insertAt, child);
+                    insertAt++;
+                }
+
+                mergedRow.MergedRows = remaining;
+                mergedRow.FilePath = string.Join(" + ", remaining.Select(r => r.FileName));
+                mergedRow.ChapterCountLabel =
+                    $"Đã gộp từ {remaining.Count} file, theo thứ tự: {string.Join(" → ", remaining.Select(r => r.FileName))} — tổng {remaining.Sum(r => r.Imported!.Chapters.Count)} chương.";
+
+                _files.Insert(insertAt, mergedRow);
+
+                StatusText.Text = $"Đã tách {toExtract.Count} file khỏi nhóm — nhóm gộp còn lại {remaining.Count} file.";
+            }
+
+            _unmergingRow = null;
+            ModalService.Close();
+            UpdateActionButtonsVisibility();
+        }
+
+        private sealed class NaturalStringComparer : IComparer<string>
+        {
+            public static readonly NaturalStringComparer Instance = new();
+
+            public int Compare(string? a, string? b)
+            {
+                a ??= ""; b ??= "";
+                int i = 0, j = 0;
+
+                while (i < a.Length && j < b.Length)
+                {
+                    if (char.IsDigit(a[i]) && char.IsDigit(b[j]))
+                    {
+                        int si = i, sj = j;
+                        while (i < a.Length && char.IsDigit(a[i])) i++;
+                        while (j < b.Length && char.IsDigit(b[j])) j++;
+
+                        var na = a[si..i].TrimStart('0');
+                        var nb = b[sj..j].TrimStart('0');
+
+                        if (na.Length != nb.Length) return na.Length - nb.Length;
+                        var numCmp = string.CompareOrdinal(na, nb);
+                        if (numCmp != 0) return numCmp;
+                    }
+                    else
+                    {
+                        var cmp = a[i].CompareTo(b[j]);
+                        if (cmp != 0) return cmp;
+                        i++; j++;
+                    }
+                }
+
+                return (a.Length - i) - (b.Length - j);
+            }
         }
 
         private async void OnImportClick(object? sender, RoutedEventArgs e)
@@ -165,11 +344,25 @@ namespace Miao.UI.Views.Pages
                     mergedCount++;
                 }
 
-                var nextNumber = isNewNovel
-                    ? 1
-                    : db.Chapters.Where(c => c.NovelId == novel.Id).Select(c => c.Number).DefaultIfEmpty(0).Max() + 1;
+                int nextNumber;
+                if (isNewNovel)
+                {
+                    nextNumber = 1;
+                }
+                else
+                {
+                    var existingChapterNumbers = db.Chapters
+                        .Where(c => c.NovelId == novel.Id)
+                        .Select(c => c.Number)
+                        .ToList();
+                    nextNumber = existingChapterNumbers.Count == 0 ? 1 : existingChapterNumbers.Max() + 1;
+                }
 
-                foreach (var ch in row.Imported!.Chapters)
+                var chaptersToImport = row.MergedRows != null
+                    ? row.MergedRows.SelectMany(r => r.Imported!.Chapters)
+                    : row.Imported!.Chapters;
+
+                foreach (var ch in chaptersToImport)
                 {
                     StatusText.Text = $"Đang dịch \"{novel.DisplayTitle}\" — chương {nextNumber}...";
 
@@ -294,10 +487,27 @@ namespace Miao.UI.Views.Pages
         }
     }
 
+    public class UnmergeCandidate
+    {
+        public string FileName { get; set; } = "";
+        public bool IsSelected { get; set; }
+        public ImportFileRow SourceRow { get; set; } = null!;
+    }
+
     public class ImportFileRow : INotifyPropertyChanged
     {
         public string FilePath { get; set; } = "";
         public string FileName => Path.GetFileName(FilePath);
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnChanged(nameof(IsSelected)); }
+        }
+
+        public List<ImportFileRow>? MergedRows { get; set; }
+        public bool IsMerged => MergedRows != null;
 
         private string _title = "";
         public string Title

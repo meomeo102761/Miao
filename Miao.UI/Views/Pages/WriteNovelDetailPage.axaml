@@ -1,0 +1,153 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+             x:Class="Miao.UI.Views.Pages.WriteNovelDetailPage"
+             Background="{StaticResource BgMain}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.tabButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="4,8"/>
+            <Setter Property="FontFamily" Value="Inter"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.tabButtonActive">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+    <Grid MaxWidth="1140" Margin="20">
+        <StackPanel>
+
+            <DockPanel Margin="0,0,0,20">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                    <Button Content="Xóa truyện" Classes="navButton" Padding="16,8" Click="OnDeleteClick"/>
+                    <Button x:Name="SaveStatusButton" Content="Đã lưu" Classes="jade" Padding="16,8" IsEnabled="False"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <Button Content="←" Width="34" Height="34" Classes="navButton" Click="OnBackClick"/>
+                    <StackPanel>
+                        <TextBlock Text="Sửa Chi Tiết Truyện" Classes="bodyText" Foreground="{StaticResource TextMuted}" FontSize="13"/>
+                        <TextBlock x:Name="HeaderTitleText" Text="Truyện Chưa Có Tiêu Đề" Classes="pageTitle" FontSize="22"/>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+
+            <Grid ColumnDefinitions="220,*">
+                <StackPanel Grid.Column="0" Margin="0,0,24,0">
+                    <Border Width="200" Height="280" CornerRadius="8" ClipToBounds="True"
+                            Background="#222" Cursor="Hand" PointerPressed="OnCoverClick">
+                        <Grid>
+                            <Image x:Name="CoverImage" Stretch="UniformToFill"/>
+                            <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource AccentJade}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12">
+                                <TextBlock Text="✎" Foreground="White" FontSize="16"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Button Content="Xem trước" Classes="jade" HorizontalAlignment="Stretch"
+                            Margin="0,12,0,0" Click="OnPreviewClick"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,16">
+                        <Button x:Name="TabDetailButton" Content="Chi Tiết Truyện"
+                                Classes="tabButton tabButtonActive" Click="OnTabClick" Tag="Detail"/>
+                        <Button x:Name="TabChaptersButton" Content="Bảng Mục Lục"
+                                Classes="tabButton" Margin="8,0,0,0" Click="OnTabClick" Tag="Chapters"/>
+                        <Button x:Name="TabNotesButton" Content="Ghi Chú Truyện"
+                                Classes="tabButton" Margin="8,0,0,0" Click="OnTabClick" Tag="Notes"/>
+                    </StackPanel>
+
+                    <!-- Tab: Chi tiết -->
+                    <StackPanel x:Name="DetailTabPanel">
+                        <TextBlock Text="Tên truyện" Classes="bodyText" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,14">
+                            <TextBox x:Name="TitleBox" Padding="10,8" BorderThickness="0" TextChanged="OnFieldChanged"/>
+                        </Border>
+
+                        <TextBlock Text="Tác giả" Classes="bodyText" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,14">
+                            <TextBox x:Name="AuthorBox" Padding="10,8" BorderThickness="0" TextChanged="OnFieldChanged"/>
+                        </Border>
+
+                        <TextBlock Text="Mô tả" Classes="bodyText" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,4">
+                            <TextBox x:Name="DescriptionBox" Padding="10,8" BorderThickness="0" AcceptsReturn="True"
+                                     TextWrapping="Wrap" Height="140" TextChanged="OnFieldChanged"/>
+                        </Border>
+
+                        <TextBlock Text="Tag có thể chọn sau ở mục sửa truyện." Classes="bodyText"
+                                   Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Tab: Mục lục -->
+                    <StackPanel x:Name="ChaptersTabPanel" IsVisible="False">
+                        <DockPanel Margin="0,0,0,12">
+                            <Button DockPanel.Dock="Right" Content="+ Chương Mới" Classes="jade" Padding="16,8" Click="OnAddChapterClick"/>
+                            <CheckBox x:Name="SelectAllChaptersBox" Content="Chọn tất cả" IsCheckedChanged="OnSelectAllChaptersChanged"/>
+                        </DockPanel>
+
+                        <StackPanel x:Name="ChapterBulkActionsBar" Orientation="Horizontal" Margin="0,0,0,12" IsVisible="False">
+                            <TextBlock x:Name="ChapterSelectedCountText" Classes="bodyText"
+                                       Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <Button Content="Đăng tải đã chọn" Classes="jade" Padding="14,6" Click="OnPublishSelectedClick"/>
+                            <Button Content="Bỏ đăng đã chọn" Classes="navButton" Padding="14,6" Margin="8,0,0,0" Click="OnUnpublishSelectedClick"/>
+                            <Button Content="Xóa đã chọn" Classes="navButton" Padding="14,6" Margin="8,0,0,0" Click="OnDeleteSelectedChaptersClick"/>
+                        </StackPanel>
+
+                        <ItemsControl x:Name="ChaptersList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:ChapterRowViewModel">
+                                    <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8"
+                                            Padding="12" Margin="0,0,0,8" Background="White">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,0,10,0"/>
+
+                                            <StackPanel Grid.Column="1" Cursor="Hand" PointerPressed="OnChapterRowClick" Tag="{Binding}">
+                                                <TextBlock Text="{Binding DisplayTitle}" FontWeight="Bold" FontFamily="Inter" FontSize="15"/>
+                                                <TextBlock Text="{Binding StatusLabel}" Classes="bodyText" FontSize="13"
+                                                           Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"/>
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="2" Text="{Binding WordCountLabel}" Classes="bodyText"
+                                                       Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                                            <Button Grid.Column="3" Content="Xóa" Classes="navButton" Padding="10,4"
+                                                    Click="OnDeleteChapterClick" Tag="{Binding}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock x:Name="ChaptersEmptyText" Text="Chưa có chương nào." IsVisible="False"
+                                   Classes="bodyText" Foreground="{StaticResource TextMuted}" FontStyle="Italic" Margin="0,8,0,0"/>
+                    </StackPanel>
+
+                    <!-- Tab: Ghi chú -->
+                    <StackPanel x:Name="NotesTabPanel" IsVisible="False">
+                        <TextBlock Text="Ghi chú truyện (chỉ mình bạn thấy, không hiển thị công khai)."
+                                   Classes="bodyText" Foreground="{StaticResource TextMuted}" Margin="0,0,0,8"/>
+                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8">
+                            <TextBox x:Name="NotesBox" Padding="10,8" BorderThickness="0" AcceptsReturn="True"
+                                     TextWrapping="Wrap" Height="300" TextChanged="OnFieldChanged"/>
+                        </Border>
+                    </StackPanel>
+
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Grid>
+    </ScrollViewer>
+</UserControl>

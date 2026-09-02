@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 
@@ -21,7 +22,9 @@ namespace Miao.Core.Services
         };
 
         private const int MaxChapterCrawl = 3000;
-
+        private const int MaxChapterRetry = 3;
+        private const int ChapterRequestDelayMs = 1200;
+        private static readonly SemaphoreSlim ChapterSemaphore = new(1, 1);
         private readonly IPageFetcher _fetcher;
 
         public WikidichDownloadSource(IPageFetcher fetcher)
@@ -30,13 +33,16 @@ namespace Miao.Core.Services
         }
 
         public bool CanHandle(string url) =>
-            KnownDomains.Any(d => url.Contains(d, StringComparison.OrdinalIgnoreCase));
+            KnownDomains.Any(d =>
+                url.Contains(d, StringComparison.OrdinalIgnoreCase));
 
         private async Task<HtmlDocument> LoadAsync(string url)
         {
             var html = await _fetcher.FetchHtmlAsync(url);
+
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
+
             return doc;
         }
 
@@ -50,7 +56,8 @@ namespace Miao.Core.Services
             return doc;
         }
 
-        public async Task<(string Title, string Author, string CoverImageUrl, string Description)> GetNovelInfoAsync(string url)
+        public async Task<(string Title, string Author, string CoverImageUrl, string Description)>
+            GetNovelInfoAsync(string url)
         {
             var doc = await LoadAsync(url);
 
@@ -70,7 +77,9 @@ namespace Miao.Core.Services
 
                 if (authorLink != null)
                 {
-                    author = HtmlEntity.DeEntitize(authorLink.InnerText).Trim();
+                    author = HtmlEntity.DeEntitize(
+                        authorLink.InnerText
+                    ).Trim();
                 }
             }
 
@@ -100,7 +109,9 @@ namespace Miao.Core.Services
 
                     foreach (var p in paragraphs)
                     {
-                        var text = HtmlEntity.DeEntitize(p.InnerText).Trim();
+                        var text = HtmlEntity.DeEntitize(
+                            p.InnerText
+                        ).Trim();
 
                         if (string.IsNullOrWhiteSpace(text))
                             continue;
@@ -116,7 +127,8 @@ namespace Miao.Core.Services
             return (title, author, cover, description);
         }
 
-        public async Task<List<(int Number, string Title, string ChapterUrl)>> GetChapterListAsync(string url)
+        public async Task<List<(int Number, string Title, string ChapterUrl)>>
+            GetChapterListAsync(string url)
         {
             var result = new List<(int, string, string)>();
 
@@ -145,7 +157,10 @@ namespace Miao.Core.Services
                     if (number > MaxChapterCrawl)
                         return result;
 
-                    var href = chapterNode.GetAttributeValue("href", "");
+                    var href = chapterNode.GetAttributeValue(
+                        "href",
+                        ""
+                    );
 
                     if (string.IsNullOrWhiteSpace(href))
                         continue;
@@ -159,7 +174,11 @@ namespace Miao.Core.Services
 
                     var chapterUrl = MakeAbsolute(url, href);
 
-                    result.Add((number, title, chapterUrl));
+                    result.Add((
+                        number,
+                        title,
+                        chapterUrl
+                    ));
 
                     number++;
                 }
@@ -170,15 +189,57 @@ namespace Miao.Core.Services
 
         public async Task<string> GetChapterContentAsync(string chapterUrl)
         {
-            var doc = await LoadAsync(chapterUrl);
+            await ChapterSemaphore.WaitAsync();
 
-            var contentNode = doc.DocumentNode.SelectSingleNode(
-                "//div[@id='bookContentBody']"
-            );
+            try
+            {
+                for (var attempt = 1; attempt <= MaxChapterRetry; attempt++)
+                {
+                    try
+                    {
+                        if (attempt > 1)
+                        {
+                            await Task.Delay(ChapterRequestDelayMs);
+                        }
 
-            if (contentNode == null)
+                        var doc = await LoadAsync(chapterUrl);
+
+                        var contentNode = doc.DocumentNode.SelectSingleNode(
+                            "//div[@id='bookContentBody']"
+                        );
+
+                        if (contentNode != null)
+                        {
+                            var content = ExtractChapterText(contentNode);
+
+                            if (!string.IsNullOrWhiteSpace(content))
+                                return content;
+                        }
+
+                        if (attempt < MaxChapterRetry)
+                        {
+                            await Task.Delay(ChapterRequestDelayMs);
+                        }
+                    }
+                    catch
+                    {
+                        if (attempt >= MaxChapterRetry)
+                            throw;
+
+                        await Task.Delay(ChapterRequestDelayMs);
+                    }
+                }
+
                 return "";
+            }
+            finally
+            {
+                ChapterSemaphore.Release();
+            }
+        }
 
+        private static string ExtractChapterText(HtmlNode contentNode)
+        {
             var sb = new StringBuilder();
 
             var paragraphNodes = contentNode.SelectNodes(".//p");
@@ -194,13 +255,19 @@ namespace Miao.Core.Services
 
             foreach (var p in paragraphNodes)
             {
-                var text = HtmlEntity.DeEntitize(p.InnerText).Trim();
+                var text = HtmlEntity.DeEntitize(
+                    p.InnerText
+                ).Trim();
 
                 if (string.IsNullOrWhiteSpace(text))
                     continue;
 
-                if (text.Contains("Wikidich", StringComparison.OrdinalIgnoreCase))
+                if (text.Contains(
+                    "Wikidich",
+                    StringComparison.OrdinalIgnoreCase))
+                {
                     continue;
+                }
 
                 sb.AppendLine(text);
                 sb.AppendLine();
@@ -214,11 +281,21 @@ namespace Miao.Core.Services
             if (string.IsNullOrWhiteSpace(href))
                 return "";
 
-            if (Uri.TryCreate(href, UriKind.Absolute, out var abs))
+            if (Uri.TryCreate(
+                href,
+                UriKind.Absolute,
+                out var abs))
+            {
                 return abs.ToString();
+            }
 
-            if (Uri.TryCreate(new Uri(baseUrl), href, out var combined))
+            if (Uri.TryCreate(
+                new Uri(baseUrl),
+                href,
+                out var combined))
+            {
                 return combined.ToString();
+            }
 
             return href;
         }

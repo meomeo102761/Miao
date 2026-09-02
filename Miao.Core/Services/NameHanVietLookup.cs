@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Miao.Core.Services
@@ -6,21 +7,24 @@ namespace Miao.Core.Services
     public static class NameHanVietLookup
     {
         private static readonly Lazy<DictionaryTranslationProvider> Shared =
-            new(() => new DictionaryTranslationProvider());
+            new(() => new DictionaryTranslationProvider(), LazyThreadSafetyMode.ExecutionAndPublication);
 
-        public static async Task<string> ToHanVietAsync(string? text)
+        public static Task<string> ToHanVietAsync(string? text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                return text ?? "";
+                return Task.FromResult(text ?? "");
 
-            try
+            return Task.Run(async () =>
             {
-                return await Shared.Value.ToHanVietPhraseAsync(text);
-            }
-            catch
-            {
-                return "";
-            }
+                try
+                {
+                    return await Shared.Value.ToHanVietPhraseAsync(text);
+                }
+                catch
+                {
+                    return "";
+                }
+            });
         }
     }
 }

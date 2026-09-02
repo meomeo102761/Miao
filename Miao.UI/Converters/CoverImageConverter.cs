@@ -9,6 +9,8 @@ namespace Miao.UI.Converters
 {
     public class CoverImageConverter : IValueConverter
     {
+        public static string? LastDebugInfo;
+
         public object? Convert(
             object? value,
             Type targetType,
@@ -16,7 +18,10 @@ namespace Miao.UI.Converters
             CultureInfo culture)
         {
             if (value is not string path || string.IsNullOrWhiteSpace(path))
+            {
+                LastDebugInfo = $"value null/empty: {value}";
                 return null;
+            }
 
             try
             {
@@ -34,13 +39,19 @@ namespace Miao.UI.Converters
                 }
 
                 if (!File.Exists(path))
+                {
+                    LastDebugInfo = $"File.Exists=false at: {path}";
                     return null;
+                }
 
                 using var stream = File.OpenRead(path);
-                return new Bitmap(stream);
+                var bitmap = new Bitmap(stream);
+                LastDebugInfo = $"OK: {path}";
+                return bitmap;
             }
-            catch
+            catch (Exception ex)
             {
+                LastDebugInfo = $"EXCEPTION at path={path}: {ex.GetType().Name}: {ex.Message}";
                 return null;
             }
         }

@@ -1,17 +1,57 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+             xmlns:conv="clr-namespace:Miao.UI.Converters"
              x:Class="Miao.UI.Views.Pages.WriteNovelPage"
              Background="{StaticResource BgMain}">
-    <StackPanel Margin="24" Spacing="12">
-        <TextBlock Text="Sáng tác" Classes="pageTitle"/>
-        <Border Background="{StaticResource AccentJadeSoft}"
-                BorderBrush="{StaticResource BorderSoft}"
-                BorderThickness="1"
-                CornerRadius="10"
-                Padding="18">
-            <TextBlock Text="Trang viết truyện đang được phát triển."
-                       Classes="bodyText"
-                       Foreground="{StaticResource TextMuted}"/>
-        </Border>
-    </StackPanel>
+
+    <UserControl.Resources>
+        <conv:CoverImageConverter x:Key="CoverImageConverter"/>
+    </UserControl.Resources>
+
+    <ScrollViewer>
+        <Grid MaxWidth="1140" Margin="20">
+            <StackPanel>
+                <!-- Header -->
+                <DockPanel Margin="0,0,0,20">
+                    <Button Content="+ Truyện Mới" DockPanel.Dock="Right" Classes="jade" Padding="16,8" Click="OnCreateNovelClick"/>
+                    <TextBlock Text="Truyện của tôi" Classes="pageTitle"/>
+                </DockPanel>
+
+                <!-- Empty state -->
+                <TextBlock x:Name="EmptyStateText" Text="Bạn chưa có truyện nào. Bấm &quot;+ Truyện Mới&quot; để bắt đầu sáng tác."
+                           Classes="bodyText" Foreground="{StaticResource TextMuted}" IsVisible="False" Margin="0,20,0,0"/>
+
+                <!-- Novel list -->
+                <ItemsControl x:Name="NovelsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:WrittenNovelRowViewModel">
+                            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12" Background="White">
+                                <Grid ColumnDefinitions="70,*,Auto">
+                                    <!-- Cover -->
+                                    <Border Grid.Column="0" Width="60" Height="84" CornerRadius="4" ClipToBounds="True" Background="#F0F0F0">
+                                        <Image Source="{Binding CoverImageSource}" Stretch="UniformToFill"/>
+                                    </Border>
+
+                                    <!-- Novel information -->
+                                    <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="17" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding ChapterCountLabel}" Classes="bodyText" Foreground="{StaticResource AccentJade}" Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding UpdatedLabel}" Classes="bodyText" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Actions -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                                        <Button Content="Tiếp tục viết" Classes="jade" Padding="16,8" Click="OnContinueWritingClick" Tag="{Binding}"/>
+                                        <Button Content="Sửa chi tiết" Classes="navButton" Padding="14,8" Click="OnEditNovelInfoClick" Tag="{Binding}"/>
+                                        <Button Content="Xóa" Classes="navButton" Padding="14,8" Click="OnDeleteNovelClick" Tag="{Binding}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

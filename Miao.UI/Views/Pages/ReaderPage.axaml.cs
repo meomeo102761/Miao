@@ -124,7 +124,7 @@ namespace Miao.UI.Views.Pages
                 stb.Classes.Add("readerParagraph");
                 stb.Inlines?.AddRange(ReaderRichText.ToInlines(group.Text ?? ""));
                 stb.ContextRequested += OnTextBlockContextRequested;
-                stb.DoubleTapped += OnParagraphDoubleTapped;
+                stb.Tapped += OnParagraphDoubleTapped;
 
                 var addItem = new MenuItem { Header = "Thêm" };
                 addItem.Click += OnContextAddStyledClick;
@@ -231,8 +231,9 @@ namespace Miao.UI.Views.Pages
                 db.SaveChanges();
             }
 
-            ReaderScrollViewer.ScrollToHome();
             _loadingChapter = false;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ReaderScrollViewer.ScrollToHome(),
+                Avalonia.Threading.DispatcherPriority.Loaded);
         }
 
         private string BuildDisplayContentForTarget(EditTarget target)
@@ -416,6 +417,31 @@ namespace Miao.UI.Views.Pages
             }
         }
 
+        private int ComputeInsertIndexForGroup(ReaderDisplayGroup targetGroup, int lineIndexInGroup)
+        {
+            var index = 0;
+            foreach (var group in _editGroups)
+            {
+                if (ReferenceEquals(group, targetGroup))
+                {
+                    var lineCount = (group.Text ?? "").Split('\n').Length;
+                    var clampedLine = Math.Clamp(lineIndexInGroup, 0, lineCount);
+                    return index + clampedLine;
+                }
+
+                index += group.IsImage ? 1 : (group.Text ?? "").Split('\n').Length;
+            }
+
+            return index;
+        }
+
+        private static int GetCaretLineIndex(TextBox tb)
+        {
+            var text = tb.Text ?? "";
+            var caret = Math.Clamp(tb.CaretIndex, 0, text.Length);
+            return text[..caret].Count(c => c == '\n');
+        }
+
         private async void OnInsertImageClick(object? sender, RoutedEventArgs e)
         {
             var topLevel = TopLevel.GetTopLevel(this);
@@ -435,39 +461,58 @@ namespace Miao.UI.Views.Pages
                 var imageDirectory = GetNovelImageDirectory();
 
                 var extension = Path.GetExtension(result[0].Name);
+                if (string.IsNullOrWhiteSpace(extension)) extension = ".png";
+
                 var fileName = $"{_novelId}_{_chapterNumber}_{Guid.NewGuid():N}{extension}";
                 var destPath = Path.Combine(imageDirectory, fileName);
 
-                await using var sourceStream = await result[0].OpenReadAsync();
-                await using var destStream = File.Create(destPath);
-                await sourceStream.CopyToAsync(destStream);
+                using (var sourceStream = await result[0].OpenReadAsync())
+                using (var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await sourceStream.CopyToAsync(destStream);
+                    await destStream.FlushAsync();
+                }
+
+                if (!File.Exists(destPath))
+                {
+                    await DialogService.ShowYesNoAsync("Không thể lưu ảnh vào thư mục dữ liệu của truyện.", "Lỗi chèn ảnh");
+                    return;
+                }
+
+                int? insertIndex = null;
+                if (_lastFocusedEditGroup != null && !_lastFocusedEditGroup.IsImage && _activeEditTextBox != null)
+                {
+                    var lineIndex = GetCaretLineIndex(_activeEditTextBox);
+                    insertIndex = ComputeInsertIndexForGroup(_lastFocusedEditGroup, lineIndex);
+                }
 
                 SyncBlocksFromEditGroups();
 
                 var newBlock = new ReaderBlockViewModel
                 {
                     Type = ReaderBlockType.Image,
-                    ImagePath = destPath,
+                    ImagePath = GetRelativeNovelImagePath(fileName),
                     IsEditing = true
                 };
 
-                var insertIndex = _lastFocusedEditGroup != null
-                    ? _lastFocusedEditGroup.EndBlockIndex + 1
-                    : _blocks.Count;
-
-                _blocks.Insert(Math.Clamp(insertIndex, 0, _blocks.Count), newBlock);
+                var finalInsertIndex = Math.Clamp(insertIndex ?? _blocks.Count, 0, _blocks.Count);
+                _blocks.Insert(finalInsertIndex, newBlock);
+                
                 RebuildReadGroups();
                 RebuildEditGroups();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[OnInsertImageClick] Lỗi chèn ảnh: {ex}");
+                await DialogService.ShowYesNoAsync($"Không thể chèn ảnh: {ex.Message}", "Lỗi chèn ảnh");
             }
         }
 
         private void OnRemoveImageGroupClick(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not ReaderDisplayGroup group || !group.IsImage) return;
+
+            var imagePathToDelete = group.ImagePath;
 
             SyncBlocksFromEditGroups();
 
@@ -476,6 +521,60 @@ namespace Miao.UI.Views.Pages
 
             RebuildReadGroups();
             RebuildEditGroups();
+
+            TryDeleteImageFileIfUnused(imagePathToDelete);
+        }
+
+        private void TryDeleteImageFileIfUnused(string? relativeOrAbsolutePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativeOrAbsolutePath) || _currentChapter == null) return;
+
+            try
+            {
+                var fullPath = ResolveImageFullPath(relativeOrAbsolutePath);
+                if (string.IsNullOrWhiteSpace(fullPath) || !File.Exists(fullPath)) return;
+
+                var stillUsedInCurrentSide = _blocks.Any(b =>
+                    b.Type == ReaderBlockType.Image &&
+                    string.Equals(b.ImagePath, relativeOrAbsolutePath, StringComparison.Ordinal));
+
+                if (stillUsedInCurrentSide) return;
+
+                using var db = OpenDb();
+
+                var currentChapterInDb = db.Chapters.FirstOrDefault(c => c.Id == _currentChapter.Id);
+                var otherSideContent = currentChapterInDb == null
+                    ? null
+                    : (_editTarget == EditTarget.Original ? currentChapterInDb.DisplayContent : currentChapterInDb.OriginalContent);
+
+                var stillUsedInOtherSide = !string.IsNullOrEmpty(otherSideContent) &&
+                    otherSideContent.Contains(relativeOrAbsolutePath, StringComparison.Ordinal);
+
+                var stillUsedInOtherChapters = db.Chapters
+                    .Where(c => c.NovelId == _novelId && c.Id != _currentChapter.Id)
+                    .Any(c =>
+                        (c.OriginalContent != null && c.OriginalContent.Contains(relativeOrAbsolutePath)) ||
+                        (c.DisplayContent != null && c.DisplayContent.Contains(relativeOrAbsolutePath)));
+
+                if (!stillUsedInOtherSide && !stillUsedInOtherChapters)
+                    File.Delete(fullPath);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TryDeleteImageFileIfUnused] Lỗi xóa file ảnh: {ex}");
+            }
+        }
+
+        private string ResolveImageFullPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return "";
+
+            if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.IsFile)
+                path = uri.LocalPath;
+
+            return Path.IsPathRooted(path)
+                ? path
+                : Path.Combine(AppSettingsService.Instance.Settings.DataFolder, path);
         }
 
         private string GetNovelImageDirectory()
@@ -485,6 +584,9 @@ namespace Miao.UI.Views.Pages
             Directory.CreateDirectory(dir);
             return dir;
         }
+
+        private string GetRelativeNovelImagePath(string fileName)
+            => Path.Combine("Images", $"Novel_{_novelId}", fileName);
 
         private async void OnEditTextBoxPasteCheck(object? sender, KeyEventArgs e)
         {
@@ -505,19 +607,23 @@ namespace Miao.UI.Views.Pages
             try
             {
                 var imageDirectory = GetNovelImageDirectory();
-                var destPath = Path.Combine(imageDirectory, $"{_novelId}_{_chapterNumber}_{Guid.NewGuid():N}.png");
+                var pasteFileName = $"{_novelId}_{_chapterNumber}_{Guid.NewGuid():N}.png";
+                var destPath = Path.Combine(imageDirectory, pasteFileName);
                 await File.WriteAllBytesAsync(destPath, bytes);
+
+                var lineIndex = GetCaretLineIndex(tb);
+                var insertIndexBeforeSync = ComputeInsertIndexForGroup(group, lineIndex);
 
                 SyncBlocksFromEditGroups();
 
                 var newBlock = new ReaderBlockViewModel
                 {
                     Type = ReaderBlockType.Image,
-                    ImagePath = destPath,
+                    ImagePath = GetRelativeNovelImagePath(pasteFileName),
                     IsEditing = true
                 };
 
-                var insertIndex = Math.Clamp(group.EndBlockIndex + 1, 0, _blocks.Count);
+                var insertIndex = Math.Clamp(insertIndexBeforeSync, 0, _blocks.Count);
                 _blocks.Insert(insertIndex, newBlock);
                 RebuildReadGroups();
                 RebuildEditGroups();
@@ -794,10 +900,12 @@ namespace Miao.UI.Views.Pages
 
             using var db = OpenDb();
             var set = db.NovelGlossarySets
-                .Where(x => x.NovelId == _novelId)
-                .Select(x => x.GlossarySet!)
-                .OrderBy(x => x.Name)
-                .FirstOrDefault();
+            .Where(x => x.NovelId == _novelId)
+            .Select(x => x.GlossarySet!)
+            .OrderByDescending(x => !x.IsShared && x.OwnerNovelId == _novelId) 
+            .ThenBy(x => x.IsShared) 
+            .ThenBy(x => x.Name)
+            .FirstOrDefault();
 
             if (set == null)
             {
@@ -1423,12 +1531,15 @@ namespace Miao.UI.Views.Pages
             ModalService.Show(card);
         }
 
-        private static async Task RefineHanVietAsync(TextBox originalBox, TextBox hanVietBox)
+        private static async Task RefineHanVietAsync(
+            TextBox originalBox, TextBox hanVietBox, System.Threading.CancellationToken token = default)
         {
             var original = originalBox.Text ?? "";
             if (string.IsNullOrWhiteSpace(original)) return;
 
             var accurate = await NameHanVietLookup.ToHanVietAsync(original);
+
+            if (token.IsCancellationRequested) return;
 
             if (!string.IsNullOrWhiteSpace(accurate) && originalBox.Text == original)
                 hanVietBox.Text = accurate;
@@ -1440,6 +1551,7 @@ namespace Miao.UI.Views.Pages
             var originalBox = new TextBox { Text = selectedOriginal, Margin = new Thickness(0, 0, 0, 14) };
             var hanVietText = string.IsNullOrWhiteSpace(currentHanViet) ? _sinoVietnamese.ToHanViet(selectedOriginal) : currentHanViet;
             var hanVietBox = new TextBox { Text = hanVietText, Margin = new Thickness(0, 0, 0, 14) };
+            var pinYinBox = new TextBox { Text = _sinoVietnamese.ToPinYin(selectedOriginal), Margin = new Thickness(0, 0, 0, 14) };
 
             if (string.IsNullOrWhiteSpace(currentHanViet))
             {
@@ -1447,6 +1559,7 @@ namespace Miao.UI.Views.Pages
             }
 
             var isFirstOriginalTextEvent = true;
+            System.Threading.CancellationTokenSource? dialogHanVietCts = null;
 
             async void OnOriginalTextChanged(string? text)
             {
@@ -1455,8 +1568,18 @@ namespace Miao.UI.Views.Pages
                 var current = text ?? "";
                 var quickGuess = _sinoVietnamese.ToHanViet(current);
                 hanVietBox.Text = string.IsNullOrWhiteSpace(quickGuess) ? current : quickGuess;
+                pinYinBox.Text = _sinoVietnamese.ToPinYin(current);
 
-                await RefineHanVietAsync(originalBox, hanVietBox);
+                dialogHanVietCts?.Cancel();
+                var cts = new System.Threading.CancellationTokenSource();
+                dialogHanVietCts = cts;
+
+                try { await Task.Delay(250, cts.Token); }
+                catch (TaskCanceledException) { return; }
+
+                if (cts.IsCancellationRequested) return;
+
+                await RefineHanVietAsync(originalBox, hanVietBox, cts.Token);
             }
 
             originalBox.GetObservable(TextBox.TextProperty).Subscribe(
@@ -1468,6 +1591,8 @@ namespace Miao.UI.Views.Pages
             root.Children.Add(originalBox);
             root.Children.Add(new TextBlock { Text = "Hán Việt:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
             root.Children.Add(hanVietBox);
+            root.Children.Add(new TextBlock { Text = "Bính âm:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
+            root.Children.Add(pinYinBox);
             root.Children.Add(new TextBlock { Text = "Dịch:", FontSize = 15, Margin = new Thickness(0, 0, 0, 4) });
             root.Children.Add(translatedBox);
 
@@ -1512,7 +1637,7 @@ namespace Miao.UI.Views.Pages
                         GlossarySetId = glossarySetId,
                         OriginalTerm = newOriginal,
                         HanViet = hanVietBox.Text?.Trim() ?? "",
-                        PinYin = _sinoVietnamese.ToPinYin(newOriginal),
+                        PinYin = pinYinBox.Text?.Trim() ?? "",
                         TranslatedTerm = translated
                     });
                 }
@@ -1521,7 +1646,7 @@ namespace Miao.UI.Views.Pages
                     entry.OriginalTerm = newOriginal;
                     entry.TranslatedTerm = translated;
                     entry.HanViet = hanVietBox.Text?.Trim() ?? "";
-                    entry.PinYin = _sinoVietnamese.ToPinYin(newOriginal);
+                    entry.PinYin = pinYinBox.Text?.Trim() ?? "";
                 }
                 saveDb.SaveChanges();
             }

@@ -10,11 +10,17 @@
                 <TextBlock Text="Hỗ trợ file .txt và .docx (tự tách chương theo dòng &quot;Chương X&quot;), và .epub (đọc theo cấu trúc chương có sẵn). Có thể chọn nhiều file cùng lúc."
                            Classes="bodyText" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
-                <Button Content="Chọn file..." Width="120" HorizontalAlignment="Left"
-                        Classes="jade" Margin="0,0,0,16" Click="OnBrowseClick"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="Chọn file..." Width="120" Classes="jade" Click="OnBrowseClick"/>
+                    <Button x:Name="MergeButton" Content="Gộp file đã chọn" Classes="navButton"
+                            Margin="10,0,0,0" IsVisible="False" Click="OnMergeSelectedFilesClick"/>
+                </StackPanel>
 
                 <TextBlock x:Name="StatusText" Text="" Classes="bodyText" Foreground="{StaticResource TextMuted}"
-                           Margin="0,0,0,16" TextWrapping="Wrap"/>
+                           Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                <CheckBox x:Name="SelectAllCheckBox" Content="Chọn tất cả" Margin="0,0,0,10"
+                          IsVisible="False" Click="OnSelectAllFilesClick"/>
 
                 <ItemsControl x:Name="FilesList">
                     <ItemsControl.ItemTemplate>
@@ -26,6 +32,13 @@
                                         <Button Content="Xóa" DockPanel.Dock="Right" Width="60"
                                                 Classes="navButton"
                                                 Click="OnRemoveFileClick" Tag="{Binding}"/>
+                                        <Button Content="Tách..." DockPanel.Dock="Right" Width="70" Margin="0,0,6,0"
+                                                Classes="navButton" IsVisible="{Binding IsMerged}"
+                                                Click="OnOpenUnmergeDialogClick" Tag="{Binding}"/>
+                                        <CheckBox DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  IsVisible="{Binding ShowFields}"
+                                                  IsCheckedChanged="OnFileCheckToggled"/>
                                         <TextBlock Text="{Binding FileName}" FontWeight="Bold"
                                                    TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                     </DockPanel>
@@ -61,6 +74,28 @@
                         Padding="16,8" HorizontalAlignment="Left" Margin="0,8,0,0"
                         IsVisible="False" Click="OnImportClick"/>
             </StackPanel>
+
+            <Border x:Name="UnmergeCard" IsVisible="False" Background="White" CornerRadius="12" Width="380" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Tách file khỏi nhóm đã gộp" FontSize="16" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Tick chọn file muốn tách ra riêng; các file không chọn vẫn giữ nguyên trong nhóm gộp."
+                               Classes="bodyText" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                    <ItemsControl x:Name="UnmergeCandidatesList" Margin="0,0,0,16">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:UnmergeCandidate">
+                                <CheckBox Content="{Binding FileName}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,4"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="Tách các file đã chọn" Width="170" Margin="0,0,10,0"
+                                Classes="jade" Click="OnConfirmUnmergeClick"/>
+                        <Button Content="Hủy" Width="85" Classes="navButton" Click="OnCancelUnmergeClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Grid>
     </ScrollViewer>
 </UserControl>

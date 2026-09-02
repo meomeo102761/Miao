@@ -137,24 +137,6 @@
             <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
         </Style>
 
-        <Style Selector="Button.VolumeMenuItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Padding" Value="14,10"/>
-            <Setter Property="Margin" Value="4,2"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.VolumeMenuItem:pointerover">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
-        </Style>
-        <Style Selector="Button.VolumeMenuItem TextBlock">
-            <Setter Property="Foreground" Value="#333333"/>
-        </Style>
-
     </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -176,6 +158,8 @@
                     Click="OnAddToVolumeClick" IsVisible="False"/>
             <Button x:Name="BulkDeleteButton" Classes="NovelActionButton NovelDangerButton" Margin="10,0,0,0"
                     Click="OnBulkDeleteChaptersClick" IsVisible="False"/>
+            <Button Content="Đánh lại số chương" Classes="NovelActionButton" Margin="10,0,0,0"
+                    Click="OnRenumberAllClick"/>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Margin="0,0,0,14" VerticalAlignment="Center">

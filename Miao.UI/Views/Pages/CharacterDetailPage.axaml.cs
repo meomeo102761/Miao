@@ -108,7 +108,7 @@ namespace Miao.UI.Views.Pages
                     CornerRadius = new CornerRadius(10), ClipToBounds = true,
                     Child = new Image { Source = new Bitmap(_character.ImagePath), Stretch = Stretch.Uniform }
                 };
-                DescriptionColumn.Children.Add(hero);   // <-- dòng bị thiếu, thêm vào
+                DescriptionColumn.Children.Add(hero);
             }
 
             DescriptionColumn.Children.Add(ColumnHeader("GIỚI THIỆU", async () =>

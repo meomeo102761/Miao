@@ -217,13 +217,11 @@ namespace Miao.UI.Views.Pages
                 using var db = new MiaoDbContext(AppPaths.DbFilePath);
 
                 var chaptersToDelete = db.Chapters.Where(c => _selectedChapterIds.Contains(c.Id)).ToList();
-                var affectedVolumeIds = chaptersToDelete.Select(c => c.VolumeId).Distinct().ToList();
 
                 db.Chapters.RemoveRange(chaptersToDelete);
                 db.SaveChanges();
 
-                foreach (var volumeId in affectedVolumeIds)
-                    RenumberScope(db, volumeId);
+                RenumberAllScopes(db);
 
                 _selectedChapterIds.Clear();
                 LoadWorkspace();
@@ -412,6 +410,7 @@ namespace Miao.UI.Views.Pages
             list.Insert(targetIndex, sourceRow);
 
             using var db = new MiaoDbContext(AppPaths.DbFilePath);
+
             for (int i = 0; i < list.Count; i++)
             {
                 var chapter = db.Chapters.Find(list[i].Id);
@@ -419,6 +418,8 @@ namespace Miao.UI.Views.Pages
                     chapter.Number = i + 1;
             }
             db.SaveChanges();
+
+            RenumberAllScopes(db);
 
             LoadWorkspace();
         }
@@ -433,42 +434,42 @@ namespace Miao.UI.Views.Pages
                 var chapter = db.Chapters.Find(row.Id);
                 if (chapter == null) return;
 
-                var volumeId = chapter.VolumeId;
-
                 db.Chapters.Remove(chapter);
                 db.SaveChanges();
 
                 _selectedChapterIds.Remove(row.Id);
-                RenumberScope(db, volumeId);
+                RenumberAllScopes(db);
 
                 LoadWorkspace();
             });
         }
 
-        private void RenumberScope(MiaoDbContext db, Guid? volumeId)
+        private void RenumberAllScopes(MiaoDbContext db)
         {
-            var remaining = db.Chapters
-                .Where(c => c.NovelId == _novelId && c.VolumeId == volumeId)
-                .OrderBy(c => c.Number)
-                .ToList();
-
-            if (remaining.Count == 0) return;
+            var volumes = db.Volumes.Where(v => v.NovelId == _novelId).OrderBy(v => v.SortOrder).ToList();
+            var allChapters = db.Chapters.Where(c => c.NovelId == _novelId).ToList();
 
             var renumberMap = new Dictionary<int, int>();
-            for (int i = 0; i < remaining.Count; i++)
+            var running = 1;
+
+            void AssignSequential(IEnumerable<Chapter> group)
             {
-                var newNumber = i + 1;
-                if (remaining[i].Number != newNumber)
+                foreach (var chapter in group.OrderBy(c => c.Number))
                 {
-                    renumberMap[remaining[i].Number] = newNumber;
-                    remaining[i].Number = newNumber;
+                    if (chapter.Number != running)
+                        renumberMap[chapter.Number] = running;
+                    chapter.Number = running;
+                    running++;
                 }
             }
 
-            if (renumberMap.Count == 0) return;
+            foreach (var vol in volumes)
+                AssignSequential(allChapters.Where(c => c.VolumeId == vol.Id));
+
+            AssignSequential(allChapters.Where(c => c.VolumeId == null));
 
             var novel = db.Novels.Find(_novelId);
-            if (volumeId == null && novel != null && novel.LastReadChapterNumber > 0 &&
+            if (novel != null && novel.LastReadChapterNumber > 0 &&
                 renumberMap.TryGetValue(novel.LastReadChapterNumber, out var mappedNumber))
             {
                 novel.LastReadChapterNumber = mappedNumber;
@@ -508,7 +509,23 @@ namespace Miao.UI.Views.Pages
         }
 
         private void OnCreateVolumeCancelClick(object? sender, RoutedEventArgs e)
-            => ModalService.Close();
+        {
+            ModalService.Close();
+        }
+
+        private void OnRenumberAllClick(object? sender, RoutedEventArgs e)
+        {
+            ShowConfirm(
+                "Đánh lại số thứ tự TẤT CẢ chương trong truyện này theo đúng thứ tự quyển hiện tại " +
+                "(quyển sau nối tiếp số cuối quyển trước)? Dùng để sửa ngay các trường hợp số chương " +
+                "bị trùng/lộn xộn do dữ liệu cũ trước khi có bản sửa lỗi này.",
+                () =>
+                {
+                    using var db = new MiaoDbContext(AppPaths.DbFilePath);
+                    RenumberAllScopes(db);
+                    LoadWorkspace();
+                });
+        }
 
         private Popup? _addToVolumePopup;
 
@@ -538,9 +555,9 @@ namespace Miao.UI.Views.Pages
                     var volumeId = vol.Id;
                     var btn = new Button
                     {
-                        Classes = { "VolumeMenuItem" },
-                        Content = new TextBlock { Text = vol.Name, TextWrapping = TextWrapping.Wrap, MaxWidth = 230 }
+                        Content = new TextBlock { Text = vol.Name, TextWrapping = TextWrapping.Wrap, MaxWidth = 180 }
                     };
+                    ApplyMenuItemHoverStyle(btn);
                     btn.Click += (_, _) =>
                     {
                         AssignSelectedChaptersToVolume(volumeId);
@@ -553,8 +570,13 @@ namespace Miao.UI.Views.Pages
 
                 var unassignBtn = new Button
                 {
-                    Classes = { "VolumeMenuItem" },
-                    Content = new TextBlock { Text = "Chưa phân quyển", TextWrapping = TextWrapping.Wrap, MaxWidth = 230 }
+                    Content = new TextBlock { Text = "Chưa phân quyển", TextWrapping = TextWrapping.Wrap, MaxWidth = 180 }
+                };
+                ApplyMenuItemHoverStyle(unassignBtn);
+                unassignBtn.Click += (_, _) =>
+                {
+                    AssignSelectedChaptersToVolume(null);
+                    if (_addToVolumePopup != null) _addToVolumePopup.IsOpen = false;
                 };
                 panel.Children.Add(unassignBtn);
             }
@@ -566,7 +588,7 @@ namespace Miao.UI.Views.Pages
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(4),
-                Width = 280,
+                Width = 220,
                 Child = panel
             };
 
@@ -582,6 +604,23 @@ namespace Miao.UI.Views.Pages
             ((ISetLogicalParent)_addToVolumePopup).SetParent(this);
         }
 
+        private static void ApplyMenuItemHoverStyle(Button button)
+        {
+            var hoverBrush = (IBrush)(Application.Current?.FindResource("AccentJadeSoft") ?? Brushes.WhiteSmoke);
+
+            button.Background = Brushes.Transparent;
+            button.BorderThickness = new Thickness(0);
+            button.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
+            button.HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Left;
+            button.Padding = new Thickness(12, 10);
+            button.Margin = new Thickness(0, 1);
+            button.CornerRadius = new CornerRadius(6);
+            button.Cursor = new Cursor(StandardCursorType.Hand);
+
+            button.PointerEntered += (_, _) => button.Background = hoverBrush;
+            button.PointerExited += (_, _) => button.Background = Brushes.Transparent;
+        }
+
         private void AssignSelectedChaptersToVolume(Guid? volumeId)
         {
             if (_selectedChapterIds.Count == 0) return;
@@ -590,18 +629,12 @@ namespace Miao.UI.Views.Pages
             var chapters = db.Chapters.Where(c => _selectedChapterIds.Contains(c.Id)).ToList();
             if (chapters.Count == 0) return;
 
-            var affectedSourceVolumeIds = chapters.Select(c => c.VolumeId).Distinct().ToList();
-
             foreach (var c in chapters)
                 c.VolumeId = volumeId;
 
             db.SaveChanges();
 
-            foreach (var sourceId in affectedSourceVolumeIds)
-                if (sourceId != volumeId)
-                    RenumberScope(db, sourceId);
-
-            RenumberScope(db, volumeId);
+            RenumberAllScopes(db);
 
             _selectedChapterIds.Clear();
             LoadWorkspace();
@@ -659,11 +692,14 @@ namespace Miao.UI.Views.Pages
                     foreach (var c in chaptersInVolume)
                         c.VolumeId = null;
 
-                    var vol = db.Volumes.Find(volumeId);
+                                        var vol = db.Volumes.Find(volumeId);
                     if (vol != null)
                         db.Volumes.Remove(vol);
 
                     db.SaveChanges();
+
+                    RenumberAllScopes(db);
+
                     LoadWorkspace();
                 });
         }
