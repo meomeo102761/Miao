@@ -553,6 +553,7 @@ namespace Miao.UI.Views.Pages
         {
             string? translatedNovelTitle = null;
             string? translatedNovelAuthor = null;
+            string? translatedNovelDescription = null;
 
             try
             {
@@ -575,7 +576,21 @@ namespace Miao.UI.Views.Pages
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(translatedNovelTitle) && string.IsNullOrWhiteSpace(translatedNovelAuthor))
+            if (!string.IsNullOrWhiteSpace(novel.Description) &&
+                System.Text.RegularExpressions.Regex.IsMatch(novel.Description, @"\p{IsCJKUnifiedIdeographs}"))
+            {
+                try
+                {
+                    translatedNovelDescription = (await _titleTranslator.TranslateChapterAsync(novel.Description)).Trim();
+                }
+                catch
+                {
+                    
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(translatedNovelTitle) && string.IsNullOrWhiteSpace(translatedNovelAuthor)
+                && string.IsNullOrWhiteSpace(translatedNovelDescription))
                 return;
 
             using var titleDb = new MiaoDbContext(AppPaths.DbFilePath);
@@ -593,6 +608,12 @@ namespace Miao.UI.Views.Pages
             {
                 savedNovel.TranslatedAuthor = translatedNovelAuthor;
                 novel.TranslatedAuthor = translatedNovelAuthor;
+            }
+
+            if (!string.IsNullOrWhiteSpace(translatedNovelDescription))
+            {
+                savedNovel.TranslatedDescription = translatedNovelDescription;
+                novel.TranslatedDescription = translatedNovelDescription;
             }
 
             titleDb.SaveChanges();

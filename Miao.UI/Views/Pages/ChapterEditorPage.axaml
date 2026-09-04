@@ -3,7 +3,8 @@
              xmlns:local="clr-namespace:Miao.UI.Views.Pages"
              x:Class="Miao.UI.Views.Pages.ChapterEditorPage"
              Background="{StaticResource BgMain}"
-             FontFamily="Inter" FontSize="15">
+             FontFamily="Inter" FontSize="15"
+             Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
 
     <UserControl.Styles>
 
@@ -106,6 +107,17 @@
         <Style Selector="TextBox.plainContentBox /template/ Border#PART_BorderElement">
             <Setter Property="Background" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="TextBox.plainContentBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="TextBox.plainContentBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
         <Style Selector="TextBox.plainContentBox /template/ TextBlock#PART_Watermark">
             <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
@@ -158,8 +170,14 @@
                     </Popup>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="14">
-                    <TextBlock x:Name="WordCountText" Text="0 từ" FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">               
+                    <Button x:Name="BoldButton" Content="B" Classes="EditorToolButton" FontWeight="Bold" Focusable="False" Click="OnBoldButtonClick"/>
+                    <Button x:Name="ItalicButton" Content="I" Classes="EditorToolButton" FontStyle="Italic" Focusable="False" Click="OnItalicButtonClick"/>
+                    <Button x:Name="UnderlineButton" Content="U" Classes="EditorToolButton" Focusable="False" Click="OnUnderlineButtonClick"/>
+                    <Button x:Name="StrikeButton" Content="S" Classes="EditorToolButton" Focusable="False" Click="OnStrikeButtonClick"/>
+                    <Button x:Name="InsertImageButton" Content="🖼" Classes="EditorToolButton" Focusable="False" Click="OnInsertImageButtonClick"/>
+                    <Separator Width="1" Margin="4,6"/>
+                    <TextBlock x:Name="WordCountText" Text="0 từ" FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                     <TextBlock x:Name="SaveStatusText" Text="Đã lưu" FontSize="13" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center"/>
                     <Button x:Name="PublishToggleButton" Classes="PublishToggleButton" Content="Đăng tải" Click="OnTogglePublishClick"/>
                 </StackPanel>
@@ -167,7 +185,8 @@
         </Border>
 
         <Grid Grid.Row="1" x:Name="EditorScrollHost" RowDefinitions="Auto,*">
-            <ScrollViewer Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Background="White">
+            <ScrollViewer Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Background="White"
+                          ScrollViewer.BringIntoViewOnFocusChange="False">
                 <StackPanel Margin="20,30,20,30" Background="White">
                     <Border x:Name="EditorContentGrid" HorizontalAlignment="Center" Background="White">
                         <StackPanel>
@@ -175,17 +194,34 @@
                                     Classes="plainTitleBox" FocusAdorner="{x:Null}"
                                     FontFamily="Inter" FontSize="20" FontWeight="Bold"
                                     TextAlignment="Center" HorizontalContentAlignment="Center"
-                                    TextChanged="OnContentChanged"/>
+                                    TextChanged="OnTitleChanged"/>
 
                             <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0" Margin="0,0,0,20"/>
 
-                            <TextBox x:Name="ContentBox" AcceptsReturn="True" TextWrapping="Wrap"
-                                    Classes="plainContentBox" Padding="0" FontFamily="Inter" FontSize="16"
-                                    FocusAdorner="{x:Null}"
-                                    VerticalContentAlignment="Top" MinHeight="500"
-                                    ContextFlyout="{x:Null}"
-                                    TextChanged="OnContentChanged"
-                                    PointerPressed="OnContentBoxPointerPressed"/>
+                            <StackPanel MinHeight="500">
+                                <ItemsControl x:Name="ContentBlocksList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="local:ReaderDisplayGroup">
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBox Text="{Binding Text, Mode=TwoWay}" TextWrapping="Wrap" AcceptsReturn="True"
+                                                        Classes="plainContentBox" Padding="0" FontFamily="Inter" FontSize="16"
+                                                        FocusAdorner="{x:Null}" VerticalContentAlignment="Top"
+                                                        ContextFlyout="{x:Null}"
+                                                        IsVisible="{Binding !IsImage}"
+                                                        GotFocus="OnBlockTextBoxFocused"
+                                                        TextChanged="OnBlockTextChanged"
+                                                        KeyDown="OnBlockTextBoxPasteCheck"
+                                                        PointerPressed="OnBlockTextBoxPointerPressed"/>
+                                                <Grid IsVisible="{Binding IsImage}" HorizontalAlignment="Center" Margin="0,6,0,16">
+                                                    <Image Source="{Binding ImagePath, Converter={StaticResource CoverImageConverter}}" Stretch="Uniform" MaxWidth="640"/>
+                                                    <Button Classes="EditorToolButton" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                            Content="✕" Click="OnRemoveImageBlockClick" Tag="{Binding}"/>
+                                                </Grid>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>

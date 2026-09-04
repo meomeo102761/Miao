@@ -40,8 +40,17 @@ namespace Miao.Core.Models
         public string DisplayTitle =>
             string.IsNullOrWhiteSpace(Title) ? $"Chưa đặt tiêu đề {Number}" : Title;
 
-        public int WordCount => string.IsNullOrWhiteSpace(Content)
-            ? 0
-            : Content.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+        private static readonly System.Text.RegularExpressions.Regex ImageMarkerRegex =
+            new(@"\[\[IMG:.+?\]\]", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        public int CharacterCount
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(Content)) return 0;
+                var withoutImageMarkers = ImageMarkerRegex.Replace(Content, "");
+                return withoutImageMarkers.Length;
+            }
+        }
     }
 }

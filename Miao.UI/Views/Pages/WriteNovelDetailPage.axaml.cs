@@ -100,7 +100,7 @@ namespace Miao.UI.Views.Pages
                 StatusLabel = c.IsPublished
                     ? $"Đã đăng - {c.UpdatedAt:dd/MM/yyyy}"
                     : $"Bản thảo - {c.UpdatedAt:dd/MM/yyyy}",
-                WordCountLabel = $"{c.WordCount} từ"
+                WordCountLabel = $"{c.CharacterCount} ký tự"
             }).ToList();
 
             foreach (var row in rows)
