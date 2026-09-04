@@ -46,7 +46,11 @@ namespace Miao.Core.Services
             return "";
         }
 
-        private const string ApiToken = "fqtc_7nKp2mQ8xR4vL6wT1yZ3bC5dF0hJ8aE9uI3kM7";
+        private static string ApiToken =>
+            Environment.GetEnvironmentVariable("MIAO_FANQIETC_TOKEN")
+            ?? throw new InvalidOperationException(
+                "Thiếu biến môi trường MIAO_FANQIETC_TOKEN. " +
+                "Hãy đặt biến môi trường này với token FanqieTC của bạn trước khi dùng nguồn tải này.");
 
         private static async Task<string> GetApiAsync(string action, string parameterName, string parameterValue)
         {

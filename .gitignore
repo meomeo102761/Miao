@@ -237,6 +237,7 @@ ClientBin/
 *~
 *.dbmdl
 *.dbproj.schemaview
+design_time_temp.db
 *.jfm
 *.pfx
 *.publishsettings
