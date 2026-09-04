@@ -58,6 +58,7 @@ namespace Miao.UI.Views.Pages
                 new NvrenshuDownloadSource(_browser),
                 new Novel543DownloadSource(_browser),
                 new CzbooksDownloadSource(_browser),
+                new WattpadDownloadSource(_browser),
             };
 
             ChaptersList.ItemsSource = _chapterItems;

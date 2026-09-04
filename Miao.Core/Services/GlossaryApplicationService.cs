@@ -2,11 +2,21 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Miao.Core.Data;
+using Miao.Core.Models;
 
 namespace Miao.Core.Services
 {
     public static class GlossaryApplicationService
     {
+        public static GlossarySetEntry? FindEntryByOriginalTerm(MiaoDbContext db, Guid glossarySetId, string originalTerm)
+        {
+            if (string.IsNullOrWhiteSpace(originalTerm)) return null;
+
+            var normalized = originalTerm.Trim().ToLower();
+            return db.GlossarySetEntries
+                .FirstOrDefault(x => x.GlossarySetId == glossarySetId && x.OriginalTerm.ToLower() == normalized);
+        }
+
         public static async Task DeleteEntryAndRevertAsync(MiaoDbContext db, Guid entryId)
         {
             var entry = db.GlossarySetEntries.Find(entryId);

@@ -15,6 +15,8 @@ namespace Miao.Core.Models
         public string CoverImagePath { get; set; } =
             Path.Combine(AppContext.BaseDirectory, "Assets", "default-cover.jpg");
 
+        public int SortOrder { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
@@ -30,6 +32,7 @@ namespace Miao.Core.Models
         public string Title { get; set; } = "";
         public string Content { get; set; } = "";
         public bool IsPublished { get; set; }
+        public int SortOrder { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;

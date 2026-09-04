@@ -9,14 +9,55 @@
         <conv:CoverImageConverter x:Key="CoverImageConverter"/>
     </UserControl.Resources>
 
+    <UserControl.Styles>
+        <Style Selector="Border.searchBoxBorder">
+            <Setter Property="BorderBrush" Value="#CCC"/>
+        </Style>
+        <Style Selector="Border.searchBoxBorder:focus-within">
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+        </Style>
+
+        <Style Selector="Button.plainCloseButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.plainCloseButton TextBlock">
+            <Setter Property="Foreground" Value="#C0392B"/>
+        </Style>
+        <Style Selector="Button.plainCloseButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.plainCloseButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#96271F"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer>
         <Grid MaxWidth="1140" Margin="20">
             <StackPanel>
+
                 <!-- Header -->
-                <DockPanel Margin="0,0,0,20">
-                    <Button Content="+ Truyện Mới" DockPanel.Dock="Right" Classes="jade" Padding="16,8" Click="OnCreateNovelClick"/>
-                    <TextBlock Text="Truyện của tôi" Classes="pageTitle"/>
-                </DockPanel>
+                <Grid Margin="0,32,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="Truyện của tôi" Classes="pageTitle"
+                               FontWeight="Bold" FontSize="25" Foreground="{StaticResource AccentJade}"
+                               VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                        <Border Classes="searchBoxBorder" Background="#F8FAFA" CornerRadius="4" Height="38" Width="220"
+                                BorderThickness="1">
+                            <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" FocusAdorner="{x:Null}"
+                                     Padding="8,0" VerticalContentAlignment="Center"
+                                     FontFamily="Inter" FontSize="15" KeyDown="SearchBox_KeyDown"/>
+                        </Border>
+                        <Button Content="Tìm" Width="65" Height="38" Classes="jade" Click="OnSearchClick"/>
+                        <Button Content="+ Truyện Mới" Height="38" Padding="16,0" Classes="jade" Click="OnCreateNovelClick"/>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Empty state -->
                 <TextBlock x:Name="EmptyStateText" Text="Bạn chưa có truyện nào. Bấm &quot;+ Truyện Mới&quot; để bắt đầu sáng tác."
@@ -26,31 +67,45 @@
                 <ItemsControl x:Name="NovelsList">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="local:WrittenNovelRowViewModel">
-                            <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12" Background="White">
-                                <Grid ColumnDefinitions="70,*,Auto">
-                                    <!-- Cover -->
-                                    <Border Grid.Column="0" Width="60" Height="84" CornerRadius="4" ClipToBounds="True" Background="#F0F0F0">
-                                        <Image Source="{Binding CoverImageSource}" Stretch="UniformToFill"/>
-                                    </Border>
+                            <Grid Margin="0,0,0,12">
+                                <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8"
+                                        Padding="16" Background="White"
+                                        DragDrop.AllowDrop="True" DragDrop.Drop="OnNovelDrop">
+                                    <Grid ColumnDefinitions="Auto,70,*">
+                                        <TextBlock Grid.Column="0" Text="::" FontSize="18" FontFamily="Inter"
+                                                   Foreground="#999999" Cursor="SizeAll" VerticalAlignment="Center"
+                                                   Margin="0,0,14,0"
+                                                   PointerPressed="OnDragHandlePressed"
+                                                   PointerMoved="OnDragHandleMoved"/>
 
-                                    <!-- Novel information -->
-                                    <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="17" FontWeight="Bold"/>
-                                        <TextBlock Text="{Binding ChapterCountLabel}" Classes="bodyText" Foreground="{StaticResource AccentJade}" Margin="0,4,0,0"/>
-                                        <TextBlock Text="{Binding UpdatedLabel}" Classes="bodyText" Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,2,0,0"/>
-                                    </StackPanel>
+                                        <Border Grid.Column="1" Width="60" Height="84" CornerRadius="4" ClipToBounds="True"
+                                                Background="#F0F0F0">
+                                            <Image Source="{Binding CoverImageSource}" Stretch="UniformToFill"/>
+                                        </Border>
 
-                                    <!-- Actions -->
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                                        <Button Content="Tiếp tục viết" Classes="jade" Padding="16,8" Click="OnContinueWritingClick" Tag="{Binding}"/>
-                                        <Button Content="Sửa chi tiết" Classes="navButton" Padding="14,8" Click="OnEditNovelInfoClick" Tag="{Binding}"/>
-                                        <Button Content="Xóa" Classes="navButton" Padding="14,8" Click="OnDeleteNovelClick" Tag="{Binding}"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
+                                        <StackPanel Grid.Column="2" Margin="14,0,0,0" VerticalAlignment="Center"
+                                                    Cursor="Hand" PointerPressed="OnNovelTitleClick">
+                                            <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="17"
+                                                       FontWeight="Bold" Foreground="{StaticResource AccentJade}"/>
+                                            <TextBlock Text="{Binding ChapterCountLabel}" Classes="bodyText"
+                                                       Foreground="{StaticResource AccentJade}" Margin="0,4,0,0"/>
+                                            <TextBlock Text="{Binding UpdatedLabel}" Classes="bodyText"
+                                                       Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Button Content="✕" Classes="plainCloseButton" Width="24" Height="24" Padding="0" FontSize="16" FontWeight="Bold"
+                                        Background="Transparent" BorderThickness="0" Foreground="#C0392B"
+                                        Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,8,10,0" Click="OnDeleteNovelClick"/>
+                            </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <StackPanel x:Name="PageButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,20"/>
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

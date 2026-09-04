@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
              xmlns:reader="clr-namespace:Miao.UI.Views.Pages.Reader"
              xmlns:local="clr-namespace:Miao.UI.Views.Pages" 
-             xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core" x:Class="Miao.UI.Views.Pages.ReaderPage" FontFamily="Inter" FontSize="15" Loaded="OnReaderLoaded" Unloaded="OnReaderUnloaded">
+             xmlns:models="clr-namespace:Miao.Core.Models;assembly=Miao.Core"
+             x:Class="Miao.UI.Views.Pages.ReaderPage" FontFamily="Inter" FontSize="15" Loaded="OnReaderLoaded" Unloaded="OnReaderUnloaded">
 
     <UserControl.Resources>
         <!-- Cỡ chữ / giãn dòng / màu chữ vùng đọc — được code-behind cập nhật trực tiếp
@@ -173,18 +174,26 @@
             <Setter Property="FontFamily" Value="Inter"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Padding" Value="14,10"/>
-            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,1"/>
             <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+
+        <!-- App.axaml có rule toàn cục "Button TextBlock { Foreground: White }" — không có dòng
+             riêng này thì TextBlock bên trong nút luôn bị ép trắng, vô hình trên nền trắng lúc
+             chưa hover (chỉ lộ ra khi hover đổi nền màu). Đây là NGUYÊN NHÂN THẬT của "ẩn chữ". -->
+        <Style Selector="Button.ReaderMenuItemButton TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
         
         <Style Selector="Button.ReaderMenuItemButton:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource AccentJadeSoft}"/>
+            <Setter Property="Background" Value="{StaticResource AccentJadeSoftHover}"/>
         </Style>
         <Style Selector="Button.ReaderMenuItemButton:pointerover">
-            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         </Style>
 
         <Style Selector="TextBox.readerEditBox">

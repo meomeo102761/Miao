@@ -570,7 +570,7 @@ namespace Miao.UI.Views.Pages
                 pinYin = _sinoVietnamese.ToPinYin(original);
 
             using var db = OpenDb();
-            if (db.GlossarySetEntries.Any(x => x.GlossarySetId == vm.Id && x.OriginalTerm == original)) return;
+            if (GlossaryApplicationService.FindEntryByOriginalTerm(db, vm.Id, original) != null) return;
 
             db.GlossarySetEntries.Add(new GlossarySetEntry
             {

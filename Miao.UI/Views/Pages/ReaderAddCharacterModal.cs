@@ -36,11 +36,11 @@ namespace Miao.UI.Views.Pages
             CornerRadius = new Avalonia.CornerRadius(12);
             Padding = new Avalonia.Thickness(20);
 
-            _nameBox = new TextBox { Classes = { "editTextBox" }, Text = suggestedName, PlaceholderText = "Tên nhân vật…" };
+            _nameBox = new TextBox { Classes = { "editTextBox" }, Text = suggestedName, PlaceholderText = "VD: Tsunayoshi Sawada" };
             _factionBox = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch };
             _cropper = new InlineImageCropper();
 
-            var pickButton = new Button { Content = "Chọn ảnh", Classes = { "jade" } };
+            var pickButton = new Button { Content = "Chọn ảnh khác", Classes = { "jade" } };
             pickButton.Click += async (_, _) =>
             {
                 var topLevel = TopLevel.GetTopLevel(this);
@@ -65,9 +65,10 @@ namespace Miao.UI.Views.Pages
                 {
                     new TextBlock { Text = "Thêm nhân vật", Classes = { "PageTitle" }, FontSize = 18, Margin = new Avalonia.Thickness(0) },
                     _nameBox,
-                    new TextBlock { Text = "Nhóm:", FontSize = 13, Margin = new Avalonia.Thickness(0) },
+                    _cropper,
+                    pickButton,
                     _factionBox,
-                    _cropper, pickButton, actionsRow
+                    actionsRow
                 }
             };
 

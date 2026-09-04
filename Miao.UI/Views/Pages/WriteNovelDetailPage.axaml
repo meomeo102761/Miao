@@ -1,13 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Miao.UI.Views.Pages"
+             xmlns:conv="clr-namespace:Miao.UI.Converters"
              x:Class="Miao.UI.Views.Pages.WriteNovelDetailPage"
              Background="{StaticResource BgMain}">
 
+    <UserControl.Resources>
+        <conv:CoverImageConverter x:Key="CoverImageConverter"/>
+    </UserControl.Resources>
+
     <UserControl.Styles>
+        <Style Selector="TextBlock.sectionLinkText">
+            <Setter Property="FontFamily" Value="Inter"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
         <Style Selector="Button.tabButton">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
             <Setter Property="BorderThickness" Value="0,0,0,2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="CornerRadius" Value="0"/>
@@ -16,10 +27,31 @@
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
+        <Style Selector="Button.tabButton TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+        </Style>
         <Style Selector="Button.tabButtonActive">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.tabButtonActive TextBlock">
             <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentJade}"/>
+        </Style>
+
+        <Style Selector="Button.iconGhostDanger">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.iconGhostDanger TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentJade}"/>
+        </Style>
+        <Style Selector="Button.iconGhostDanger:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#E4574C"/>
         </Style>
     </UserControl.Styles>
 
@@ -27,26 +59,35 @@
     <Grid MaxWidth="1140" Margin="20">
         <StackPanel>
 
-            <DockPanel Margin="0,0,0,20">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
-                    <Button Content="Xóa truyện" Classes="navButton" Padding="16,8" Click="OnDeleteClick"/>
-                    <Button x:Name="SaveStatusButton" Content="Đã lưu" Classes="jade" Padding="16,8" IsEnabled="False"/>
+            <!-- Header -->
+            <Grid Margin="0,32,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="‹ Truyện của tôi" Classes="sectionLinkText" PointerPressed="OnBackClick"/>
+                    <TextBlock x:Name="HeaderTitleText" Text="Truyện Chưa Có Tiêu Đề"
+                               FontFamily="Inter" FontWeight="Bold" FontSize="25"
+                               Foreground="{StaticResource AccentJade}" Margin="0,4,0,0"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                    <Button Content="←" Width="34" Height="34" Classes="navButton" Click="OnBackClick"/>
-                    <StackPanel>
-                        <TextBlock Text="Sửa Chi Tiết Truyện" Classes="bodyText" Foreground="{StaticResource TextMuted}" FontSize="13"/>
-                        <TextBlock x:Name="HeaderTitleText" Text="Truyện Chưa Có Tiêu Đề" Classes="pageTitle" FontSize="22"/>
-                    </StackPanel>
-                </StackPanel>
-            </DockPanel>
+
+                <TextBlock Grid.Column="1" x:Name="SaveStatusText" Text="Đã lưu"
+                            FontFamily="Inter" FontSize="13" Foreground="{StaticResource TextMuted}"
+                            VerticalAlignment="Top" Margin="0,10,0,0"/>
+            </Grid>
 
             <Grid ColumnDefinitions="220,*">
                 <StackPanel Grid.Column="0" Margin="0,0,24,0">
-                    <Border Width="200" Height="280" CornerRadius="8" ClipToBounds="True"
-                            Background="#222" Cursor="Hand" PointerPressed="OnCoverClick">
+                    <Border Width="200" Height="280" ClipToBounds="True"
+                            Background="White" BorderBrush="{StaticResource AccentJade}" BorderThickness="1"
+                            Cursor="Hand" PointerPressed="OnCoverClick">
                         <Grid>
+                            <TextBlock Text="₍^. .^₎Ⳋ" FontSize="30" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" Opacity="0.6"/>
                             <Image x:Name="CoverImage" Stretch="UniformToFill"/>
+
                             <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource AccentJade}"
                                     HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12">
                                 <TextBlock Text="✎" Foreground="White" FontSize="16"
@@ -54,9 +95,6 @@
                             </Border>
                         </Grid>
                     </Border>
-
-                    <Button Content="Xem trước" Classes="jade" HorizontalAlignment="Stretch"
-                            Margin="0,12,0,0" Click="OnPreviewClick"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1">
@@ -82,13 +120,14 @@
                         </Border>
 
                         <TextBlock Text="Mô tả" Classes="bodyText" FontWeight="Bold" Margin="0,0,0,4"/>
-                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,4">
+                        <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Margin="0,0,4,0">
                             <TextBox x:Name="DescriptionBox" Padding="10,8" BorderThickness="0" AcceptsReturn="True"
-                                     TextWrapping="Wrap" Height="140" TextChanged="OnFieldChanged"/>
+                                     TextWrapping="Wrap" MinHeight="80" VerticalContentAlignment="Top"
+                                     TextChanged="OnFieldChanged"/>
                         </Border>
 
                         <TextBlock Text="Tag có thể chọn sau ở mục sửa truyện." Classes="bodyText"
-                                   Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,4,0,0"/>
+                                   Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,8,0,0"/>
                     </StackPanel>
 
                     <!-- Tab: Mục lục -->
@@ -110,21 +149,30 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:ChapterRowViewModel">
                                     <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8"
-                                            Padding="12" Margin="0,0,0,8" Background="White">
-                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,0,10,0"/>
+                                            Padding="12" Margin="0,0,0,8" Background="White"
+                                            Tag="{Binding}" DragDrop.AllowDrop="True" DragDrop.Drop="OnChapterRowDrop">
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                                            <TextBlock Grid.Column="0" Text="::" FontSize="14" FontWeight="Bold"
+                                                    Foreground="{StaticResource TextMuted}" Cursor="SizeAll"
+                                                    VerticalAlignment="Center" Margin="0,0,10,0"
+                                                    ToolTip.Tip="Kéo để đổi vị trí chương"
+                                                    PointerPressed="OnChapterDragHandlePressed" Tag="{Binding}"/>
 
-                                            <StackPanel Grid.Column="1" Cursor="Hand" PointerPressed="OnChapterRowClick" Tag="{Binding}">
+                                            <CheckBox Grid.Column="1" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,0,10,0"/>
+
+                                            <StackPanel Grid.Column="2" Cursor="Hand" PointerPressed="OnChapterRowClick" Tag="{Binding}">
                                                 <TextBlock Text="{Binding DisplayTitle}" FontWeight="Bold" FontFamily="Inter" FontSize="15"/>
                                                 <TextBlock Text="{Binding StatusLabel}" Classes="bodyText" FontSize="13"
-                                                           Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"/>
+                                                        Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"/>
                                             </StackPanel>
 
-                                            <TextBlock Grid.Column="2" Text="{Binding WordCountLabel}" Classes="bodyText"
-                                                       Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding WordCountLabel}" Classes="bodyText"
+                                                    Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-                                            <Button Grid.Column="3" Content="Xóa" Classes="navButton" Padding="10,4"
-                                                    Click="OnDeleteChapterClick" Tag="{Binding}"/>
+                                            <Button Grid.Column="4" Classes="iconGhostDanger" Click="OnDeleteChapterClick" Tag="{Binding}"
+                                                    ToolTip.Tip="Xóa chương">
+                                                <TextBlock Text="✕" FontSize="14" FontWeight="Bold"/>
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -137,17 +185,36 @@
 
                     <!-- Tab: Ghi chú -->
                     <StackPanel x:Name="NotesTabPanel" IsVisible="False">
-                        <TextBlock Text="Ghi chú truyện (chỉ mình bạn thấy, không hiển thị công khai)."
-                                   Classes="bodyText" Foreground="{StaticResource TextMuted}" Margin="0,0,0,8"/>
                         <Border BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8">
                             <TextBox x:Name="NotesBox" Padding="10,8" BorderThickness="0" AcceptsReturn="True"
-                                     TextWrapping="Wrap" Height="300" TextChanged="OnFieldChanged"/>
+                                    TextWrapping="Wrap" MinHeight="200" VerticalContentAlignment="Top" TextChanged="OnFieldChanged"/>
                         </Border>
                     </StackPanel>
 
                 </StackPanel>
             </Grid>
         </StackPanel>
+
+        <!-- Popup cắt ảnh bìa -->
+        <Border x:Name="CropCard" IsVisible="False" Background="White" CornerRadius="12" Width="320" Padding="20">
+            <StackPanel Spacing="14">
+                <TextBlock Text="Chỉnh ảnh bìa" FontWeight="Bold" FontSize="16" Foreground="{StaticResource AccentJade}"/>
+
+                <ContentControl x:Name="CropperHost"/>
+
+                <Button x:Name="PickCoverImageButton" Content="Chọn ảnh" Classes="jade"
+                        HorizontalAlignment="Left" Click="OnPickCoverImageClick"/>
+
+                <TextBlock Text="Kéo ảnh để chọn vị trí, dùng thanh trượt để thu phóng."
+                        Classes="bodyText" Foreground="{StaticResource TextMuted}" FontSize="13" TextWrapping="Wrap"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                    <Button Content="Lưu" Width="90" Classes="jade" Click="OnCropSaveClick"/>
+                    <Button Content="Hủy" Width="90" Classes="SecondaryButton" Click="OnCropCancelClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
     </Grid>
     </ScrollViewer>
 </UserControl>

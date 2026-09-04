@@ -3,9 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Miao.Core.Data;
@@ -40,6 +45,13 @@ namespace Miao.UI.Views.Pages
         private bool _isLoading = true;
         private string _coverPath = "";
 
+        private const double CropFrameW = 240;
+        private const double CropFrameH = 336;
+        private InlineImageCropper? _coverCropper;
+
+        private static readonly DataFormat<ChapterRowViewModel> ChapterDragFormat =
+            DataFormat.CreateInProcessFormat<ChapterRowViewModel>("Miao.WrittenChapterRow");
+
         public WriteNovelDetailPage(Guid novelId)
         {
             InitializeComponent();
@@ -66,8 +78,11 @@ namespace Miao.UI.Views.Pages
             _coverPath = novel.CoverImagePath;
             HeaderTitleText.Text = novel.DisplayTitle;
 
-            CoverImage.Source = CoverImageResolver.Load(this, _coverPath);
+            CoverImage.Source = IsDefaultCover(_coverPath) ? null : CoverImageResolver.Load(this, _coverPath);
         }
+
+        private static bool IsDefaultCover(string path) =>
+            string.IsNullOrWhiteSpace(path) || path.Contains("default-cover", StringComparison.OrdinalIgnoreCase);
 
         private void LoadChapters()
         {
@@ -130,7 +145,7 @@ namespace Miao.UI.Views.Pages
 
         private void ScheduleAutoSave()
         {
-            SaveStatusButton.Content = "Đang lưu...";
+            SaveStatusText.Text = "Đang lưu...";
 
             _autoSaveTimer?.Stop();
             _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
@@ -156,70 +171,12 @@ namespace Miao.UI.Views.Pages
             db.SaveChanges();
 
             HeaderTitleText.Text = novel.DisplayTitle;
-            SaveStatusButton.Content = "Đã lưu";
+            SaveStatusText.Text = "Đã lưu";
         }
 
-        private async void OnCoverClick(object? sender, PointerPressedEventArgs e)
-        {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is null) return;
-
-            var result = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-            {
-                Title = "Chọn ảnh bìa",
-                AllowMultiple = false,
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType("Ảnh (*.jpg;*.jpeg;*.png;*.webp)")
-                    {
-                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.webp" }
-                    }
-                }
-            });
-
-            if (result is null || result.Count == 0) return;
-
-            var sourcePath = result[0].Path.LocalPath;
-            var coverFolder = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "Covers");
-            Directory.CreateDirectory(coverFolder);
-
-            var extension = Path.GetExtension(sourcePath);
-            var destPath = Path.Combine(coverFolder, $"{_novelId}{extension}");
-            File.Copy(sourcePath, destPath, overwrite: true);
-
-            _coverPath = destPath;
-            CoverImage.Source = CoverImageResolver.Load(this, destPath);
-
-            using var db = OpenDb();
-            var novel = db.WrittenNovels.Find(_novelId);
-            if (novel != null)
-            {
-                novel.CoverImagePath = destPath;
-                novel.UpdatedAt = DateTime.Now;
-                db.SaveChanges();
-            }
-        }
-
-        private void OnPreviewClick(object? sender, RoutedEventArgs e) => SaveNovelInfo();
-
-        private void OnBackClick(object? sender, RoutedEventArgs e)
+        private void OnBackClick(object? sender, PointerPressedEventArgs e)
         {
             SaveNovelInfo();
-            AppNavigator.NavigateTo(new WriteNovelPage());
-        }
-
-        private async void OnDeleteClick(object? sender, RoutedEventArgs e)
-        {
-            var choice = await DialogService.ShowYesNoAsync(
-                "Xóa truyện này? Toàn bộ chương bên trong sẽ bị xóa vĩnh viễn.", "Xóa truyện");
-            if (choice != DialogResult.Yes) return;
-
-            using var db = OpenDb();
-            db.WrittenChapters.RemoveRange(db.WrittenChapters.Where(c => c.NovelId == _novelId));
-            var novel = db.WrittenNovels.Find(_novelId);
-            if (novel != null) db.WrittenNovels.Remove(novel);
-            db.SaveChanges();
-
             AppNavigator.NavigateTo(new WriteNovelPage());
         }
 
@@ -304,6 +261,163 @@ namespace Miao.UI.Views.Pages
             db.SaveChanges();
 
             LoadChapters();
+        }
+
+        private async void OnChapterDragHandlePressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (sender is not Control fe || fe.Tag is not ChapterRowViewModel row) return;
+
+            var item = new DataTransferItem();
+            item.Set(ChapterDragFormat, row);
+
+            var data = new DataTransfer();
+            data.Add(item);
+
+            await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Move);
+        }
+
+        private void OnChapterRowDrop(object? sender, DragEventArgs e)
+        {
+            if (sender is not Control targetControl || targetControl.Tag is not ChapterRowViewModel targetRow) return;
+
+            var sourceRow = e.DataTransfer.TryGetValue(ChapterDragFormat);
+            if (sourceRow == null || sourceRow.Id == targetRow.Id) return;
+
+            var rows = ChapterRows;
+            var sourceIndex = rows.FindIndex(r => r.Id == sourceRow.Id);
+            var targetIndex = rows.FindIndex(r => r.Id == targetRow.Id);
+            if (sourceIndex < 0 || targetIndex < 0) return;
+
+            rows.RemoveAt(sourceIndex);
+            rows.Insert(targetIndex, sourceRow);
+
+            using var db = OpenDb();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var chapter = db.WrittenChapters.Find(rows[i].Id);
+                if (chapter != null) chapter.Number = i + 1;
+            }
+            db.SaveChanges();
+
+            LoadChapters();
+        }
+
+        // ===================== Cắt ảnh bìa =====================
+
+        private void OnCoverClick(object? sender, PointerPressedEventArgs e)
+        {
+            OpenCropDialog();
+        }
+
+        private void OpenCropDialog()
+        {
+            _coverCropper = new InlineImageCropper(CropFrameW, CropFrameH);
+            CropperHost.Content = _coverCropper;
+
+            var hasExistingCover = !IsDefaultCover(_coverPath) && File.Exists(_coverPath);
+            if (hasExistingCover)
+            {
+                try
+                {
+                    _coverCropper.SetSource(_coverPath);
+                    PickCoverImageButton.Content = "Chọn ảnh khác";
+                }
+                catch
+                {
+                    // Ảnh cũ lỗi/không đọc được -> coi như chưa có ảnh, để trống chờ chọn mới.
+                    _coverCropper = new InlineImageCropper(CropFrameW, CropFrameH);
+                    CropperHost.Content = _coverCropper;
+                    PickCoverImageButton.Content = "Chọn ảnh";
+                }
+            }
+            else
+            {
+                PickCoverImageButton.Content = "Chọn ảnh";
+            }
+
+            CropCard.IsVisible = true;
+            if (CropCard.Parent is Panel panel) panel.Children.Remove(CropCard);
+            ModalService.Show(CropCard);
+        }
+
+        private async void OnPickCoverImageClick(object? sender, RoutedEventArgs e)
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+
+            var result = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Chọn ảnh bìa",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Ảnh (*.jpg;*.jpeg;*.png;*.webp)")
+                    {
+                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.webp" }
+                    }
+                }
+            });
+
+            if (result is null || result.Count == 0) return;
+
+            await using var stream = await result[0].OpenReadAsync();
+            var sourceBitmap = new Bitmap(stream);
+
+            _coverCropper = new InlineImageCropper(CropFrameW, CropFrameH);
+            _coverCropper.SetSource(sourceBitmap);
+            CropperHost.Content = _coverCropper;
+            PickCoverImageButton.Content = "Chọn ảnh khác";
+        }
+
+        private void OpenCropDialog(Bitmap sourceBitmap)
+        {
+            _coverCropper = new InlineImageCropper(CropFrameW, CropFrameH);
+            _coverCropper.SetSource(sourceBitmap);
+            CropperHost.Content = _coverCropper;
+
+            CropCard.IsVisible = true;
+            if (CropCard.Parent is Panel panel) panel.Children.Remove(CropCard);
+            ModalService.Show(CropCard);
+        }
+
+        private void OnCropCancelClick(object? sender, RoutedEventArgs e)
+        {
+            ModalService.Close();
+            _coverCropper = null;
+            CropperHost.Content = null;
+            PickCoverImageButton.Content = "Chọn ảnh";
+        }
+
+        private void OnCropSaveClick(object? sender, RoutedEventArgs e)
+        {
+            if (_coverCropper == null || !_coverCropper.HasImage) return;
+
+            var pngBytes = _coverCropper.GetCroppedPngBytes();
+            if (pngBytes.Length == 0) return;
+
+            var coverFolder = Path.Combine(AppSettingsService.Instance.Settings.DataFolder, "Covers");
+            Directory.CreateDirectory(coverFolder);
+            var destPath = Path.Combine(coverFolder, $"{_novelId}.png");
+
+            File.WriteAllBytes(destPath, pngBytes);
+
+            _coverPath = destPath;
+            CoverImage.Source = CoverImageResolver.Load(this, destPath);
+
+            using (var db = OpenDb())
+            {
+                var novel = db.WrittenNovels.Find(_novelId);
+                if (novel != null)
+                {
+                    novel.CoverImagePath = destPath;
+                    novel.UpdatedAt = DateTime.Now;
+                    db.SaveChanges();
+                }
+            }
+
+            ModalService.Close();
+            _coverCropper = null;
+            CropperHost.Content = null;
         }
     }
 }

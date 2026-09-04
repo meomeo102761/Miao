@@ -33,6 +33,9 @@ namespace Miao.UI.Views.Pages
 
         private int _latestPage = 1;
         private int _completedPage = 1;
+        private List<WrittenNovelCardItem> _authoredFull = new();
+        private int _authoredPage = 1;
+        private const int PreviewPageSizeAuthored = ItemsPerRow * PreviewRowsPerPage;
 
         private sealed class NovelTagInfo
         {
@@ -75,7 +78,48 @@ namespace Miao.UI.Views.Pages
             }
 
             RefreshHomeSections();
+            LoadAuthoredNovels(db);
             ShowFullList();
+        }
+
+        private void LoadAuthoredNovels(MiaoDbContext db)
+        {
+            var publishedNovelIds = db.WrittenChapters
+                .Where(c => c.IsPublished)
+                .Select(c => c.NovelId)
+                .Distinct()
+                .ToList();
+
+            _authoredFull = db.WrittenNovels
+                .Where(n => publishedNovelIds.Contains(n.Id))
+                .ToList()
+                .OrderByDescending(n => n.UpdatedAt)
+                .Select(n => new WrittenNovelCardItem
+                {
+                    Id = n.Id,
+                    DisplayTitle = n.DisplayTitle,
+                    Author = n.Author,
+                    CoverImagePath = n.CoverImagePath
+                })
+                .ToList();
+
+            AuthoredSection.IsVisible = _authoredFull.Count > 0;
+            _authoredPage = 1;
+            RenderAuthoredPage();
+        }
+
+        private void RenderAuthoredPage()
+        {
+            int totalPages = Math.Max(1, (int)Math.Ceiling(_authoredFull.Count / (double)PreviewPageSizeAuthored));
+            if (_authoredPage > totalPages) _authoredPage = totalPages;
+            AuthoredPreviewList.ItemsSource = _authoredFull.Skip((_authoredPage - 1) * PreviewPageSizeAuthored).Take(PreviewPageSizeAuthored).ToList();
+            PaginationHelper.Build(AuthoredPageButtonsPanel, totalPages, _authoredPage, p => { _authoredPage = p; RenderAuthoredPage(); });
+        }
+
+        private void OnAuthoredNovelClick(object? sender, PointerPressedEventArgs e)
+        {
+            if (sender is not Control fe || fe.Tag is not WrittenNovelCardItem item) return;
+            AppNavigator.NavigateTo(new WriteNovelDetailPage(item.Id));
         }
 
         private static string GetDirectionTag(IEnumerable<NovelTagInfo> tags)
@@ -137,6 +181,9 @@ namespace Miao.UI.Views.Pages
 
         private void OnShowAllCompletedClick(object? sender, PointerPressedEventArgs e)
             => AppNavigator.NavigateTo(new LibraryListPage(CompletedStatus, _completedFull));
+
+        private void OnShowAllAuthoredClick(object? sender, PointerPressedEventArgs e)
+            => AppNavigator.NavigateTo(new AuthoredListPage(_authoredFull));
 
         private void OnBackToFullListClick(object? sender, PointerPressedEventArgs e) => ShowFullList();
 
@@ -214,5 +261,13 @@ namespace Miao.UI.Views.Pages
 
             AppNavigator.NavigateTo(new NovelDetailPage(novel.Id)); 
         }
+    }
+
+    public class WrittenNovelCardItem
+    {
+        public Guid Id { get; set; }
+        public string DisplayTitle { get; set; } = "";
+        public string Author { get; set; } = "";
+        public string CoverImagePath { get; set; } = "";
     }
 }

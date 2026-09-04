@@ -12,9 +12,12 @@ namespace Miao.UI.Views.Pages
 {
     public class InlineImageCropper : StackPanel
     {
-        private const double ViewportWidth = 320;
-        private const double ViewportHeight = 300;
+        private const double DefaultViewportWidth = 320;
+        private const double DefaultViewportHeight = 300;
         private const double ExportScale = 2.0;
+
+        private readonly double _viewportWidth;
+        private readonly double _viewportHeight;
 
         private Bitmap? _source;
         private readonly Image _image;
@@ -28,17 +31,22 @@ namespace Miao.UI.Views.Pages
 
         public bool HasImage => _source != null;
 
-        public InlineImageCropper()
+        public InlineImageCropper() : this(DefaultViewportWidth, DefaultViewportHeight) { }
+
+        public InlineImageCropper(double viewportWidth, double viewportHeight)
         {
+            _viewportWidth = viewportWidth;
+            _viewportHeight = viewportHeight;
+
             Spacing = 8;
 
             _image = new Image { Stretch = Stretch.Fill };
-            var canvas = new Canvas { Width = ViewportWidth, Height = ViewportHeight };
+            var canvas = new Canvas { Width = _viewportWidth, Height = _viewportHeight };
             canvas.Children.Add(_image);
 
             _viewport = new Border
             {
-                Width = ViewportWidth, Height = ViewportHeight, ClipToBounds = true,
+                Width = _viewportWidth, Height = _viewportHeight, ClipToBounds = true,
                 Background = Brushes.LightGray, CornerRadius = new CornerRadius(8),
                 Child = canvas, Cursor = new Cursor(StandardCursorType.SizeAll)
             };
@@ -46,7 +54,7 @@ namespace Miao.UI.Views.Pages
             _viewport.PointerMoved += OnMoved;
             _viewport.PointerReleased += OnReleased;
 
-            _zoomSlider = new Slider { Width = ViewportWidth, IsEnabled = false };
+            _zoomSlider = new Slider { Width = _viewportWidth, IsEnabled = false };
             _zoomSlider.ValueChanged += (_, e) => ApplyZoom(e.NewValue);
 
             Children.Add(_viewport);
@@ -60,10 +68,10 @@ namespace Miao.UI.Views.Pages
             _source = bitmap;
             var srcW = bitmap.PixelSize.Width;
             var srcH = bitmap.PixelSize.Height;
-            _minScale = Math.Max(ViewportWidth / srcW, ViewportHeight / srcH);
+            _minScale = Math.Max(_viewportWidth / srcW, _viewportHeight / srcH);
             _scale = _minScale;
-            _offsetX = (ViewportWidth - srcW * _scale) / 2;
-            _offsetY = (ViewportHeight - srcH * _scale) / 2;
+            _offsetX = (_viewportWidth - srcW * _scale) / 2;
+            _offsetY = (_viewportHeight - srcH * _scale) / 2;
 
             _zoomSlider.Minimum = _minScale;
             _zoomSlider.Maximum = _minScale * 3;
@@ -76,8 +84,8 @@ namespace Miao.UI.Views.Pages
         private void ApplyZoom(double newScale)
         {
             if (_source == null) return;
-            var cx = ViewportWidth / 2;
-            var cy = ViewportHeight / 2;
+            var cx = _viewportWidth / 2;
+            var cy = _viewportHeight / 2;
             var imgX = (cx - _offsetX) / _scale;
             var imgY = (cy - _offsetY) / _scale;
 
@@ -129,18 +137,18 @@ namespace Miao.UI.Views.Pages
             if (_source == null) return;
             var scaledW = _source.PixelSize.Width * _scale;
             var scaledH = _source.PixelSize.Height * _scale;
-            _offsetX = Math.Min(0, Math.Max(_offsetX, ViewportWidth - scaledW));
-            _offsetY = Math.Min(0, Math.Max(_offsetY, ViewportHeight - scaledH));
+            _offsetX = Math.Min(0, Math.Max(_offsetX, _viewportWidth - scaledW));
+            _offsetY = Math.Min(0, Math.Max(_offsetY, _viewportHeight - scaledH));
         }
 
         public byte[] GetCroppedPngBytes()
         {
-                if (_source == null)
-            return Array.Empty<byte>();
+            if (_source == null)
+                return Array.Empty<byte>();
 
             const double exportScale = 2.0;
-            var exportW = ViewportWidth * exportScale;
-            var exportH = ViewportHeight * exportScale;
+            var exportW = _viewportWidth * exportScale;
+            var exportH = _viewportHeight * exportScale;
 
             var exportImage = new Image
             {

@@ -917,7 +917,7 @@ namespace Miao.UI.Views.Pages
 
             if (isOriginalSelection)
             {
-                var existing = db.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == set.Id && x.OriginalTerm == selectedText);
+                var existing = GlossaryApplicationService.FindEntryByOriginalTerm(db, set.Id, selectedText);
                 ShowGlossaryEntryDialog(set.Id, selectedText, existing?.TranslatedTerm ?? "", existing?.HanViet ?? "",
                     oldTranslatedText: existing?.TranslatedTerm ?? "", blockIndex: -1);
             }
@@ -926,7 +926,7 @@ namespace Miao.UI.Views.Pages
                 var blockIndex = GetSelectionBlockIndex();
                 var originalGuess = selectedText;
 
-                var existing = db.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == set.Id && x.OriginalTerm == originalGuess);
+                var existing = GlossaryApplicationService.FindEntryByOriginalTerm(db, set.Id, originalGuess);
                 ShowGlossaryEntryDialog(set.Id, originalGuess, existing?.TranslatedTerm ?? selectedText, existing?.HanViet ?? "",
                     oldTranslatedText: selectedText, blockIndex: blockIndex ?? -1);
             }
@@ -1389,7 +1389,7 @@ namespace Miao.UI.Views.Pages
                 Background = Brushes.White,
                 BorderBrush = borderSoft,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(10),
+                CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(4),
                 Width = 240,
                 Child = panel
@@ -1453,12 +1453,18 @@ namespace Miao.UI.Views.Pages
             {
                 PlacementTarget = addButton,
                 Placement = PlacementMode.Bottom,
-                IsLightDismissEnabled = true,
-                Child = card,
-                IsOpen = true
+                IsLightDismissEnabled = true
             };
 
+            // QUAN TRỌNG: phải gán logical parent TRƯỚC khi gán Child và mở popup (IsOpen = true).
+            // Nếu IsOpen được set cùng lúc trong object initializer (như trước đây), popup mở ra
+            // và dựng cây hiển thị ngay lúc đó, trước khi SetParent kịp chạy — khiến style engine
+            // không tìm thấy UserControl.Styles của ReaderPage (nơi khai báo ReaderMenuItemButton),
+            // nên các thuộc tính cứng (nền trắng, viền...) vẫn hiện đúng nhưng hover/Cursor bị mất.
             ((ISetLogicalParent)_readerLibraryPopup).SetParent(this);
+
+            _readerLibraryPopup.Child = card;
+            _readerLibraryPopup.IsOpen = true;
         }
 
         private void OnReaderLibraryItemClick(object? sender, RoutedEventArgs e)
@@ -1629,7 +1635,7 @@ namespace Miao.UI.Views.Pages
             void SaveGlossaryEntry(string newOriginal, string translated)
             {
                 using var saveDb = OpenDb();
-                var entry = saveDb.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == glossarySetId && x.OriginalTerm == selectedOriginal);
+                var entry = GlossaryApplicationService.FindEntryByOriginalTerm(saveDb, glossarySetId, selectedOriginal);
                 if (entry == null)
                 {
                     saveDb.GlossarySetEntries.Add(new GlossarySetEntry

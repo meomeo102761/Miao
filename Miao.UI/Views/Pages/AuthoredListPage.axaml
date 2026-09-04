@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Miao.UI.Views.Pages.AuthoredListPage"
+             Background="{StaticResource BgMain}">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="AuthoredNovelCardTemplate">
+            <Border Width="200" Margin="15,0,15,16" Background="White"
+                    Cursor="Hand" PointerPressed="OnNovelClick" Tag="{Binding}">
+                <StackPanel HorizontalAlignment="Center">
+                    <Border Width="200" Height="280" Background="White" ClipToBounds="True"
+                            BorderBrush="{StaticResource AccentJade}" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="₍^. .^₎Ⳋ" FontSize="30" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" Opacity="0.6"/>
+                            <Image Source="{Binding CoverImagePath, Converter={StaticResource CoverImageConverter}}"
+                                   Width="200" Height="280" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="{Binding DisplayTitle}" FontFamily="Inter" FontSize="17"
+                               FontWeight="Bold" Foreground="#444" Margin="0,8,0,0"
+                               TextAlignment="Center" HorizontalAlignment="Stretch"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
+
+                    <TextBlock Text="{Binding Author}" FontFamily="Inter" FontSize="15"
+                               Foreground="#333" Margin="0,2,0,8" MaxWidth="200"
+                               HorizontalAlignment="Stretch" TextAlignment="Center"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid MaxWidth="1140" Margin="20">
+        <StackPanel>
+
+            <StackPanel Orientation="Horizontal" Cursor="Hand" HorizontalAlignment="Left"
+                        Margin="0,32,0,20" PointerPressed="OnBackClick">
+                <TextBlock Text="‹ " FontSize="20" Foreground="{StaticResource AccentJade}" VerticalAlignment="Center"/>
+                <TextBlock Text="Truyện sáng tác" Classes="pageTitle" FontWeight="Bold" FontSize="22"
+                           Foreground="{StaticResource AccentJade}"/>
+            </StackPanel>
+
+            <ItemsControl x:Name="NovelsList" ItemTemplate="{StaticResource AuthoredNovelCardTemplate}"
+                          HorizontalAlignment="Center" Margin="-15,0,-15,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                        Margin="0,16,0,20" x:Name="PageButtonsPanel"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

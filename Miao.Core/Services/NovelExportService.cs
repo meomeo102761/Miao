@@ -69,7 +69,7 @@ namespace Miao.Core.Services
 
                 var bodyHtml = string.Join("\n", GetContent(ch, useOriginalContent)
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(line => $"<p>{XmlEscape(line.Trim())}</p>"));
+                    .Select(line => $"<p>{BuildEpubLineHtml(line.Trim())}</p>"));
 
                 WriteEntry(archive, $"OEBPS/{fileName}", $"""
                     <?xml version="1.0" encoding="UTF-8"?>
@@ -125,6 +125,24 @@ namespace Miao.Core.Services
 
         private static string XmlEscape(string text) =>
             (text ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+        private static string BuildEpubLineHtml(string line)
+        {
+            var segments = RichTextParser.ParseLine(line);
+            var sb = new StringBuilder();
+
+            foreach (var seg in segments)
+            {
+                var escaped = XmlEscape(seg.Text);
+                if (seg.Bold) escaped = $"<b>{escaped}</b>";
+                if (seg.Italic) escaped = $"<i>{escaped}</i>";
+                if (seg.Underline) escaped = $"<u>{escaped}</u>";
+                if (seg.Strike) escaped = $"<s>{escaped}</s>";
+                sb.Append(escaped);
+            }
+
+            return sb.ToString();
+        }
         
         private static string GetContent(Chapter ch, bool useOriginal) =>
             useOriginal ? (ch.OriginalContent ?? "") : (ch.DisplayContent ?? "");
@@ -149,8 +167,8 @@ namespace Miao.Core.Services
                 foreach (var line in lines)
                 {
                     var p = new Paragraph();
-                    var run = new Run(new Text(line.Trim()) { Space = SpaceProcessingModeValues.Preserve });
-                    p.AppendChild(run);
+                    foreach (var seg in RichTextParser.ParseLine(line.Trim()))
+                        p.AppendChild(BuildDocxRun(seg));
                     body.AppendChild(p);
                 }
             }
@@ -171,6 +189,23 @@ namespace Miao.Core.Services
             run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
             p.AppendChild(run);
             return p;
+        }
+
+        private static Run BuildDocxRun(RichTextSegment seg)
+        {
+            var run = new Run();
+            var props = new RunProperties();
+
+            if (seg.Bold) props.AppendChild(new Bold());
+            if (seg.Italic) props.AppendChild(new Italic());
+            if (seg.Underline) props.AppendChild(new Underline { Val = UnderlineValues.Single });
+            if (seg.Strike) props.AppendChild(new Strike());
+
+            if (props.HasChildren)
+                run.AppendChild(props);
+
+            run.AppendChild(new Text(seg.Text) { Space = SpaceProcessingModeValues.Preserve });
+            return run;
         }
 
         private static void ExportPdf(Novel novel, List<Chapter> chapters, string outputPath, bool useOriginalContent)
@@ -198,7 +233,19 @@ namespace Miao.Core.Services
                             col.Item().PaddingVertical(6);
 
                             foreach (var line in GetContent(ch, useOriginalContent).Split('\n', StringSplitOptions.RemoveEmptyEntries))
-                                col.Item().Text(line.Trim()).ParagraphSpacing(4);
+                            {
+                                col.Item().PaddingBottom(4).Text(text =>
+                                {
+                                    foreach (var seg in RichTextParser.ParseLine(line.Trim()))
+                                    {
+                                        var span = text.Span(seg.Text);
+                                        if (seg.Bold) span.Bold();
+                                        if (seg.Italic) span.Italic();
+                                        if (seg.Underline) span.Underline();
+                                        if (seg.Strike) span.Strikethrough();
+                                    }
+                                });
+                            }
                         }
                     });
                 });
