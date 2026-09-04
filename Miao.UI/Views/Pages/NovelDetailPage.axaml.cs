@@ -353,8 +353,7 @@ namespace Miao.UI.Views.Pages
 
                 var directionRow = tagRows.FirstOrDefault(t =>
                     t.Category.Contains("hướng", StringComparison.OrdinalIgnoreCase) ||
-                    t.Category.Contains("giới tính", StringComparison.OrdinalIgnoreCase) ||
-                    t.Category.Contains("giới", StringComparison.OrdinalIgnoreCase));
+                    t.Category.Contains("giới tính", StringComparison.OrdinalIgnoreCase));
 
                 var direction = directionRow?.Name.Trim() ?? string.Empty;
 

@@ -52,8 +52,7 @@ namespace Miao.Core.Services
         {
             var direction = tags.FirstOrDefault(t =>
                 t.Category.Contains("hướng", StringComparison.OrdinalIgnoreCase)
-                || t.Category.Contains("giới tính", StringComparison.OrdinalIgnoreCase)
-                || t.Category.Contains("giới", StringComparison.OrdinalIgnoreCase));
+                || t.Category.Contains("giới tính", StringComparison.OrdinalIgnoreCase));
 
             if (direction != null && !string.IsNullOrWhiteSpace(direction.Name))
                 return direction.Name.Trim();
