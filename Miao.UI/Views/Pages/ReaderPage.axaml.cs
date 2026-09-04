@@ -1694,7 +1694,7 @@ namespace Miao.UI.Views.Pages
                 if (result != DialogResult.Yes) return;
 
                 using var deleteDb = OpenDb();
-                var entry = deleteDb.GlossarySetEntries.FirstOrDefault(x => x.GlossarySetId == glossarySetId && x.OriginalTerm == selectedOriginal);
+                var entry = GlossaryApplicationService.FindEntryByOriginalTerm(deleteDb, glossarySetId, selectedOriginal);
                 if (entry == null) { ModalService.Close(); return; }
 
                 ModalService.Close();

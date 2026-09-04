@@ -304,7 +304,8 @@
         </Border>
 
         <Grid Grid.Row="1">
-            <ScrollViewer x:Name="ReaderScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ScrollViewer x:Name="ReaderScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+              ScrollViewer.BringIntoViewOnFocusChange="False">
                 <StackPanel Margin="20,35,20,30" MaxWidth="1140">
 
                     <Border x:Name="ReadingCard" Background="#FFFDF8" BorderBrush="#E8E3D9" BorderThickness="1" Padding="70,55,70,65">

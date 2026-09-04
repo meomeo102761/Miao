@@ -108,7 +108,7 @@
             </StackPanel>
         </DataTemplate>
     </UserControl.Resources>
-    <ScrollViewer>
+    <ScrollViewer ScrollViewer.BringIntoViewOnFocusChange="False">
     <StackPanel Background="{StaticResource BgMain}" Margin="20" MaxWidth="1140">
 
         <StackPanel Orientation="Horizontal" Cursor="Hand" HorizontalAlignment="Left"

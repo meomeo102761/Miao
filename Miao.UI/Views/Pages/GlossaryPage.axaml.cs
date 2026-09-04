@@ -737,11 +737,8 @@ namespace Miao.UI.Views.Pages
             var entry = db.GlossarySetEntries.Find(_editingEntry.Id);
             if (entry == null) return;
 
-            bool isDuplicate = db.GlossarySetEntries.Any(x =>
-                x.GlossarySetId == entry.GlossarySetId &&
-                x.Id != entry.Id &&
-                x.OriginalTerm == original);
-            if (isDuplicate) return;
+            var duplicateEntry = GlossaryApplicationService.FindEntryByOriginalTerm(db, entry.GlossarySetId, original);
+            if (duplicateEntry != null && duplicateEntry.Id != entry.Id) return;
 
             entry.OriginalTerm = original;
             entry.HanViet = EditHanVietBox.Text?.Trim() ?? "";
