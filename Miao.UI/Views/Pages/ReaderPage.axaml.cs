@@ -175,7 +175,13 @@ namespace Miao.UI.Views.Pages
         private void UpdateReadingContentWidth(double cardWidth)
         {
             var available = cardWidth - ReadingCard.Padding.Left - ReadingCard.Padding.Right;
-            var newWidth = Math.Clamp(available, MinReadingWidth, MaxReadingWidth);
+
+            // Math.Clamp ép sàn tối thiểu MinReadingWidth (480) dù màn hình thực tế hẹp hơn -> trên điện
+            // thoại (~360-400dp) sẽ luôn bị ép tràn ngang. Chỉ áp dụng mức tối thiểu lý tưởng khi màn
+            // hình đủ rộng để chứa nó; hẹp hơn thì dùng hết chiều rộng đang có, không ép tràn.
+            var newWidth = available < MinReadingWidth
+                ? Math.Max(available, 0)
+                : Math.Clamp(available, MinReadingWidth, MaxReadingWidth);
             if (newWidth <= 0) return;
 
             ReadBlocksList.Width = newWidth;

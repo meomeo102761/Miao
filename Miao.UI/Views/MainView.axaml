@@ -126,11 +126,11 @@
                         PointerEntered="OnDownloadMenuEnter"
                         PointerExited="OnDownloadMenuLeave">
 
-                        <Button Content="Tải truyện" Height="60" Classes="TopNavButton"/>
+                        <Button Content="Tải truyện" Height="60" Classes="TopNavButton" Click="OnDownloadMenuToggleClick"/>
                         <Popup x:Name="DownloadPopup"
                             PlacementTarget="{Binding #DownloadMenuArea}"
                             Placement="Bottom"
-                            IsLightDismissEnabled="False">
+                            IsLightDismissEnabled="True">
 
                             <Border x:Name="DownloadPopupContent" Background="{StaticResource AccentJade}" MinWidth="105"
                                     PointerEntered="OnDownloadMenuEnter"

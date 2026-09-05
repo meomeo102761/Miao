@@ -74,7 +74,13 @@ namespace Miao.UI.Views.Pages
 
         private void UpdateEditorContentWidth(double availableWidth)
         {
-            var newWidth = Math.Clamp(availableWidth - 40, MinEditorWidth, MaxEditorWidth);
+            var available = availableWidth - 40;
+
+            // Math.Clamp ép sàn 480px dù màn hình thực tế hẹp hơn -> tràn ngang trên điện thoại.
+            // Hẹp hơn mức lý tưởng thì dùng hết chiều rộng đang có thay vì ép cứng.
+            var newWidth = available < MinEditorWidth
+                ? Math.Max(available, 0)
+                : Math.Clamp(available, MinEditorWidth, MaxEditorWidth);
             if (newWidth <= 0) return;
             EditorContentGrid.Width = newWidth;
         }
@@ -395,16 +401,55 @@ namespace Miao.UI.Views.Pages
 
         // ===================== Toolbar định dạng (hiện khi chuột phải vào 1 khối chữ) =====================
 
+        private DispatcherTimer? _longPressTimer;
+        private Point _longPressStartPos;
+        private TextBox? _longPressTargetBox;
+        private const double LongPressMoveTolerance = 12;
+        private const int LongPressDurationMs = 450;
+
         private void OnBlockTextBoxPointerPressed(object? sender, PointerPressedEventArgs e)
         {
             if (sender is not TextBox tb) return;
-            if (!e.GetCurrentPoint(tb).Properties.IsRightButtonPressed) return;
 
-            e.Handled = true;
-            _activeTextBox = tb;
-            if (tb.DataContext is ReaderDisplayGroup group) _lastFocusedGroup = group;
+            if (e.GetCurrentPoint(tb).Properties.IsRightButtonPressed)
+            {
+                e.Handled = true;
+                _activeTextBox = tb;
+                if (tb.DataContext is ReaderDisplayGroup group) _lastFocusedGroup = group;
+                ShowFormattingToolbar(tb);
+                return;
+            }
 
-            ShowFormattingToolbar(tb);
+            // Trên Android không có "chuột phải" — giữ ngón tay đủ lâu (long-press) mở cùng toolbar.
+            // Không bật cho desktop để không đổi hành vi click/kéo-chọn chữ bằng chuột trái đang có.
+            if (!PlatformServices.IsTouchPlatform) return;
+
+            _longPressTargetBox = tb;
+            _longPressStartPos = e.GetPosition(tb);
+            _longPressTimer?.Stop();
+            _longPressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(LongPressDurationMs) };
+            _longPressTimer.Tick += (_, _) =>
+            {
+                _longPressTimer!.Stop();
+                _activeTextBox = tb;
+                if (tb.DataContext is ReaderDisplayGroup group) _lastFocusedGroup = group;
+                ShowFormattingToolbar(tb);
+            };
+            _longPressTimer.Start();
+        }
+
+        private void OnBlockTextBoxPointerMoved(object? sender, PointerEventArgs e)
+        {
+            if (_longPressTimer == null || _longPressTargetBox == null) return;
+
+            var delta = e.GetPosition(_longPressTargetBox) - _longPressStartPos;
+            if (Math.Abs(delta.X) > LongPressMoveTolerance || Math.Abs(delta.Y) > LongPressMoveTolerance)
+                _longPressTimer.Stop();
+        }
+
+        private void OnBlockTextBoxPointerReleased(object? sender, PointerReleasedEventArgs e)
+        {
+            _longPressTimer?.Stop();
         }
 
         private void ShowFormattingToolbar(TextBox targetBox)

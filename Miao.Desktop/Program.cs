@@ -26,6 +26,7 @@ class Program
         var browserFetch = new BrowserFetchService();
         PlatformServices.PageFetcher = browserFetch;
         PlatformServices.ScreenshotFetcher = browserFetch;
+        PlatformServices.IsTouchPlatform = false;
 
         try
         {

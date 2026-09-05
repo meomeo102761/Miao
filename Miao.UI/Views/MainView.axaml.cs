@@ -94,6 +94,11 @@ namespace Miao.UI.Views
 
         private void OnDownloadMenuEnter(object? sender, PointerEventArgs e)
         {
+            // Trên cảm ứng không có "hover" thật, và ở phần lớn kích thước điện thoại menu này đã tự ẩn
+            // (NavButtonsPanel chỉ hiện khi đủ rộng, xem UpdateNavLayout) — chặn thêm ở đây để an toàn
+            // với tablet Android màn hình rộng vẫn hiện NavButtonsPanel.
+            if (PlatformServices.IsTouchPlatform) return;
+
             _downloadCloseTimer?.Stop();
             _downloadCloseTimer = null;
 
@@ -103,6 +108,8 @@ namespace Miao.UI.Views
 
         private void OnDownloadMenuLeave(object? sender, PointerEventArgs e)
         {
+            if (PlatformServices.IsTouchPlatform) return;
+
             _downloadCloseTimer?.Stop();
 
             _downloadCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };

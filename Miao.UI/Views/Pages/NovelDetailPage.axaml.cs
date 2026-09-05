@@ -151,6 +151,16 @@ namespace Miao.UI.Views.Pages
                 RelatedSlotWide.Content = _relatedContent;
             }
 
+            // Cột 1 (đệm 24px) và cột 2 (300px, chứa RelatedSlotWide) trước đây luôn giữ nguyên kích
+            // thước dù nội dung đã chuyển sang RelatedSlotNarrow khi hẹp — trên màn hình điện thoại
+            // (~360-400px), phần cột trống này chiếm gần hết chiều ngang, bóp nát cột thông tin chính.
+            // Co 2 cột đó về 0 khi ở chế độ hẹp, trả lại đúng kích thước cũ khi đủ rộng.
+            if (InfoGrid.ColumnDefinitions.Count >= 3)
+            {
+                InfoGrid.ColumnDefinitions[1].Width = isNarrow ? new GridLength(0) : new GridLength(24);
+                InfoGrid.ColumnDefinitions[2].Width = isNarrow ? new GridLength(0) : new GridLength(300);
+            }
+
             SyncRelatedHeightToLeftColumn();
         }
 
@@ -2016,6 +2026,12 @@ namespace Miao.UI.Views.Pages
 
         private void AttachHoverAutoClose(Popup popup, Control anchor)
         {
+            // Cơ chế này dựa hoàn toàn vào "hover" (IsPointerOver). Trên cảm ứng, ngón tay nhấc lên
+            // là hết hover ngay lập tức -> popup sẽ tự đóng trước khi người dùng kịp bấm gì bên trong.
+            // Trên Android, IsLightDismissEnabled của Popup đã tự lo việc "chạm ra ngoài để đóng" rồi,
+            // nên bỏ qua vòng lặp poll này, không cần thay thế bằng gì khác.
+            if (PlatformServices.IsTouchPlatform) return;
+
             if (popup.Child is not Control content)
                 return;
 

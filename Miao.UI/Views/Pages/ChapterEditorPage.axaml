@@ -211,7 +211,9 @@
                                                         GotFocus="OnBlockTextBoxFocused"
                                                         TextChanged="OnBlockTextChanged"
                                                         KeyDown="OnBlockTextBoxPasteCheck"
-                                                        PointerPressed="OnBlockTextBoxPointerPressed"/>
+                                                        PointerPressed="OnBlockTextBoxPointerPressed"
+                                                        PointerMoved="OnBlockTextBoxPointerMoved"
+                                                        PointerReleased="OnBlockTextBoxPointerReleased"/>
                                                 <Grid IsVisible="{Binding IsImage}" HorizontalAlignment="Center" Margin="0,6,0,16">
                                                     <Image Source="{Binding ImagePath, Converter={StaticResource CoverImageConverter}}" Stretch="Uniform" MaxWidth="640"/>
                                                     <Button Classes="EditorToolButton" HorizontalAlignment="Right" VerticalAlignment="Top"

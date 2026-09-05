@@ -24,6 +24,7 @@ namespace Miao.Android
             var fetcher = new NotSupportedPageFetcher();
             PlatformServices.PageFetcher = fetcher;
             PlatformServices.ScreenshotFetcher = fetcher;
+            PlatformServices.IsTouchPlatform = true;
 
             base.OnCreate();
         }
